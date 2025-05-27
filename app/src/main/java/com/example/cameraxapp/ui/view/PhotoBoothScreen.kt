@@ -18,15 +18,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults.xLargeContainerSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -88,7 +93,7 @@ fun PhotoBoothScreen(
             if (countdown == 0) {
                 cameraViewModel.takePhoto(
                     onPhotoCaptured = { uri ->
-                        photoBoothViewModel.addCapturedImage(uri.toString())
+                        photoBoothViewModel.addCapturedImage(uri.path.toString())
                         cameraViewModel.updateCountdown(TIME_TO_CAPTURE)
                         if (photoBoothViewModel.capturedImages.value?.size == PHOTO_LIMIT) {
                             cameraViewModel.stopCapturing()
@@ -118,6 +123,7 @@ fun PhotoBoothScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.background(color = Color.LightGray),
                 title = { },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
@@ -128,6 +134,7 @@ fun PhotoBoothScreen(
         }
     ) { padding ->
         Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(padding)
@@ -145,7 +152,7 @@ fun PhotoBoothScreen(
                             CameraView(
                                 previewUseCase = cameraViewModel.preview.value!!,
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(64.dp))
                                     .aspectRatio(4f / 3f)
                             )
                             if (isCapturing) {
@@ -191,17 +198,15 @@ fun PhotoBoothScreen(
                 CaptureImages(capturedImages, Modifier.height(140.dp))
             }
 
-            CaptureButton(
-                onClick = {
-                    if (!isCapturing) {
+            if(!isCapturing){
+                CaptureButton(
+                    onClick = {
                         cameraViewModel.startCapturing()
-                    } else {
-                        cameraViewModel.stopCapturing()
-                    }
-                },
-                isEnabled =  captureCount < 8,
-                isCapturing = isCapturing
-            )
+                    },
+                    isEnabled = captureCount < 8,
+                    isCapturing = isCapturing
+                )
+            }
         }
     }
 }
@@ -297,6 +302,7 @@ fun CaptureImages(capturedImages: List<String>?, modifier: Modifier = Modifier) 
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun CaptureButton(
     onClick: () -> Unit,
@@ -305,8 +311,10 @@ fun CaptureButton(
 ) {
     Button(
         onClick = onClick,
+        shape = ButtonDefaults.filledTonalShape,
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth(.8f)
+            .size(xLargeContainerSize())
             .padding(16.dp),
         enabled = isEnabled
     ) {

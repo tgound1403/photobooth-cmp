@@ -1,55 +1,42 @@
 package com.example.cameraxapp.ui.view
 
+import android.net.Uri
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.cameraxapp.data.api.UnsplashPhoto
 import com.example.cameraxapp.ui.viewmodel.PhotoBoothViewModel
+import com.example.cameraxapp.ui.viewmodel.BackgroundSelectorViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhotoBoothResultScreen(
     photoBoothId: Long,
     navController: NavController,
-    viewModel: PhotoBoothViewModel
+    viewModel: PhotoBoothViewModel,
+    backgroundSelectorViewModel: BackgroundSelectorViewModel = koinViewModel<BackgroundSelectorViewModel>()
 ) {
     val photoBooth by viewModel.photoBooth.observeAsState()
     val saveState by viewModel.saveState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    var showBackgroundSelector by remember { mutableStateOf(false) }
+    var showDeviceImagePicker by remember { mutableStateOf(false) }
+    var selectedBackground by remember { mutableStateOf<UnsplashPhoto?>(null) }
+    var selectedDeviceImage by remember { mutableStateOf<Uri?>(null) }
 
     LaunchedEffect(photoBoothId) {
         viewModel.getPhotoBoothById(photoBoothId)
@@ -65,6 +52,29 @@ fun PhotoBoothResultScreen(
             }
             else -> {}
         }
+    }
+
+    if (showBackgroundSelector) {
+        BackgroundSelector(
+            viewModel = backgroundSelectorViewModel,
+            onBackgroundSelected = { photo ->
+                selectedBackground = photo
+                selectedDeviceImage = null
+                showBackgroundSelector = false
+            },
+            onDismiss = { showBackgroundSelector = false }
+        )
+    }
+
+    if (showDeviceImagePicker) {
+        DeviceImagePicker(
+            onImageSelected = { uri ->
+                selectedDeviceImage = uri
+                selectedBackground = null
+                showDeviceImagePicker = false
+            },
+            onDismiss = { showDeviceImagePicker = false }
+        )
     }
 
     Scaffold(
@@ -92,6 +102,27 @@ fun PhotoBoothResultScreen(
                     .padding(16.dp)
                     .border(2.dp, Color.White)
             ) {
+                selectedBackground?.let { background ->
+                    AsyncImage(
+                        model = background.urls.regular,
+                        contentDescription = "Background",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                selectedDeviceImage?.let { uri ->
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(uri)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Device background",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.SpaceEvenly
@@ -113,11 +144,11 @@ fun PhotoBoothResultScreen(
                 }
             }
 
-            Row(
+            Column (
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                verticalArrangement = Arrangement.SpaceEvenly
             ) {
                 Button(
                     onClick = { navController.navigate("photoBooth") },
@@ -132,9 +163,51 @@ fun PhotoBoothResultScreen(
                 }
 
                 Button(
+                    onClick = { showBackgroundSelector = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Black
+                    )
+                ) {
+                    Icon(Icons.Default.Image, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Unsplash")
+                }
+
+                Button(
+                    onClick = { showDeviceImagePicker = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Black
+                    )
+                ) {
+                    Icon(Icons.Default.PhotoLibrary, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Thiết bị")
+                }
+
+                Button(
                     onClick = { 
                         photoBooth?.imagePaths?.let { imagePaths ->
-                            viewModel.saveImages(context, imagePaths)
+                            when {
+                                selectedBackground != null -> {
+                                    viewModel.saveImageWithBg(
+                                        context,
+                                        imagePaths,
+                                        selectedBackground!!.urls.regular
+                                    )
+                                }
+                                selectedDeviceImage != null -> {
+                                    viewModel.saveImageWithBg(
+                                        context,
+                                        imagePaths,
+                                        selectedDeviceImage.toString()
+                                    )
+                                }
+                                else -> {
+                                    viewModel.saveImages(context, imagePaths)
+                                }
+                            }
                         }
                     },
                     enabled = saveState !is PhotoBoothViewModel.SaveState.Saving,

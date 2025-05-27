@@ -2,27 +2,21 @@ package com.example.cameraxapp.ui.viewmodel
 
 import android.app.Application
 import android.content.Context
-import android.net.Uri
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
+import android.graphics.BitmapFactory
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.cameraxapp.data.model.PhotoBooth
 import com.example.cameraxapp.data.repository.PhotoBoothRepository
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.concurrent.Executor
+import com.example.cameraxapp.domain.usecase.CreatePhotoBoothImageUseCase
 import com.example.cameraxapp.domain.usecase.SaveImageUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import com.example.cameraxapp.domain.usecase.CreatePhotoBoothImageUseCase
+import java.io.File
+import java.io.IOException
+import java.util.Date
 
 class PhotoBoothViewModel constructor(
     private val repository: PhotoBoothRepository,
@@ -84,6 +78,18 @@ class PhotoBoothViewModel constructor(
             _saveState.value = SaveState.Saving
             try {
                 createPhotoBoothImageUseCase.execute(context, imagePaths).getOrThrow()
+                _saveState.value = SaveState.Success
+            } catch (e: Exception) {
+                _saveState.value = SaveState.Error(e.message ?: "Unknown error")
+            }
+        }
+    }
+
+    fun saveImageWithBg(context: Context, imagePaths: List<String>, background: String) {
+        viewModelScope.launch {
+            _saveState.value = SaveState.Saving
+            try {
+                createPhotoBoothImageUseCase.executeWithBackground(context, imagePaths, background).getOrThrow()
                 _saveState.value = SaveState.Success
             } catch (e: Exception) {
                 _saveState.value = SaveState.Error(e.message ?: "Unknown error")

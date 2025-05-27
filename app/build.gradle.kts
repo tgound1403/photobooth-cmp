@@ -19,7 +19,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.cameraxapp"
-        minSdk = 21
+        minSdk = 24
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -67,6 +67,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation("androidx.compose.material3:material3:1.2.1") // Or the latest version
 
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)
@@ -103,6 +104,17 @@ dependencies {
 
     // Gson
     implementation(libs.gson)
+    
+    // Retrofit
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.logging.interceptor)
+    
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
+    // Coil
+    implementation("io.coil-kt:coil-compose:2.4.0")
 
     implementation(libs.androidx.animation)
     implementation(libs.androidx.material3)
