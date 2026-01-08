@@ -17,3 +17,9 @@ val DeepBlack = Color(0xFF0A0A0A)
 val SurfaceBlack = Color(0xFF1E1E1E)
 val GlassWhite = Color(0x20FFFFFF) // 20% Alpha White for Glass effect
 val TextWhite = Color(0xFFEEEEEE)
+
+// B&W Palette
+val BWBlack = Color(0xFF000000)
+val BWWhite = Color(0xFFFFFFFF)
+val BWDarkGray = Color(0xFF121212)
+val BWGlass = Color(0x30FFFFFF)

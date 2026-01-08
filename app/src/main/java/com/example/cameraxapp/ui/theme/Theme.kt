@@ -35,29 +35,49 @@ private val LightColorScheme = lightColorScheme(
     // Other default colors to override
 )
 
+private val PastelColorScheme = lightColorScheme(
+    primary = PastelBlue,
+    onPrimary = CharcoalText,
+    secondary = PastelPink,
+    onSecondary = CharcoalText,
+    tertiary = PastelLilac,
+    background = CreamWhite,
+    onBackground = CharcoalText,
+    surface = PastelCream, // or specialized surface color
+    onSurface = CharcoalText
+)
+
+private val BlackAndWhiteColorScheme = darkColorScheme(
+    primary = BWWhite,
+    onPrimary = BWBlack,
+    secondary = BWWhite,
+    onSecondary = BWBlack,
+    tertiary = BWDarkGray,
+    background = BWBlack,
+    onBackground = BWWhite,
+    surface = BWBlack,
+    onSurface = BWWhite
+)
+
 @Composable
 fun CameraXAppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    appTheme: AppTheme = AppTheme.DARK_NEON,
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = false, // Disable dynamic color to enforce our premium look
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        // Force Dark Theme for Premium Look or respect system? 
-        // For this phase, let's prioritize the Dark Premium look.
-        true -> DarkColorScheme 
-        else -> LightColorScheme
+    val colorScheme = when (appTheme) {
+        AppTheme.DARK_NEON -> DarkColorScheme
+        AppTheme.KOREAN_PASTEL -> PastelColorScheme
+        AppTheme.BLACK_AND_WHITE -> BlackAndWhiteColorScheme
     }
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.background.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = appTheme == AppTheme.KOREAN_PASTEL
         }
     }
 
