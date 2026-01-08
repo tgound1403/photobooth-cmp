@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.androidx.runtime.android)
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.media3.common.ktx)
+    implementation(libs.androidx.datastore.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -124,4 +125,8 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
     implementation(libs.koin.androidx.compose.navigation)
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    // GIF Encoder
+    implementation("com.github.nbadal:android-gif-encoder:1.2")
 }
