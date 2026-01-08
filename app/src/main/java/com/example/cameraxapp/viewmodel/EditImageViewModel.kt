@@ -7,6 +7,8 @@ import com.example.cameraxapp.core.enum.EditType
 import com.example.cameraxapp.core.enum.ImageInfo
 import com.example.cameraxapp.core.enum.TabType
 import com.example.cameraxapp.data.model.Preset
+import com.example.cameraxapp.data.model.StickerOverlay
+import com.example.cameraxapp.data.model.OverlayType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -21,8 +23,12 @@ class EditImageViewModel : ViewModel() {
         EditType.FRAME,
         EditType.SCRATCH,
         EditType.LIGHT_LEAK,
-        EditType.DISTORTION,
-        EditType.SCRATCH
+        EditType.DISTORTION
+    )
+    
+    val decorFeatures = listOf(
+        EditType.STICKER,
+        EditType.TEXT
     )
 
     val filters = listOf(
@@ -98,13 +104,19 @@ class EditImageViewModel : ViewModel() {
         })
     )
 
-    val tabs = listOf(TabType.CUSTOMIZE, TabType.BASIC, TabType.FAVOURITE)
+    val tabs = listOf(TabType.CUSTOMIZE, TabType.BASIC, TabType.DECOR, TabType.FAVOURITE)
     val imageInfo = listOf(ImageInfo.BRIGHTNESS, ImageInfo.TEMPERATURE, ImageInfo.CONTRAST, ImageInfo.SATURATION, ImageInfo.SHARPNESS, ImageInfo.HIGHLIGHT, ImageInfo.SHADOW)
 
     val frames = listOf("Frame 1", "Frame 2", "Frame 3", "Frame 4", "Frame 5")
     val lightLeaks = listOf("Light leak 1", "Light leak 2", "Light leak 3", "Light leak 4", "Light leak 5")
     val distortions = listOf("Distortion 1", "Distortion 2", "Distortion 3", "Distortion 4", "Distortion 5")
     val scratches = listOf("Scratch 1", "Scratch 2", "Scratch 3", "Scratch 4", "Scratch 5")
+    
+    // Sticker/Emoji options (using emojis as stickers)
+    val stickers = listOf("❤️", "⭐", "✨", "🎉", "🎈", "🌈", "☀️", "🌙", "💫", "🔥")
+    
+    // Overlay state
+    val overlays = mutableListOf<StickerOverlay>()
 
     suspend fun applyBrightness(bitmap: Bitmap, brightness: Float): Bitmap {
         return withContext(Dispatchers.IO){
@@ -184,6 +196,280 @@ class EditImageViewModel : ViewModel() {
         }
     }
 
+    suspend fun applyScratch(bitmap: Bitmap, type: String): Bitmap {
+        return withContext(Dispatchers.IO) {
+            val resultBitmap = bitmap.copy(bitmap.config!!, true)
+            val canvas = Canvas(resultBitmap)
+            val paint = Paint().apply {
+                color = Color.WHITE
+                style = Paint.Style.STROKE
+                strokeWidth = 2f
+                alpha = 150
+                isAntiAlias = true
+            }
+            
+            // Deterministic random based on type hash for consistency
+            val random = Random(type.hashCode())
+            val count = 20 + random.nextInt(30)
+            
+            for (i in 0 until count) {
+                val startX = random.nextFloat() * bitmap.width
+                val startY = random.nextFloat() * bitmap.height
+                val endX = startX + (random.nextFloat() - 0.5f) * 100
+                val endY = startY + (random.nextFloat() - 0.5f) * 100
+                canvas.drawLine(startX, startY, endX, endY, paint)
+            }
+            resultBitmap
+        }
+    }
+
+    suspend fun applyDistortion(bitmap: Bitmap, type: String): Bitmap {
+        return withContext(Dispatchers.IO) {
+             // Simple Chromatic Aberration (RGB Shift)
+            val shift = 10f * (type.lastOrNull()?.digitToInt() ?: 1)
+            val width = bitmap.width
+            val height = bitmap.height
+            val resultBitmap = Bitmap.createBitmap(width, height, bitmap.config!!) // Use raw config, prevent null safety issues if needed, strictly standard ARGB usually
+            val canvas = Canvas(resultBitmap)
+            
+            val paint = Paint()
+            
+            // Draw Red Channel shifted Left
+            paint.colorFilter = LightingColorFilter(0xFFFF0000.toInt(), 0)
+            canvas.drawBitmap(bitmap, -shift, 0f, paint)
+            
+            // Draw Green Channel Centered (Add mode)
+            paint.colorFilter = LightingColorFilter(0xFF00FF00.toInt(), 0)
+            paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.ADD)
+            canvas.drawBitmap(bitmap, 0f, 0f, paint)
+            
+            // Draw Blue Channel shifted Right
+            paint.colorFilter = LightingColorFilter(0xFF0000FF.toInt(), 0)
+            canvas.drawBitmap(bitmap, shift, 0f, paint)
+            
+            // Reset Xfermode for safety if reused
+             paint.xfermode = null
+             
+             resultBitmap
+        }
+    }
+
+    suspend fun applyLightLeak(bitmap: Bitmap, type: String): Bitmap {
+        return withContext(Dispatchers.IO) {
+            val resultBitmap = bitmap.copy(bitmap.config!!, true)
+            val canvas = Canvas(resultBitmap)
+            
+            val width = bitmap.width.toFloat()
+            val height = bitmap.height.toFloat()
+            
+            // Deterministic "random" based on type
+            val hash = type.hashCode()
+            val side = hash % 4 // 0: Left, 1: Top, 2: Right, 3: Bottom
+            
+            val centerX = when {
+                side == 0 || side == 0 -> 0f 
+                side == 2 -> width
+                else -> width * 0.5f + (hash % 100)
+            }
+            // Allow random center
+             val cx = if (hash % 2 == 0) 0f else width
+             val cy = if (hash % 3 == 0) 0f else height
+
+            val radius = width.coerceAtLeast(height) * (0.5f + (hash % 5) / 10f)
+            
+            val colors = intArrayOf(
+                Color.argb(150, 255, 200, 0), // Orange/Yellow
+                Color.argb(100, 255, 100, 0), // Reddish
+                Color.TRANSPARENT
+            )
+            
+            val gradient = RadialGradient(cx, cy, radius, colors, null, Shader.TileMode.CLAMP)
+            
+            val paint = Paint().apply {
+                shader = gradient
+                xfermode = PorterDuffXfermode(PorterDuff.Mode.SCREEN) // Screen blend mode for light leak
+                isAntiAlias = true
+            }
+            
+            canvas.drawRect(0f, 0f, width, height, paint)
+            
+            resultBitmap
+        }
+    }
+
+    suspend fun applySharpness(bitmap: Bitmap, sharpness: Float): Bitmap {
+        return withContext(Dispatchers.IO) {
+            // Convolution Matrix for Sharpness
+            // Basic kernel: [ -1 -1 -1 ]
+            //               [ -1  9 -1 ]
+            //               [ -1 -1 -1 ]
+            // We'll interpolate between original and sharpened based on 'sharpness' (0..1)
+            // But here sharpness input is generic. Let's assume 0..1 range or similar.
+            // If sharpness is 0, return original? Or allows negative blur?
+            // Let's assume sharpness is 0..1 intensity.
+            
+            val width = bitmap.width
+            val height = bitmap.height
+            val pixels = IntArray(width * height)
+            bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+            
+            val resultPixels = IntArray(width * height)
+            
+            // Simple 3x3 Convolution
+            // Doing this in pure Kotlin is slow for large images, but acceptable for typical phone camera photos if not too huge.
+            // Optimized approach would be RenderScript, but let's stick to standard loop for compatibility/simplicity without NDK/RS.
+            
+            val newAlpha = 255
+            
+            for (y in 1 until height - 1) {
+                for (x in 1 until width - 1) {
+                    val idx = y * width + x
+                    
+                    var rSum = 0
+                    var gSum = 0
+                    var bSum = 0
+                    
+                    // Kernel: 
+                    // 0 -1  0
+                    // -1 5 -1
+                    // 0 -1  0
+                    // A milder sharpen kernel.
+                    
+                    val centerVal = 5
+                    val neighborVal = -1
+                    
+                    // Center
+                    val p = pixels[idx]
+                    rSum += Color.red(p) * centerVal
+                    gSum += Color.green(p) * centerVal
+                    bSum += Color.blue(p) * centerVal
+                    
+                    // Neighbors (Top, Bottom, Left, Right)
+                    val pT = pixels[idx - width]
+                    rSum += Color.red(pT) * neighborVal
+                    gSum += Color.green(pT) * neighborVal
+                    bSum += Color.blue(pT) * neighborVal
+                    
+                    val pB = pixels[idx + width]
+                    rSum += Color.red(pB) * neighborVal
+                    gSum += Color.green(pB) * neighborVal
+                    bSum += Color.blue(pB) * neighborVal
+                    
+                    val pL = pixels[idx - 1]
+                    rSum += Color.red(pL) * neighborVal
+                    gSum += Color.green(pL) * neighborVal
+                    bSum += Color.blue(pL) * neighborVal
+                    
+                    val pR = pixels[idx + 1]
+                    rSum += Color.red(pR) * neighborVal
+                    gSum += Color.green(pR) * neighborVal
+                    bSum += Color.blue(pR) * neighborVal
+                    
+                    // Clamp
+                    val r = rSum.coerceIn(0, 255)
+                    val g = gSum.coerceIn(0, 255)
+                    val b = bSum.coerceIn(0, 255)
+                    
+                    // Blend based on intensity (sharpness)
+                    if (sharpness > 0) {
+                         val origR = Color.red(p)
+                         val origG = Color.green(p)
+                         val origB = Color.blue(p)
+                         
+                         val finalR = (origR + (r - origR) * sharpness).toInt().coerceIn(0,255)
+                         val finalG = (origG + (g - origG) * sharpness).toInt().coerceIn(0,255)
+                         val finalB = (origB + (b - origB) * sharpness).toInt().coerceIn(0,255)
+                         
+                         resultPixels[idx] = Color.argb(newAlpha, finalR, finalG, finalB)
+                    } else {
+                         resultPixels[idx] = p
+                    }
+                }
+            }
+             // Fill borders
+            for (x in 0 until width) {
+                resultPixels[x] = pixels[x]
+                resultPixels[(height-1)*width + x] = pixels[(height-1)*width + x]
+            }
+            for (y in 0 until height) {
+                resultPixels[y*width] = pixels[y*width]
+                resultPixels[y*width + width-1] = pixels[y*width + width-1]
+            }
+
+            val result = Bitmap.createBitmap(width, height, bitmap.config!!)
+            result.setPixels(resultPixels, 0, width, 0, 0, width, height)
+            result
+        }
+    }
+
+    suspend fun applyHighlight(bitmap: Bitmap, highlight: Float): Bitmap {
+        return withContext(Dispatchers.IO) {
+             val width = bitmap.width
+            val height = bitmap.height
+            val pixels = IntArray(width * height)
+            bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+            
+            // Highlight adjustment: affects bright areas. 
+            // Positive highlight -> Brighten brights
+            // Negative highlight -> Darken brights (recover highlights)
+            
+            for (i in pixels.indices) {
+                val p = pixels[i]
+                var r = Color.red(p)
+                var g = Color.green(p)
+                var b = Color.blue(p)
+                
+                // Simple Luminance Approximation
+                val lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+                
+                // Apply only if luminance is high (e.g. > 0.5)
+                if (lum > 0.5) {
+                    val factor = 1f + highlight * (lum - 0.5).toFloat() * 2f // Scale effect by how bright it is
+                    r = (r * factor).toInt().coerceIn(0, 255)
+                    g = (g * factor).toInt().coerceIn(0, 255)
+                    b = (b * factor).toInt().coerceIn(0, 255)
+                }
+                 pixels[i] = Color.argb(Color.alpha(p), r, g, b)
+            }
+            
+            val result = Bitmap.createBitmap(width, height, bitmap.config!!)
+            result.setPixels(pixels, 0, width, 0, 0, width, height)
+            result
+        }
+    }
+
+    suspend fun applyShadow(bitmap: Bitmap, shadow: Float): Bitmap {
+        return withContext(Dispatchers.IO) {
+            val width = bitmap.width
+            val height = bitmap.height
+            val pixels = IntArray(width * height)
+            bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+            
+            // Shadow adjustment: affects dark areas.
+            
+            for (i in pixels.indices) {
+                val p = pixels[i]
+                var r = Color.red(p)
+                var g = Color.green(p)
+                var b = Color.blue(p)
+                
+                 val lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+                 
+                 // Apply only if luminance is low (e.g. < 0.5)
+                 if (lum < 0.5) {
+                     val factor = 1f + shadow * (0.5 - lum).toFloat() * 2f
+                     r = (r * factor).toInt().coerceIn(0, 255)
+                     g = (g * factor).toInt().coerceIn(0, 255)
+                     b = (b * factor).toInt().coerceIn(0, 255)
+                 }
+                pixels[i] = Color.argb(Color.alpha(p), r, g, b)
+            }
+             val result = Bitmap.createBitmap(width, height, bitmap.config!!)
+            result.setPixels(pixels, 0, width, 0, 0, width, height)
+            result
+        }
+    }
+
     fun applyPresetFilter(
         bitmap: Bitmap,
         matrix: ColorMatrix
@@ -224,6 +510,58 @@ class EditImageViewModel : ViewModel() {
         } catch (e: Exception) {
             e.printStackTrace()
             return false
+        }
+    }
+    
+    // Overlay management methods
+    fun addOverlay(overlay: StickerOverlay) {
+        overlays.add(overlay)
+    }
+    
+    fun removeOverlay(id: String) {
+        overlays.removeAll { it.id == id }
+    }
+    
+    fun updateOverlay(id: String, offsetX: Float, offsetY: Float, scale: Float, rotation: Float) {
+        overlays.find { it.id == id }?.apply {
+            this.offsetX = offsetX
+            this.offsetY = offsetY
+            this.scale = scale
+            this.rotation = rotation
+        }
+    }
+    
+    suspend fun applyOverlaysToBitmap(bitmap: Bitmap): Bitmap {
+        return withContext(Dispatchers.IO) {
+            val resultBitmap = bitmap.copy(bitmap.config!!, true)
+            val canvas = Canvas(resultBitmap)
+            
+            overlays.forEach { overlay ->
+                val paint = Paint().apply {
+                    isAntiAlias = true
+                    textAlign = Paint.Align.CENTER
+                }
+                
+                canvas.save()
+                canvas.translate(overlay.offsetX, overlay.offsetY)
+                canvas.rotate(overlay.rotation)
+                canvas.scale(overlay.scale, overlay.scale)
+                
+                when (overlay.type) {
+                    OverlayType.STICKER, OverlayType.TEXT -> {
+                        paint.textSize = if (overlay.type == OverlayType.STICKER) 80f else 60f
+                        paint.color = if (overlay.type == OverlayType.TEXT) Color.WHITE else Color.BLACK
+                        if (overlay.type == OverlayType.TEXT) {
+                            paint.setShadowLayer(5f, 0f, 0f, Color.BLACK)
+                        }
+                        canvas.drawText(overlay.content, 0f, 0f, paint)
+                    }
+                }
+                
+                canvas.restore()
+            }
+            
+            resultBitmap
         }
     }
 

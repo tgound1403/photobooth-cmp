@@ -5,5 +5,7 @@ enum class EditType(name: String) {
     FRAME("Frame"),
     LIGHT_LEAK("Light Leak"),
     DISTORTION("Distortion"),
-    SCRATCH("Scratch")
+    SCRATCH("Scratch"),
+    STICKER("Sticker"),
+    TEXT("Text")
 }

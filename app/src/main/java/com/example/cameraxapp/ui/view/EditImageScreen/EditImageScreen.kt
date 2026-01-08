@@ -24,8 +24,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoFixHigh
+import androidx.compose.material.icons.filled.Brightness6
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.DeviceThermostat
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +66,7 @@ import com.example.cameraxapp.core.enum.EditType
 import com.example.cameraxapp.core.enum.ImageInfo
 import com.example.cameraxapp.core.enum.TabType
 import com.example.cameraxapp.data.model.Preset
+import com.example.cameraxapp.ui.components.GlassButton
 import com.example.cameraxapp.viewmodel.EditImageViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -81,10 +91,15 @@ val coroutineScope = CoroutineScope(Dispatchers.IO + job)
 @Composable
 fun EditImageScreen(imagePath: String, navController: NavController) {
     val context = LocalContext.current
-
+    val scope = rememberCoroutineScope() // Use local scope bound to composition
+    
+    // State Management Fix: Use remember { mutableStateOf } for bitmaps to trigger recomposition
     val originalBitmap by remember { mutableStateOf<Bitmap>(BitmapFactory.decodeFile(imagePath)) }
-    var temporaryBitmap: Bitmap = originalBitmap
-    var filteredBitmap: Bitmap = originalBitmap
+    var temporaryBitmap by remember { mutableStateOf(originalBitmap) }
+    var filteredBitmap by remember { mutableStateOf(originalBitmap) }
+    
+    // Debounce Job
+    var processingJob by remember { mutableStateOf<Job?>(null) }
 
     var selectedFeature by remember { mutableStateOf(EditType.FILTER) }
     var selectedFilter by remember { mutableStateOf(filters[0]) }
@@ -99,6 +114,23 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
     var contrast by remember { mutableFloatStateOf(0f) }
     var saturation by remember { mutableFloatStateOf(0f) }
     var temperature by remember { mutableFloatStateOf(0f) }
+    var sharpness by remember { mutableFloatStateOf(0f) }
+    var highlight by remember { mutableFloatStateOf(0f) }
+    var shadow by remember { mutableFloatStateOf(0f) }
+    
+    // Helper for Icons
+    fun getIconForImageInfo(info: ImageInfo): androidx.compose.ui.graphics.vector.ImageVector {
+        return when (info) {
+            ImageInfo.BRIGHTNESS -> Icons.Default.Brightness6
+            ImageInfo.CONTRAST -> Icons.Default.Tune // Tune as Contrast
+            ImageInfo.SATURATION -> Icons.Default.Brush // Brush as Saturation
+            ImageInfo.TEMPERATURE -> Icons.Default.DeviceThermostat // Thermostat
+            ImageInfo.SHARPNESS -> Icons.Default.AutoFixHigh
+            ImageInfo.HIGHLIGHT -> Icons.Default.WbSunny
+            ImageInfo.SHADOW -> Icons.Default.Cloud
+            ImageInfo.NONE -> Icons.Default.Edit
+        }
+    }
 
     @Composable
     fun TabSelection(
@@ -150,9 +182,9 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        Icons.Default.AcUnit,
+                        getIconForImageInfo(it),
                         modifier = Modifier.size(48.dp),
-                        contentDescription = null,
+                        contentDescription = it.name,
                         tint = Color.White
                     )
                     Text(
@@ -190,7 +222,8 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                 title = selectedInfo.name,
                 onValueChange = { change ->
                     brightness = change
-                    coroutineScope.launch {
+                    processingJob?.cancel()
+                    processingJob = scope.launch {
                         temporaryBitmap = viewmodel.applyBrightness(filteredBitmap, brightness)
                     }
                 },
@@ -204,8 +237,9 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                 title = selectedInfo.name,
                 onValueChange = { change ->
                     contrast = change
-                    coroutineScope.launch {
-                        temporaryBitmap = viewmodel.applyContrast(filteredBitmap, contrast)
+                    processingJob?.cancel()
+                    processingJob = scope.launch {
+                         temporaryBitmap = viewmodel.applyContrast(filteredBitmap, contrast)
                     }
                 },
                 range = -1f..1f,
@@ -218,7 +252,8 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                 title = selectedInfo.name,
                 onValueChange = { change ->
                     saturation = change
-                    coroutineScope.launch {
+                    processingJob?.cancel()
+                    processingJob = scope.launch {
                         temporaryBitmap = viewmodel.applySaturation(filteredBitmap, saturation)
                     }
                 },
@@ -232,7 +267,8 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                 title = selectedInfo.name,
                 onValueChange = { change ->
                     temperature = change
-                    coroutineScope.launch {
+                    processingJob?.cancel()
+                    processingJob = scope.launch {
                         temporaryBitmap = viewmodel.applyTemperature(filteredBitmap, temperature)
                     }
                 },
@@ -241,9 +277,48 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                 onAccept = { onAcceptChangeInfo() }
             )
 
-            ImageInfo.SHARPNESS -> TODO()
-            ImageInfo.HIGHLIGHT -> TODO()
-            ImageInfo.SHADOW -> TODO()
+            ImageInfo.SHARPNESS -> EditSlider(
+                value = sharpness,
+                title = selectedInfo.name,
+                onValueChange = { change ->
+                    sharpness = change
+                    processingJob?.cancel()
+                    processingJob = scope.launch {
+                        temporaryBitmap = viewmodel.applySharpness(filteredBitmap, sharpness)
+                    }
+                },
+                range = 0f..1f, // Sharpness usually 0 to 1
+                onCancel = { onCancelChangeInfo() },
+                onAccept = { onAcceptChangeInfo() }
+            )
+            ImageInfo.HIGHLIGHT -> EditSlider(
+                value = highlight,
+                title = selectedInfo.name,
+                onValueChange = { change ->
+                    highlight = change
+                    processingJob?.cancel()
+                    processingJob = scope.launch {
+                        temporaryBitmap = viewmodel.applyHighlight(filteredBitmap, highlight)
+                    }
+                },
+                range = -1f..1f,
+                onCancel = { onCancelChangeInfo() },
+                onAccept = { onAcceptChangeInfo() }
+            )
+            ImageInfo.SHADOW -> EditSlider(
+                value = shadow,
+                title = selectedInfo.name,
+                onValueChange = { change ->
+                    shadow = change
+                    processingJob?.cancel()
+                    processingJob = scope.launch {
+                        temporaryBitmap = viewmodel.applyShadow(filteredBitmap, shadow)
+                    }
+                },
+                range = -1f..1f,
+                onCancel = { onCancelChangeInfo() },
+                onAccept = { onAcceptChangeInfo() }
+            )
             ImageInfo.NONE -> Unit
         }
     }
@@ -256,6 +331,8 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
             EditType.LIGHT_LEAK -> selectedLightLeak
             EditType.DISTORTION -> selectedDistortion
             EditType.SCRATCH -> selectedScratch
+            EditType.TEXT -> ""
+            EditType.STICKER -> ""
         }
 
         val items = when (editType) {
@@ -264,6 +341,8 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
             EditType.LIGHT_LEAK -> lightLeaks
             EditType.DISTORTION -> distortions
             EditType.SCRATCH -> scratches
+            EditType.TEXT -> emptyList<String>()
+            EditType.STICKER -> emptyList<String>()
         }
 
         fun onSelectItem(selection: Any) {
@@ -277,9 +356,26 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                     selectedFrame = (selection as String)
                     filteredBitmap = viewmodel.createPolaroidFrameWithDate(context, originalBitmap)
                 }
-                EditType.LIGHT_LEAK -> selectedLightLeak = (selection as String)
-                EditType.DISTORTION -> selectedDistortion = (selection as String)
-                EditType.SCRATCH -> selectedScratch = (selection as String)
+                EditType.LIGHT_LEAK -> {
+                    selectedLightLeak = (selection as String)
+                    scope.launch {
+                        filteredBitmap = viewmodel.applyLightLeak(originalBitmap, selectedLightLeak)
+                    }
+                }
+                EditType.DISTORTION -> {
+                    selectedDistortion = (selection as String)
+                    scope.launch {
+                         filteredBitmap = viewmodel.applyDistortion(originalBitmap, selectedDistortion)
+                    }
+                }
+                EditType.SCRATCH -> {
+                    selectedScratch = (selection as String)
+                    scope.launch {
+                        filteredBitmap = viewmodel.applyScratch(originalBitmap, selectedScratch)
+                    }
+                }
+                EditType.TEXT -> { /* Handled in DECOR tab */ }
+                EditType.STICKER -> { /* Handled in DECOR tab */ }
             }
         }
 
@@ -343,9 +439,44 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                                     )
                                 }
                             }
-                            EditType.LIGHT_LEAK -> TODO()
-                            EditType.DISTORTION -> TODO()
-                            EditType.SCRATCH -> TODO()
+                            EditType.LIGHT_LEAK, EditType.DISTORTION, EditType.SCRATCH -> Box(
+                                modifier = Modifier
+                                    .width(96.dp)
+                                    .height(120.dp)
+                                    .background(
+                                        color = Color.White,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(8.dp)
+                            ) {
+                                Column {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(80.dp)
+                                            .background(
+                                                shape = RoundedCornerShape(8.dp),
+                                                color = Color.Black
+                                            )
+                                    ) {
+                                        AsyncImage(
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .clip(shape = RoundedCornerShape(8.dp)),
+                                            model = imagePath,
+                                            contentDescription = null,
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = items[it] as String,
+                                        fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                                        fontWeight = FontWeight.Black,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                            EditType.TEXT, EditType.STICKER -> Unit // Handled in DECOR tab
                         }
                     }
                     Spacer(modifier = Modifier.width(12.dp))
@@ -452,7 +583,117 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                 }
 
                 TabType.BASIC -> if (selectedInfo == ImageInfo.NONE) BasicEditGroup() else BasicEditDetail()
-                TabType.FAVOURITE -> TODO()
+                
+                TabType.DECOR -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(.8f)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            // Sticker Button
+                            GlassButton(
+                                onClick = {
+                                    // Add a random sticker to center
+                                    val sticker = viewmodel.stickers.random()
+                                    viewmodel.addOverlay(
+                                        com.example.cameraxapp.data.model.StickerOverlay(
+                                            type = com.example.cameraxapp.data.model.OverlayType.STICKER,
+                                            content = sticker,
+                                            offsetX = filteredBitmap.width / 2f,
+                                            offsetY = filteredBitmap.height / 2f
+                                        )
+                                    )
+                                    scope.launch {
+                                        filteredBitmap = viewmodel.applyOverlaysToBitmap(filteredBitmap)
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                text = "Add Sticker"
+                            )
+                            
+                            // Text Button
+                            GlassButton(
+                                onClick = {
+                                    // Add sample text
+                                    viewmodel.addOverlay(
+                                        com.example.cameraxapp.data.model.StickerOverlay(
+                                            type = com.example.cameraxapp.data.model.OverlayType.TEXT,
+                                            content = "Your Text",
+                                            offsetX = filteredBitmap.width / 2f,
+                                            offsetY = filteredBitmap.height / 2f
+                                        )
+                                    )
+                                    scope.launch {
+                                        filteredBitmap = viewmodel.applyOverlaysToBitmap(filteredBitmap)
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                text = "Add Text"
+                            )
+                        }
+                        
+                        // Show available stickers
+                        Text(
+                            "Available Stickers:",
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(viewmodel.stickers) { sticker ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(60.dp)
+                                        .background(
+                                            color = Color.White.copy(alpha = 0.1f),
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .clickable {
+                                            viewmodel.addOverlay(
+                                                com.example.cameraxapp.data.model.StickerOverlay(
+                                                    type = com.example.cameraxapp.data.model.OverlayType.STICKER,
+                                                    content = sticker,
+                                                    offsetX = filteredBitmap.width / 2f,
+                                                    offsetY = filteredBitmap.height / 2f
+                                                )
+                                            )
+                                            scope.launch {
+                                                filteredBitmap = viewmodel.applyOverlaysToBitmap(filteredBitmap)
+                                            }
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = sticker,
+                                        fontSize = 32.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                TabType.FAVOURITE -> Box(
+                    modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "Favorites Coming Soon", 
+                        color = Color.White, 
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             TabSelection(
                 tabs = tabs.map { it.name },

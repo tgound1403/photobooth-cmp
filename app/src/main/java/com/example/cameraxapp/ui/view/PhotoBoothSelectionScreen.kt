@@ -75,7 +75,7 @@ fun PhotoBoothSelectionScreen(
                 GlassButton(
                     onClick = {
                         viewModel.selectedImages.value?.toList()?.let { images ->
-                            if (images.size == 4) {
+                            if (images.size == viewModel.requiredPhotoCount.value) {
                                 val context = navController.context
                                 viewModel.saveImages(context, images)
                             }
@@ -83,7 +83,7 @@ fun PhotoBoothSelectionScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     text = "Xem Kết Quả",
-                    enabled = selectedImages?.size == 4
+                    enabled = selectedImages?.size == viewModel.requiredPhotoCount.value
                 )
             }
         },
@@ -100,65 +100,7 @@ fun PhotoBoothSelectionScreen(
                 )
                 .graphicsLayer { alpha = alphaAnim.value }
         ) {
-            // Options Row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Layout Selector
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Layout", color = NeonCyan, style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(
-                            selected = selectedLayout == PhotoBoothLayout.GRID_2X2,
-                            onClick = { viewModel.updateLayout(PhotoBoothLayout.GRID_2X2) },
-                            label = { Text("2x2") },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = NeonPurple,
-                                selectedLabelColor = Color.White
-                            )
-                        )
-                        FilterChip(
-                            selected = selectedLayout == PhotoBoothLayout.STRIP_1X4,
-                            onClick = { viewModel.updateLayout(PhotoBoothLayout.STRIP_1X4) },
-                            label = { Text("1x4") },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = NeonPurple,
-                                selectedLabelColor = Color.White
-                            )
-                        )
-                    }
-                }
-                
-                // Filter Selector
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Filter", color = NeonCyan, style = MaterialTheme.typography.titleMedium)
-                     Spacer(modifier = Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                         FilterChip(
-                            selected = selectedFilter == ImageFilter.ORIGINAL,
-                            onClick = { viewModel.updateFilter(ImageFilter.ORIGINAL) },
-                            label = { Text("Normal") },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = NeonPurple,
-                                selectedLabelColor = Color.White
-                            )
-                        )
-                       FilterChip(
-                            selected = selectedFilter == ImageFilter.BLACK_AND_WHITE,
-                            onClick = { viewModel.updateFilter(ImageFilter.BLACK_AND_WHITE) },
-                            label = { Text("B&W") },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = NeonPurple,
-                                selectedLabelColor = Color.White
-                            )
-                        )
-                    }
-                }
-            }
+            Spacer(modifier = Modifier.height(16.dp))
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
@@ -199,7 +141,7 @@ fun PhotoBoothSelectionScreen(
             }
             
             Text(
-                text = "Chọn 4 ảnh để tạo kỷ niệm",
+                text = "Chọn ${viewModel.requiredPhotoCount.collectAsState().value} ảnh để tạo kỷ niệm",
                 color = Color.White.copy(alpha = 0.7f),
                 modifier = Modifier
                     .align(androidx.compose.ui.Alignment.CenterHorizontally)
