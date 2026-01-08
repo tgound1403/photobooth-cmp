@@ -24,4 +24,3 @@ dependencyResolutionManagement {
 rootProject.name = "CameraXApp"
 include(":app")
 include(":shared")
-include(":shared")
