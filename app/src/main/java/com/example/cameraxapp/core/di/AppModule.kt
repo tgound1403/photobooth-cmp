@@ -20,4 +20,5 @@ val appModule = module {
     single { ThemeRepository(androidContext()) }
     viewModel { ThemeViewModel(get()) }
     viewModel { com.example.cameraxapp.ui.viewmodel.GalleryViewModel(get()) }
+    viewModel { com.example.cameraxapp.viewmodel.EditImageViewModel() }
 }

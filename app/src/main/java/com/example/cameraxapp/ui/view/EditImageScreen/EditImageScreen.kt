@@ -22,7 +22,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.Adjust
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Brightness6
@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.airbnb.lottie.compose.*
 import com.example.cameraxapp.core.enum.EditType
 import com.example.cameraxapp.core.enum.ImageInfo
 import com.example.cameraxapp.core.enum.TabType
@@ -71,35 +72,49 @@ import com.example.cameraxapp.viewmodel.EditImageViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-val viewmodel = EditImageViewModel()
-
-val photoEditFeatures = viewmodel.photoEditFeatures
-val filters = viewmodel.filters
-val tabs = viewmodel.tabs
-val frames = viewmodel.frames
-val lightLeaks = viewmodel.lightLeaks
-val distortions = viewmodel.distortions
-val scratches = viewmodel.scratches
-
-val job = Job()
-val coroutineScope = CoroutineScope(Dispatchers.IO + job)
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditImageScreen(imagePath: String, navController: NavController) {
+fun EditImageScreen(
+    imagePath: String,
+    navController: NavController,
+    viewmodel: EditImageViewModel = koinViewModel()
+) {
+    val photoEditFeatures = viewmodel.photoEditFeatures
+    val filters = viewmodel.filters
+    val tabs = viewmodel.tabs
+    val frames = viewmodel.frames
+    val lightLeaks = viewmodel.lightLeaks
+    val distortions = viewmodel.distortions
+    val scratches = viewmodel.scratches
+
     val context = LocalContext.current
-    val scope = rememberCoroutineScope() // Use local scope bound to composition
-    
+    val scope = rememberCoroutineScope()
+
     // State Management Fix: Use remember { mutableStateOf } for bitmaps to trigger recomposition
     val originalBitmap by remember { mutableStateOf<Bitmap>(BitmapFactory.decodeFile(imagePath)) }
     var temporaryBitmap by remember { mutableStateOf(originalBitmap) }
     var filteredBitmap by remember { mutableStateOf(originalBitmap) }
-    
+
     // Debounce Job
     var processingJob by remember { mutableStateOf<Job?>(null) }
+    var isProcessing by remember { mutableStateOf(false) }
+
+    val lottieComposition by
+    rememberLottieComposition(
+        LottieCompositionSpec.Url(
+            "https://assets2.lottiefiles.com/packages/lf20_m6cu9nha.json"
+        )
+    )
+    val lottieProgress by
+    animateLottieCompositionAsState(
+        lottieComposition,
+        iterations = LottieConstants.IterateForever
+    )
 
     var selectedFeature by remember { mutableStateOf(EditType.FILTER) }
     var selectedFilter by remember { mutableStateOf(filters[0]) }
@@ -117,7 +132,10 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
     var sharpness by remember { mutableFloatStateOf(0f) }
     var highlight by remember { mutableFloatStateOf(0f) }
     var shadow by remember { mutableFloatStateOf(0f) }
-    
+    var grain by remember { mutableFloatStateOf(0f) }
+    var vignette by remember { mutableFloatStateOf(0f) }
+    var chromaticAberration by remember { mutableFloatStateOf(0f) }
+
     // Helper for Icons
     fun getIconForImageInfo(info: ImageInfo): androidx.compose.ui.graphics.vector.ImageVector {
         return when (info) {
@@ -128,6 +146,9 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
             ImageInfo.SHARPNESS -> Icons.Default.AutoFixHigh
             ImageInfo.HIGHLIGHT -> Icons.Default.WbSunny
             ImageInfo.SHADOW -> Icons.Default.Cloud
+            ImageInfo.GRAIN -> Icons.Default.Brush
+            ImageInfo.VIGNETTE -> Icons.Default.Adjust
+            ImageInfo.CHROMATIC_ABERRATION -> Icons.Default.AutoFixHigh
             ImageInfo.NONE -> Icons.Default.Edit
         }
     }
@@ -152,13 +173,17 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                         color = Color.White,
                         fontSize = MaterialTheme.typography.bodyLarge.fontSize,
                         fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier
-                            .background(
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (tabs[it] == selection) selectedColor.copy(alpha = 0.5f) else Color.Transparent
-                            )
-                            .padding(horizontal = 24.dp, vertical = 8.dp)
-                            .clickable { onSelect.invoke(tabs[it]) }
+                        modifier =
+                            Modifier
+                                .background(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color =
+                                        if (tabs[it] == selection)
+                                            selectedColor.copy(alpha = 0.5f)
+                                        else Color.Transparent
+                                )
+                                .padding(horizontal = 24.dp, vertical = 8.dp)
+                                .clickable { onSelect.invoke(tabs[it]) }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                 }
@@ -171,13 +196,14 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
         LazyRow {
             items(viewmodel.imageInfo) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight(.8f)
-                        .clickable {
-                            selectedInfo = it
-                            temporaryBitmap = filteredBitmap
-                        },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(.8f)
+                            .clickable {
+                                selectedInfo = it
+                                temporaryBitmap = filteredBitmap
+                            },
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -192,12 +218,13 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                         color = Color.White,
                         fontSize = MaterialTheme.typography.bodyLarge.fontSize,
                         fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier
-                            .background(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color.Transparent
-                            )
-                            .padding(horizontal = 24.dp, vertical = 8.dp)
+                        modifier =
+                            Modifier
+                                .background(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color.Transparent
+                                )
+                                .padding(horizontal = 24.dp, vertical = 8.dp)
                     )
                 }
             }
@@ -217,165 +244,295 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
     @Composable
     fun BasicEditDetail() {
         when (selectedInfo) {
-            ImageInfo.BRIGHTNESS -> EditSlider(
-                value = brightness,
-                title = selectedInfo.name,
-                onValueChange = { change ->
-                    brightness = change
-                    processingJob?.cancel()
-                    processingJob = scope.launch {
-                        temporaryBitmap = viewmodel.applyBrightness(filteredBitmap, brightness)
-                    }
-                },
-                range = -1f..1f,
-                onCancel = { onCancelChangeInfo() },
-                onAccept = { onAcceptChangeInfo() }
-            )
+            ImageInfo.BRIGHTNESS ->
+                EditSlider(
+                    value = brightness,
+                    title = selectedInfo.name,
+                    onValueChange = { change ->
+                        brightness = change
+                        processingJob?.cancel()
+                        processingJob =
+                            scope.launch {
+                                temporaryBitmap =
+                                    viewmodel.applyBrightness(
+                                        filteredBitmap,
+                                        brightness
+                                    )
+                                isProcessing = false
+                            }
+                    },
+                    range = -1f..1f,
+                    onCancel = { onCancelChangeInfo() },
+                    onAccept = { onAcceptChangeInfo() }
+                )
 
-            ImageInfo.CONTRAST -> EditSlider(
-                value = contrast,
-                title = selectedInfo.name,
-                onValueChange = { change ->
-                    contrast = change
-                    processingJob?.cancel()
-                    processingJob = scope.launch {
-                         temporaryBitmap = viewmodel.applyContrast(filteredBitmap, contrast)
-                    }
-                },
-                range = -1f..1f,
-                onCancel = { onCancelChangeInfo() },
-                onAccept = { onAcceptChangeInfo() }
-            )
+            ImageInfo.CONTRAST ->
+                EditSlider(
+                    value = contrast,
+                    title = selectedInfo.name,
+                    onValueChange = { change ->
+                        contrast = change
+                        processingJob?.cancel()
+                        processingJob =
+                            scope.launch {
+                                temporaryBitmap =
+                                    viewmodel.applyContrast(
+                                        filteredBitmap,
+                                        contrast
+                                    )
+                                isProcessing = false
+                            }
+                    },
+                    range = -1f..1f,
+                    onCancel = { onCancelChangeInfo() },
+                    onAccept = { onAcceptChangeInfo() }
+                )
 
-            ImageInfo.SATURATION -> EditSlider(
-                value = saturation,
-                title = selectedInfo.name,
-                onValueChange = { change ->
-                    saturation = change
-                    processingJob?.cancel()
-                    processingJob = scope.launch {
-                        temporaryBitmap = viewmodel.applySaturation(filteredBitmap, saturation)
-                    }
-                },
-                range = -1f..1f,
-                onCancel = { onCancelChangeInfo() },
-                onAccept = { onAcceptChangeInfo() }
-            )
+            ImageInfo.SATURATION ->
+                EditSlider(
+                    value = saturation,
+                    title = selectedInfo.name,
+                    onValueChange = { change ->
+                        saturation = change
+                        processingJob?.cancel()
+                        processingJob =
+                            scope.launch {
+                                temporaryBitmap =
+                                    viewmodel.applySaturation(
+                                        filteredBitmap,
+                                        saturation
+                                    )
+                                isProcessing = false
+                            }
+                    },
+                    range = -1f..1f,
+                    onCancel = { onCancelChangeInfo() },
+                    onAccept = { onAcceptChangeInfo() }
+                )
 
-            ImageInfo.TEMPERATURE -> EditSlider(
-                value = temperature,
-                title = selectedInfo.name,
-                onValueChange = { change ->
-                    temperature = change
-                    processingJob?.cancel()
-                    processingJob = scope.launch {
-                        temporaryBitmap = viewmodel.applyTemperature(filteredBitmap, temperature)
-                    }
-                },
-                range = -3f..3f,
-                onCancel = { onCancelChangeInfo() },
-                onAccept = { onAcceptChangeInfo() }
-            )
+            ImageInfo.TEMPERATURE ->
+                EditSlider(
+                    value = temperature,
+                    title = selectedInfo.name,
+                    onValueChange = { change ->
+                        temperature = change
+                        processingJob?.cancel()
+                        processingJob =
+                            scope.launch {
+                                temporaryBitmap =
+                                    viewmodel.applyTemperature(
+                                        filteredBitmap,
+                                        temperature
+                                    )
+                                isProcessing = false
+                            }
+                    },
+                    range = -3f..3f,
+                    onCancel = { onCancelChangeInfo() },
+                    onAccept = { onAcceptChangeInfo() }
+                )
 
-            ImageInfo.SHARPNESS -> EditSlider(
-                value = sharpness,
-                title = selectedInfo.name,
-                onValueChange = { change ->
-                    sharpness = change
-                    processingJob?.cancel()
-                    processingJob = scope.launch {
-                        temporaryBitmap = viewmodel.applySharpness(filteredBitmap, sharpness)
-                    }
-                },
-                range = 0f..1f, // Sharpness usually 0 to 1
-                onCancel = { onCancelChangeInfo() },
-                onAccept = { onAcceptChangeInfo() }
-            )
-            ImageInfo.HIGHLIGHT -> EditSlider(
-                value = highlight,
-                title = selectedInfo.name,
-                onValueChange = { change ->
-                    highlight = change
-                    processingJob?.cancel()
-                    processingJob = scope.launch {
-                        temporaryBitmap = viewmodel.applyHighlight(filteredBitmap, highlight)
-                    }
-                },
-                range = -1f..1f,
-                onCancel = { onCancelChangeInfo() },
-                onAccept = { onAcceptChangeInfo() }
-            )
-            ImageInfo.SHADOW -> EditSlider(
-                value = shadow,
-                title = selectedInfo.name,
-                onValueChange = { change ->
-                    shadow = change
-                    processingJob?.cancel()
-                    processingJob = scope.launch {
-                        temporaryBitmap = viewmodel.applyShadow(filteredBitmap, shadow)
-                    }
-                },
-                range = -1f..1f,
-                onCancel = { onCancelChangeInfo() },
-                onAccept = { onAcceptChangeInfo() }
-            )
+            ImageInfo.SHARPNESS ->
+                EditSlider(
+                    value = sharpness,
+                    title = selectedInfo.name,
+                    onValueChange = { change ->
+                        sharpness = change
+                        processingJob?.cancel()
+                        processingJob =
+                            scope.launch {
+                                temporaryBitmap =
+                                    viewmodel.applySharpness(
+                                        filteredBitmap,
+                                        sharpness
+                                    )
+                                isProcessing = false
+                            }
+                    },
+                    range = 0f..1f, // Sharpness usually 0 to 1
+                    onCancel = { onCancelChangeInfo() },
+                    onAccept = { onAcceptChangeInfo() }
+                )
+
+            ImageInfo.HIGHLIGHT ->
+                EditSlider(
+                    value = highlight,
+                    title = selectedInfo.name,
+                    onValueChange = { change ->
+                        highlight = change
+                        processingJob?.cancel()
+                        processingJob =
+                            scope.launch {
+                                temporaryBitmap =
+                                    viewmodel.applyHighlight(
+                                        filteredBitmap,
+                                        highlight
+                                    )
+                                isProcessing = false
+                            }
+                    },
+                    range = -1f..1f,
+                    onCancel = { onCancelChangeInfo() },
+                    onAccept = { onAcceptChangeInfo() }
+                )
+
+            ImageInfo.SHADOW ->
+                EditSlider(
+                    value = shadow,
+                    title = selectedInfo.name,
+                    onValueChange = { change ->
+                        shadow = change
+                        processingJob?.cancel()
+                        processingJob =
+                            scope.launch {
+                                temporaryBitmap =
+                                    viewmodel.applyShadow(filteredBitmap, shadow)
+                                isProcessing = false
+                            }
+                    },
+                    range = -1f..1f,
+                    onCancel = { onCancelChangeInfo() },
+                    onAccept = { onAcceptChangeInfo() }
+                )
+
+            ImageInfo.GRAIN ->
+                EditSlider(
+                    value = grain,
+                    title = selectedInfo.name,
+                    onValueChange = { change ->
+                        grain = change
+                        processingJob?.cancel()
+                        processingJob =
+                            scope.launch {
+                                temporaryBitmap =
+                                    viewmodel.applyGrain(filteredBitmap, grain)
+                                isProcessing = false
+                            }
+                    },
+                    range = 0f..1f,
+                    onCancel = { onCancelChangeInfo() },
+                    onAccept = { onAcceptChangeInfo() }
+                )
+
+            ImageInfo.VIGNETTE ->
+                EditSlider(
+                    value = vignette,
+                    title = selectedInfo.name,
+                    onValueChange = { change ->
+                        vignette = change
+                        processingJob?.cancel()
+                        processingJob =
+                            scope.launch {
+                                temporaryBitmap =
+                                    viewmodel.applyVignette(
+                                        filteredBitmap,
+                                        vignette
+                                    )
+                                isProcessing = false
+                            }
+                    },
+                    range = 0f..1f,
+                    onCancel = { onCancelChangeInfo() },
+                    onAccept = { onAcceptChangeInfo() }
+                )
+
+            ImageInfo.CHROMATIC_ABERRATION ->
+                EditSlider(
+                    value = chromaticAberration,
+                    title = selectedInfo.name,
+                    onValueChange = { change ->
+                        chromaticAberration = change
+                        processingJob?.cancel()
+                        processingJob =
+                            scope.launch {
+                                temporaryBitmap =
+                                    viewmodel.applyChromaticAberration(
+                                        filteredBitmap,
+                                        chromaticAberration
+                                    )
+                                isProcessing = false
+                            }
+                    },
+                    range = 0f..1f,
+                    onCancel = { onCancelChangeInfo() },
+                    onAccept = { onAcceptChangeInfo() }
+                )
+
             ImageInfo.NONE -> Unit
         }
     }
 
     @Composable
     fun StyledEdit(imagePath: String, editType: EditType) {
-        val selection = when (editType) {
-            EditType.FILTER -> selectedFilter
-            EditType.FRAME -> selectedFrame
-            EditType.LIGHT_LEAK -> selectedLightLeak
-            EditType.DISTORTION -> selectedDistortion
-            EditType.SCRATCH -> selectedScratch
-            EditType.TEXT -> ""
-            EditType.STICKER -> ""
-        }
+        val selection =
+            when (editType) {
+                EditType.FILTER -> selectedFilter
+                EditType.FRAME -> selectedFrame
+                EditType.LIGHT_LEAK -> selectedLightLeak
+                EditType.DISTORTION -> selectedDistortion
+                EditType.SCRATCH -> selectedScratch
+                EditType.TEXT -> ""
+                EditType.STICKER -> ""
+            }
 
-        val items = when (editType) {
-            EditType.FILTER -> filters
-            EditType.FRAME -> frames
-            EditType.LIGHT_LEAK -> lightLeaks
-            EditType.DISTORTION -> distortions
-            EditType.SCRATCH -> scratches
-            EditType.TEXT -> emptyList<String>()
-            EditType.STICKER -> emptyList<String>()
-        }
+        val items =
+            when (editType) {
+                EditType.FILTER -> filters
+                EditType.FRAME -> frames
+                EditType.LIGHT_LEAK -> lightLeaks
+                EditType.DISTORTION -> distortions
+                EditType.SCRATCH -> scratches
+                EditType.TEXT -> emptyList<String>()
+                EditType.STICKER -> emptyList<String>()
+            }
 
         fun onSelectItem(selection: Any) {
             when (editType) {
                 EditType.FILTER -> {
                     selectedFilter = selection as Preset
-                    filteredBitmap = viewmodel.applyPresetFilter(originalBitmap, selectedFilter.matrix)
+                    filteredBitmap =
+                        viewmodel.applyPresetFilter(originalBitmap, selectedFilter.matrix)
                 }
 
                 EditType.FRAME -> {
                     selectedFrame = (selection as String)
                     filteredBitmap = viewmodel.createPolaroidFrameWithDate(context, originalBitmap)
                 }
+
                 EditType.LIGHT_LEAK -> {
                     selectedLightLeak = (selection as String)
+                    isProcessing = true
                     scope.launch {
                         filteredBitmap = viewmodel.applyLightLeak(originalBitmap, selectedLightLeak)
+                        isProcessing = false
                     }
                 }
+
                 EditType.DISTORTION -> {
                     selectedDistortion = (selection as String)
+                    isProcessing = true
                     scope.launch {
-                         filteredBitmap = viewmodel.applyDistortion(originalBitmap, selectedDistortion)
+                        filteredBitmap =
+                            viewmodel.applyDistortion(originalBitmap, selectedDistortion)
+                        isProcessing = false
                     }
                 }
+
                 EditType.SCRATCH -> {
                     selectedScratch = (selection as String)
+                    isProcessing = true
                     scope.launch {
                         filteredBitmap = viewmodel.applyScratch(originalBitmap, selectedScratch)
                     }
                 }
-                EditType.TEXT -> { /* Handled in DECOR tab */ }
-                EditType.STICKER -> { /* Handled in DECOR tab */ }
+
+                EditType.TEXT -> {
+                    /* Handled in DECOR tab */
+                }
+
+                EditType.STICKER -> {
+                    /* Handled in DECOR tab */
+                }
             }
         }
 
@@ -388,94 +545,127 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
             items(items.size) {
                 Row {
                     Box(
-                        modifier = Modifier
-                            .background(
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (selection == items[it]) Color.Yellow.copy(alpha = 0.8f) else Color.Transparent
-                            )
-                            .padding(if (selection == items[it]) 4.dp else 0.dp)
-                            .clickable {
-                                onSelectItem(items[it])
-                            }) {
+                        modifier =
+                            Modifier
+                                .background(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color =
+                                        if (selection == items[it])
+                                            Color.Yellow.copy(alpha = 0.8f)
+                                        else Color.Transparent
+                                )
+                                .padding(if (selection == items[it]) 4.dp else 0.dp)
+                                .clickable { onSelectItem(items[it]) }
+                    ) {
                         when (editType) {
-                            EditType.FILTER -> FilterItem(
-                                filter = items[it] as Preset,
-                                imagePath = imagePath
-                            )
+                            EditType.FILTER ->
+                                FilterItem(filter = items[it] as Preset, imagePath = imagePath)
 
-                            EditType.FRAME -> Box(
-                                modifier = Modifier
-                                    .width(96.dp)
-                                    .height(120.dp)
-                                    .background(
-                                        color = Color.White,
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                                    .padding(8.dp)
-                            ) {
-                                Column {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(80.dp)
+                            EditType.FRAME ->
+                                Box(
+                                    modifier =
+                                        Modifier
+                                            .width(96.dp)
+                                            .height(120.dp)
                                             .background(
-                                                shape = RoundedCornerShape(8.dp),
-                                                color = Color.Black
+                                                color = Color.White,
+                                                shape = RoundedCornerShape(8.dp)
                                             )
-                                    ) {
-                                        AsyncImage(
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .clip(shape = RoundedCornerShape(8.dp)),
-                                            model = imagePath,
-                                            contentDescription = null,
+                                            .padding(8.dp)
+                                ) {
+                                    Column {
+                                        Box(
+                                            modifier =
+                                                Modifier
+                                                    .size(80.dp)
+                                                    .background(
+                                                        shape =
+                                                            RoundedCornerShape(
+                                                                8.dp
+                                                            ),
+                                                        color = Color.Black
+                                                    )
+                                        ) {
+                                            AsyncImage(
+                                                contentScale = ContentScale.Crop,
+                                                modifier =
+                                                    Modifier
+                                                        .fillMaxSize()
+                                                        .clip(
+                                                            shape =
+                                                                RoundedCornerShape(
+                                                                    8.dp
+                                                                )
+                                                        ),
+                                                model = imagePath,
+                                                contentDescription = null,
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            frames[0],
+                                            fontSize =
+                                                MaterialTheme.typography
+                                                    .bodyLarge
+                                                    .fontSize,
+                                            fontWeight = FontWeight.Black
                                         )
                                     }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        frames[0],
-                                        fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                                        fontWeight = FontWeight.Black
-                                    )
                                 }
-                            }
-                            EditType.LIGHT_LEAK, EditType.DISTORTION, EditType.SCRATCH -> Box(
-                                modifier = Modifier
-                                    .width(96.dp)
-                                    .height(120.dp)
-                                    .background(
-                                        color = Color.White,
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                                    .padding(8.dp)
-                            ) {
-                                Column {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(80.dp)
+
+                            EditType.LIGHT_LEAK, EditType.DISTORTION, EditType.SCRATCH ->
+                                Box(
+                                    modifier =
+                                        Modifier
+                                            .width(96.dp)
+                                            .height(120.dp)
                                             .background(
-                                                shape = RoundedCornerShape(8.dp),
-                                                color = Color.Black
+                                                color = Color.White,
+                                                shape = RoundedCornerShape(8.dp)
                                             )
-                                    ) {
-                                        AsyncImage(
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .clip(shape = RoundedCornerShape(8.dp)),
-                                            model = imagePath,
-                                            contentDescription = null,
+                                            .padding(8.dp)
+                                ) {
+                                    Column {
+                                        Box(
+                                            modifier =
+                                                Modifier
+                                                    .size(80.dp)
+                                                    .background(
+                                                        shape =
+                                                            RoundedCornerShape(
+                                                                8.dp
+                                                            ),
+                                                        color = Color.Black
+                                                    )
+                                        ) {
+                                            AsyncImage(
+                                                contentScale = ContentScale.Crop,
+                                                modifier =
+                                                    Modifier
+                                                        .fillMaxSize()
+                                                        .clip(
+                                                            shape =
+                                                                RoundedCornerShape(
+                                                                    8.dp
+                                                                )
+                                                        ),
+                                                model = imagePath,
+                                                contentDescription = null,
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = items[it] as String,
+                                            fontSize =
+                                                MaterialTheme.typography
+                                                    .bodyLarge
+                                                    .fontSize,
+                                            fontWeight = FontWeight.Black,
+                                            maxLines = 1
                                         )
                                     }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = items[it] as String,
-                                        fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                                        fontWeight = FontWeight.Black,
-                                        maxLines = 1
-                                    )
                                 }
-                            }
+
                             EditType.TEXT, EditType.STICKER -> Unit // Handled in DECOR tab
                         }
                     }
@@ -491,11 +681,12 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
         topBar = {
             TopAppBar(
                 modifier = Modifier.padding(end = 16.dp),
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Black,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
-                ),
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Black,
+                        titleContentColor = Color.White,
+                        navigationIconContentColor = Color.White
+                    ),
                 title = { Text("") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -508,41 +699,43 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                         color = Color.Black,
                         fontSize = MaterialTheme.typography.bodyLarge.fontSize,
                         fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier
-                            .background(
-                                shape = RoundedCornerShape(8.dp), color = Color.White
-                            )
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .clickable {
-                                coroutineScope.launch {
-                                    viewmodel
-                                        .saveBitmapToDevice(
-                                            filteredBitmap, imagePath
+                        modifier =
+                            Modifier
+                                .background(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color.White
+                                )
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .clickable {
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        viewmodel.saveBitmapToDevice(
+                                            filteredBitmap,
+                                            imagePath
                                         )
-                                        .apply {
-                                            val result = this
-                                            withContext(Dispatchers.Main) {
-                                                if (result) {
-                                                    Toast
-                                                        .makeText(
+                                            .apply {
+                                                val result = this
+                                                withContext(
+                                                    Dispatchers.Main
+                                                ) {
+                                                    if (result) {
+                                                        Toast.makeText(
                                                             context,
                                                             "Successfully Saved",
                                                             Toast.LENGTH_SHORT
                                                         )
-                                                        .show()
-                                                } else {
-                                                    Toast
-                                                        .makeText(
+                                                            .show()
+                                                    } else {
+                                                        Toast.makeText(
                                                             context,
                                                             "Failed on Save",
                                                             Toast.LENGTH_SHORT
                                                         )
-                                                        .show()
+                                                            .show()
+                                                    }
                                                 }
                                             }
-                                        }
+                                    }
                                 }
-                            }
                     )
                 }
             )
@@ -558,20 +751,19 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
             ) {
                 AsyncImage(
                     modifier = Modifier.fillMaxWidth(0.8f),
-                    model = if (selectedInfo == ImageInfo.NONE) (filteredBitmap) else temporaryBitmap,
+                    model =
+                        if (selectedInfo == ImageInfo.NONE) (filteredBitmap)
+                        else temporaryBitmap,
                     contentDescription = null,
                     contentScale = ContentScale.Fit,
                 )
-
             }
             Spacer(modifier = Modifier.height(16.dp))
             when (selectedTab) {
                 TabType.CUSTOMIZE -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(.8f)
-                    ) {
+                    Column(modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(.8f)) {
                         TabSelection(
                             tabs = photoEditFeatures.map { it.name },
                             selection = selectedFeature.name,
@@ -582,18 +774,18 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                     }
                 }
 
-                TabType.BASIC -> if (selectedInfo == ImageInfo.NONE) BasicEditGroup() else BasicEditDetail()
-                
+                TabType.BASIC ->
+                    if (selectedInfo == ImageInfo.NONE) BasicEditGroup() else BasicEditDetail()
+
                 TabType.DECOR -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(.8f)
-                    ) {
+                    Column(modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(.8f)) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             // Sticker Button
@@ -603,41 +795,47 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                                     val sticker = viewmodel.stickers.random()
                                     viewmodel.addOverlay(
                                         com.example.cameraxapp.data.model.StickerOverlay(
-                                            type = com.example.cameraxapp.data.model.OverlayType.STICKER,
+                                            type =
+                                                com.example.cameraxapp.data.model
+                                                    .OverlayType.STICKER,
                                             content = sticker,
                                             offsetX = filteredBitmap.width / 2f,
                                             offsetY = filteredBitmap.height / 2f
                                         )
                                     )
                                     scope.launch {
-                                        filteredBitmap = viewmodel.applyOverlaysToBitmap(filteredBitmap)
+                                        filteredBitmap =
+                                            viewmodel.applyOverlaysToBitmap(filteredBitmap)
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
                                 text = "Add Sticker"
                             )
-                            
+
                             // Text Button
                             GlassButton(
                                 onClick = {
                                     // Add sample text
                                     viewmodel.addOverlay(
                                         com.example.cameraxapp.data.model.StickerOverlay(
-                                            type = com.example.cameraxapp.data.model.OverlayType.TEXT,
+                                            type =
+                                                com.example.cameraxapp.data.model
+                                                    .OverlayType.TEXT,
                                             content = "Your Text",
                                             offsetX = filteredBitmap.width / 2f,
                                             offsetY = filteredBitmap.height / 2f
                                         )
                                     )
                                     scope.launch {
-                                        filteredBitmap = viewmodel.applyOverlaysToBitmap(filteredBitmap)
+                                        filteredBitmap =
+                                            viewmodel.applyOverlaysToBitmap(filteredBitmap)
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
                                 text = "Add Text"
                             )
                         }
-                        
+
                         // Show available stickers
                         Text(
                             "Available Stickers:",
@@ -652,48 +850,67 @@ fun EditImageScreen(imagePath: String, navController: NavController) {
                         ) {
                             items(viewmodel.stickers) { sticker ->
                                 Box(
-                                    modifier = Modifier
-                                        .size(60.dp)
-                                        .background(
-                                            color = Color.White.copy(alpha = 0.1f),
-                                            shape = RoundedCornerShape(8.dp)
-                                        )
-                                        .clickable {
-                                            viewmodel.addOverlay(
-                                                com.example.cameraxapp.data.model.StickerOverlay(
-                                                    type = com.example.cameraxapp.data.model.OverlayType.STICKER,
-                                                    content = sticker,
-                                                    offsetX = filteredBitmap.width / 2f,
-                                                    offsetY = filteredBitmap.height / 2f
-                                                )
+                                    modifier =
+                                        Modifier
+                                            .size(60.dp)
+                                            .background(
+                                                color =
+                                                    Color.White.copy(
+                                                        alpha = 0.1f
+                                                    ),
+                                                shape = RoundedCornerShape(8.dp)
                                             )
-                                            scope.launch {
-                                                filteredBitmap = viewmodel.applyOverlaysToBitmap(filteredBitmap)
-                                            }
-                                        },
+                                            .clickable {
+                                                viewmodel.addOverlay(
+                                                    com.example.cameraxapp.data
+                                                        .model.StickerOverlay(
+                                                            type =
+                                                                com.example
+                                                                    .cameraxapp
+                                                                    .data
+                                                                    .model
+                                                                    .OverlayType
+                                                                    .STICKER,
+                                                            content = sticker,
+                                                            offsetX =
+                                                                filteredBitmap
+                                                                    .width /
+                                                                        2f,
+                                                            offsetY =
+                                                                filteredBitmap
+                                                                    .height /
+                                                                        2f
+                                                        )
+                                                )
+                                                scope.launch {
+                                                    filteredBitmap =
+                                                        viewmodel
+                                                            .applyOverlaysToBitmap(
+                                                                filteredBitmap
+                                                            )
+                                                }
+                                            },
                                     contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = sticker,
-                                        fontSize = 32.sp
-                                    )
-                                }
+                                ) { Text(text = sticker, fontSize = 32.sp) }
                             }
                         }
                     }
                 }
-                
-                TabType.FAVOURITE -> Box(
-                    modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "Favorites Coming Soon", 
-                        color = Color.White, 
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+
+                TabType.FAVOURITE ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(0.8f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Favorites Coming Soon",
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
             }
             TabSelection(
                 tabs = tabs.map { it.name },
@@ -724,22 +941,27 @@ fun EditSlider(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(Icons.Default.Cancel, modifier = Modifier.clickable {
-                onCancel.invoke()
-            }, contentDescription = null, tint = Color.White)
-            Icon(Icons.Default.Check, modifier = Modifier.clickable {
-                onAccept.invoke()
-            }, contentDescription = null, tint = Color.White)
+            Icon(
+                Icons.Default.Cancel,
+                modifier = Modifier.clickable { onCancel.invoke() },
+                contentDescription = null,
+                tint = Color.White
+            )
+            Icon(
+                Icons.Default.Check,
+                modifier = Modifier.clickable { onAccept.invoke() },
+                contentDescription = null,
+                tint = Color.White
+            )
         }
         Spacer(Modifier.height(24.dp))
         Text(title, color = Color.White, fontSize = 20.sp)
         Spacer(Modifier.height(32.dp))
         Slider(
-            colors = SliderDefaults.colors(
-                thumbColor = Color.Gray
-            ),
+            colors = SliderDefaults.colors(thumbColor = Color.Gray),
             value = value,
             onValueChange = onValueChange,
             valueRange = range,
@@ -753,17 +975,22 @@ fun EditSlider(
 @Composable
 fun FilterItem(filter: Preset, imagePath: String) {
     return Box(
-        modifier = Modifier
-            .width(96.dp)
-            .height(120.dp)
-            .background(color = Color.White, shape = RoundedCornerShape(8.dp))
-            .padding(8.dp)
+        modifier =
+            Modifier
+                .width(96.dp)
+                .height(120.dp)
+                .background(color = Color.White, shape = RoundedCornerShape(8.dp))
+                .padding(8.dp)
     ) {
         Column {
             Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(shape = RoundedCornerShape(8.dp), color = Color.Black)
+                modifier =
+                    Modifier
+                        .size(80.dp)
+                        .background(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.Black
+                        )
             ) {
                 AsyncImage(
                     contentScale = ContentScale.Crop,
