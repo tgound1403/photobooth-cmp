@@ -15,6 +15,11 @@ import androidx.core.content.ContextCompat
 import com.example.cameraxapp.core.navigation.AppNavigation
 import com.example.cameraxapp.ui.view.NoPermissionGrantedScreen
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.example.cameraxapp.ui.viewmodel.ThemeViewModel
+import org.koin.androidx.compose.koinViewModel
+
 class MainActivity : ComponentActivity() {
     companion object {
         val REQUIRED_PERMISSIONS = mutableListOf(
@@ -31,7 +36,10 @@ class MainActivity : ComponentActivity() {
 
         if (allPermissionsGranted()) {
             setContent {
-                com.example.cameraxapp.ui.theme.CameraXAppTheme {
+                val themeViewModel: ThemeViewModel = koinViewModel()
+                val currentTheme by themeViewModel.theme.collectAsState()
+                
+                com.example.cameraxapp.ui.theme.CameraXAppTheme(appTheme = currentTheme) {
                     AppNavigation()
                 }
             }
@@ -48,7 +56,10 @@ class MainActivity : ComponentActivity() {
             if (it.key in REQUIRED_PERMISSIONS && !it.value) permissionGranted = false
         }
         setContent {
-            com.example.cameraxapp.ui.theme.CameraXAppTheme {
+            val themeViewModel: ThemeViewModel = koinViewModel()
+            val currentTheme by themeViewModel.theme.collectAsState()
+            
+            com.example.cameraxapp.ui.theme.CameraXAppTheme(appTheme = currentTheme) {
                 if (!permissionGranted) {
                     NoPermissionGrantedScreen()
                 } else AppNavigation()

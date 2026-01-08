@@ -7,11 +7,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.cameraxapp.ui.view.CameraScreen.CameraScreen
-import com.example.cameraxapp.ui.view.GaleryScreen.GalleryScreen
 import com.example.cameraxapp.ui.view.EditImageScreen.EditImageScreen
+import com.example.cameraxapp.ui.view.GaleryScreen.GalleryScreen
 import com.example.cameraxapp.ui.view.NoPermissionGrantedScreen
-import com.example.cameraxapp.ui.view.PhotoBoothScreen
 import com.example.cameraxapp.ui.view.PhotoBoothResultScreen
+import com.example.cameraxapp.ui.view.PhotoBoothScreen
 import com.example.cameraxapp.ui.view.PhotoBoothSelectionScreen
 import com.example.cameraxapp.ui.viewmodel.PhotoBoothViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -21,34 +21,33 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val viewmodel = koinViewModel<PhotoBoothViewModel>()
 
-    NavHost(navController = navController, startDestination = "photoBooth") {
-        composable("main") {
-            CameraScreen(navController)
-        }
+    NavHost(navController = navController, startDestination = "home") {
+        composable("home") { com.example.cameraxapp.ui.view.HomeScreen(navController) }
+        composable("settings") { com.example.cameraxapp.ui.view.SettingsScreen(navController) }
+        composable("main") { CameraScreen(navController) }
         composable("gallery") {
-            GalleryScreen(navController)
+            val galleryViewModel =
+                    koinViewModel<com.example.cameraxapp.ui.viewmodel.GalleryViewModel>()
+            com.example.cameraxapp.ui.view.GalleryScreen(navController, galleryViewModel)
         }
-        composable("noPermissionGranted") {
-            NoPermissionGrantedScreen()
-        }
-        composable(AppRoutes.photoBooth) {
-            PhotoBoothScreen(navController, viewmodel)
+        composable("noPermissionGranted") { NoPermissionGrantedScreen() }
+        composable(AppRoutes.photoBooth) { PhotoBoothScreen(navController, viewmodel) }
+        composable(
+                route = "photoBoothSelection",
+        ) { PhotoBoothSelectionScreen(navController, viewmodel) }
+        composable("frameSelection") {
+            com.example.cameraxapp.ui.view.FrameSelectionScreen(navController, viewmodel)
         }
         composable(
-            route = "photoBoothSelection",
-        ) {
-            PhotoBoothSelectionScreen(navController, viewmodel)
-        }
-        composable(
-            route = "photoBoothResult/{photoBoothId}",
-            arguments = listOf(navArgument("photoBoothId") { type = NavType.LongType })
+                route = "photoBoothResult/{photoBoothId}",
+                arguments = listOf(navArgument("photoBoothId") { type = NavType.LongType })
         ) { backStackEntry ->
             val photoBoothId = backStackEntry.arguments?.getLong("photoBoothId") ?: 0L
             PhotoBoothResultScreen(photoBoothId, navController, viewmodel)
         }
         composable(
-            route = "imageDetail/{imagePath}",
-            arguments = listOf(navArgument("imagePath") { type = NavType.StringType })
+                route = "imageDetail/{imagePath}",
+                arguments = listOf(navArgument("imagePath") { type = NavType.StringType })
         ) { backStackEntry ->
             val imagePath = backStackEntry.arguments?.getString("imagePath")
             EditImageScreen(imagePath ?: "", navController)
