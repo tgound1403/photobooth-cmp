@@ -8,5 +8,8 @@ enum class ImageInfo {
     SHARPNESS,
     TEMPERATURE,
     HIGHLIGHT,
-    SHADOW
+    SHADOW,
+    VIGNETTE,
+    GRAIN,
+    CHROMATIC_ABERRATION
 }

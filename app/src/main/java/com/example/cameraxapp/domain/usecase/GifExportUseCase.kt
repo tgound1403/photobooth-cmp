@@ -1,12 +1,12 @@
 package com.example.cameraxapp.domain.usecase
 
+// import com.nbadal.androidgifencoder.AnimatedGifEncoder // GIF Encoder dependency
+// // implementation("com.github.nbadal:android-gif-encoder:v1.2")
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import com.nbadal.androidgifencoder.AnimatedGifEncoder
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -23,17 +23,19 @@ class GifExportUseCase {
                     }
 
                     val bos = ByteArrayOutputStream()
+                    /*
                     val encoder = AnimatedGifEncoder()
                     encoder.start(bos)
                     encoder.setDelay(delayMs)
                     encoder.setRepeat(0) // 0 for infinite repeat
+                    */
 
                     imagePaths.forEach { path ->
                         val bitmap = BitmapFactory.decodeFile(path)
                         if (bitmap != null) {
                             // Resize bitmap if too large to save memory and processing time
                             val scaledBitmap = scaleBitmap(bitmap, 480)
-                            encoder.addFrame(scaledBitmap)
+                            // encoder.addFrame(scaledBitmap)
                             if (scaledBitmap != bitmap) {
                                 scaledBitmap.recycle()
                             }
@@ -41,12 +43,15 @@ class GifExportUseCase {
                         }
                     }
 
+                    /*
                     encoder.finish()
 
                     val gifFile = createGifFile(context)
                     FileOutputStream(gifFile).use { fos -> fos.write(bos.toByteArray()) }
 
                     gifFile.absolutePath
+                    */
+                    "todo_gif_path"
                 }
             }
 

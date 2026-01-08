@@ -20,6 +20,8 @@ import android.util.Log
 import androidx.core.graphics.drawable.toBitmap
 import coil.Coil
 import coil.request.ImageRequest
+import com.example.cameraxapp.data.model.FrameTheme
+import com.example.cameraxapp.data.model.ThemePattern
 import com.example.cameraxapp.shared.domain.model.ImageFilter
 import com.example.cameraxapp.shared.domain.model.PhotoBoothLayout
 import java.io.IOException
@@ -36,7 +38,7 @@ class CreatePhotoBoothImageUseCase {
             layout: PhotoBoothLayout = PhotoBoothLayout.GRID_2X2,
             filter: ImageFilter = ImageFilter.ORIGINAL,
             backgroundSource: String? = null,
-            frameTheme: com.example.cameraxapp.data.model.FrameTheme? = null
+            frameTheme: FrameTheme? = null
     ): Result<String> = runCatching {
         val requiredCount =
                 when (layout) {
@@ -233,13 +235,13 @@ class CreatePhotoBoothImageUseCase {
             canvas: Canvas,
             width: Int,
             height: Int,
-            theme: com.example.cameraxapp.data.model.FrameTheme
+            theme: FrameTheme
     ) {
         when (theme.pattern) {
-            com.example.cameraxapp.data.model.ThemePattern.SOLID -> {
+            ThemePattern.SOLID -> {
                 canvas.drawColor(theme.backgroundColor)
             }
-            com.example.cameraxapp.data.model.ThemePattern.GRADIENT -> {
+            ThemePattern.GRADIENT -> {
                 val paint =
                         Paint().apply {
                             shader =
@@ -255,7 +257,7 @@ class CreatePhotoBoothImageUseCase {
                         }
                 canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
             }
-            com.example.cameraxapp.data.model.ThemePattern.DOTS -> {
+            ThemePattern.DOTS -> {
                 canvas.drawColor(theme.backgroundColor)
                 val dotPaint =
                         Paint().apply {
@@ -271,7 +273,7 @@ class CreatePhotoBoothImageUseCase {
                     }
                 }
             }
-            com.example.cameraxapp.data.model.ThemePattern.STRIPES -> {
+            ThemePattern.STRIPES -> {
                 canvas.drawColor(theme.backgroundColor)
                 val stripePaint =
                         Paint().apply {
