@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.cameraxapp.core.navigation.AppRoutes
 import com.example.cameraxapp.shared.domain.model.PhotoBoothLayout
 import com.example.cameraxapp.ui.components.GlassBox
 import com.example.cameraxapp.ui.theme.DeepBlack
@@ -79,7 +80,7 @@ fun FrameSelectionScreen(navController: NavController, viewModel: PhotoBoothView
                             onClick = {
                                 viewModel.updateLayout(PhotoBoothLayout.SINGLE)
                                 viewModel.clearCapturedImages()
-                                navController.navigate("photoBooth")
+                                navController.navigate(AppRoutes.PHOTO_BOOTH)
                             }
                     )
                 }
@@ -91,7 +92,7 @@ fun FrameSelectionScreen(navController: NavController, viewModel: PhotoBoothView
                             onClick = {
                                 viewModel.updateLayout(PhotoBoothLayout.STRIP_1X2)
                                 viewModel.clearCapturedImages()
-                                navController.navigate("photoBooth")
+                                navController.navigate(AppRoutes.PHOTO_BOOTH)
                             }
                     )
                 }
@@ -103,7 +104,7 @@ fun FrameSelectionScreen(navController: NavController, viewModel: PhotoBoothView
                             onClick = {
                                 viewModel.updateLayout(PhotoBoothLayout.STRIP_1X3)
                                 viewModel.clearCapturedImages()
-                                navController.navigate("photoBooth")
+                                navController.navigate(AppRoutes.PHOTO_BOOTH)
                             }
                     )
                 }
@@ -115,7 +116,7 @@ fun FrameSelectionScreen(navController: NavController, viewModel: PhotoBoothView
                             onClick = {
                                 viewModel.updateLayout(PhotoBoothLayout.GRID_2X2)
                                 viewModel.clearCapturedImages()
-                                navController.navigate("photoBooth")
+                                navController.navigate(AppRoutes.PHOTO_BOOTH)
                             }
                     )
                 }
@@ -127,7 +128,7 @@ fun FrameSelectionScreen(navController: NavController, viewModel: PhotoBoothView
                             onClick = {
                                 viewModel.updateLayout(PhotoBoothLayout.STRIP_1X4)
                                 viewModel.clearCapturedImages()
-                                navController.navigate("photoBooth")
+                                navController.navigate(AppRoutes.PHOTO_BOOTH)
                             }
                     )
                 }

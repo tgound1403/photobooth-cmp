@@ -9,7 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.cameraxapp.core.navigation.AppRoutes
 import com.example.cameraxapp.ui.components.GlassBox
 import com.example.cameraxapp.ui.components.GlassButton
 import com.example.cameraxapp.ui.theme.DeepBlack
@@ -34,7 +35,7 @@ fun PhotoBoothResultScreen(
         navController: NavController,
         viewModel: PhotoBoothViewModel,
 ) {
-    val photoBooth by viewModel.photoBooth.observeAsState()
+    val photoBooth by viewModel.photoBooth.collectAsState()
     val saveState by viewModel.saveState.collectAsState()
     val gifExportState by viewModel.gifExportState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -171,7 +172,7 @@ fun PhotoBoothResultScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     GlassButton(
-                            onClick = { navController.navigate("photoBooth") },
+                            onClick = { navController.navigate(AppRoutes.PHOTO_BOOTH) },
                             modifier = Modifier.weight(1f),
                             text = "Chụp Lại"
                     )

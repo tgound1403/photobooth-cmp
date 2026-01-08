@@ -65,6 +65,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
+import com.example.cameraxapp.core.navigation.AppRoutes
 import com.example.cameraxapp.ui.components.ManualControls
 import com.example.cameraxapp.ui.components.ZoomControl
 import java.text.SimpleDateFormat
@@ -205,7 +206,7 @@ fun CameraPreviewViewfinder(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(shape = RoundedCornerShape(16.dp))
-                    .clickable { navController.navigate("gallery") },
+                    .clickable { navController.navigate(AppRoutes.GALLERY) },
                 contentDescription = null,
                 tint = Color.White
             )

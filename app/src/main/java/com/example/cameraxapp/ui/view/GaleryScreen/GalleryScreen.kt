@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.cameraxapp.core.navigation.AppRoutes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,7 +112,7 @@ fun GalleryScreen(navController: NavController) {
             content = {
                 items(images.value) { imagePath ->
                     ImageItem(imagePath, onImageClick = {
-                        navController.navigate("imageDetail/${Uri.encode(imagePath)}")
+                        navController.navigate(AppRoutes.imageDetail(Uri.encode(imagePath)))
                      })
                 }
             }

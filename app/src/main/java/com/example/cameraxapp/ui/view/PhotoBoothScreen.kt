@@ -14,7 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.cameraxapp.core.navigation.AppRoutes
 import com.example.cameraxapp.ui.components.DefaultAppBar
 import com.example.cameraxapp.ui.components.GlassBox
 import com.example.cameraxapp.ui.components.GlassButton
@@ -49,7 +50,7 @@ fun PhotoBoothScreen(
     cameraViewModel: CameraViewModel = viewModel()
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    val capturedImages by photoBoothViewModel.capturedImages.observeAsState(initial = emptyList())
+    val capturedImages by photoBoothViewModel.capturedImages.collectAsState()
     val captureCount = capturedImages.size
 
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
@@ -89,9 +90,9 @@ fun PhotoBoothScreen(
                         photoBoothViewModel.addCapturedImage(uri.path.toString())
                         cameraViewModel.updateCountdown(TIME_TO_CAPTURE)
                         // Check against live value or local constant
-                        if (photoBoothViewModel.capturedImages.value?.size == PHOTO_LIMIT) {
+                        if (photoBoothViewModel.capturedImages.value.size == PHOTO_LIMIT) {
                             cameraViewModel.stopCapturing()
-                            navController.navigate("photoBoothSelection") {
+                            navController.navigate(AppRoutes.PHOTO_BOOTH_SELECTION) {
                                 popUpTo(navController.graph.startDestinationId) {
                                     inclusive = true
                                 }

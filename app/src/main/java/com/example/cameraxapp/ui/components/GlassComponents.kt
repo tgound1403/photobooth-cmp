@@ -15,14 +15,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import com.example.cameraxapp.ui.theme.BorderWidth
+import com.example.cameraxapp.ui.theme.CornerRadius
 import com.example.cameraxapp.ui.theme.GlassWhite
 import com.example.cameraxapp.ui.theme.NeonPurple
+import com.example.cameraxapp.ui.theme.Spacing
 
 @Composable
 fun GlassBox(
         modifier: Modifier = Modifier,
-        cornerRadius: Dp = 16.dp,
+        cornerRadius: Dp = CornerRadius.card,
         backgroundColor: Color = GlassWhite,
         content: @Composable BoxScope.() -> Unit
 ) {
@@ -31,7 +33,7 @@ fun GlassBox(
                     modifier.clip(RoundedCornerShape(cornerRadius))
                             .background(backgroundColor)
                             .border(
-                                    width = 1.dp,
+                                    width = BorderWidth.default,
                                     brush =
                                             Brush.linearGradient(
                                                     colors =
@@ -58,7 +60,7 @@ fun GlassButton(
     val alpha = if (enabled) 1f else 0.5f
     Box(
             modifier =
-                    modifier.clip(RoundedCornerShape(24.dp))
+                    modifier.clip(RoundedCornerShape(CornerRadius.button))
                             .background(
                                     brush =
                                             Brush.verticalGradient(
@@ -74,7 +76,7 @@ fun GlassButton(
                                             )
                             )
                             .border(
-                                    width = 1.dp,
+                                    width = BorderWidth.default,
                                     brush =
                                             Brush.linearGradient(
                                                     colors =
@@ -88,10 +90,10 @@ fun GlassButton(
                                                                     )
                                                             )
                                             ),
-                                    shape = RoundedCornerShape(24.dp)
+                                    shape = RoundedCornerShape(CornerRadius.button)
                             )
                             .clickable(enabled = enabled, onClick = onClick)
-                            .padding(vertical = 14.dp, horizontal = 28.dp),
+                            .padding(vertical = Spacing.sm, horizontal = Spacing.lg),
             contentAlignment = Alignment.Center
     ) {
         Text(

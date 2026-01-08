@@ -127,7 +127,8 @@ dependencies {
     implementation(libs.koin.androidx.compose.navigation)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
-    // GIF Encoder (temporarily removed)
+    // GIF Encoder
+    implementation("com.github.nbadal:android-gif-encoder:v1.2")
 
     // Lottie
     implementation("com.airbnb.android:lottie-compose:6.4.0")

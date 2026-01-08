@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.cameraxapp.core.navigation.AppRoutes
 import com.example.cameraxapp.shared.domain.model.PhotoBooth
 import com.example.cameraxapp.ui.components.GlassBox
 import com.example.cameraxapp.ui.theme.DeepBlack
@@ -107,7 +108,7 @@ fun GalleryScreen(navController: NavController, viewModel: GalleryViewModel) {
                                                     photoBooth.imagePaths.first(),
                                                     "UTF-8"
                                             )
-                                    navController.navigate("imageDetail/$encodedPath")
+                                    navController.navigate(AppRoutes.imageDetail(encodedPath))
                                 }
                         )
                     }

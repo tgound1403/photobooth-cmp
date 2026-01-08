@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.cameraxapp.core.navigation.AppRoutes
 import com.example.cameraxapp.ui.components.GlassBox
 import com.example.cameraxapp.ui.theme.NeonCyan
 import com.example.cameraxapp.ui.theme.NeonPurple
@@ -104,7 +105,7 @@ fun HomeScreen(navController: NavController) {
                 HomeButton(
                     icon = Icons.Default.CameraAlt,
                     label = "Chụp Ảnh",
-                    onClick = { navController.navigate("frameSelection") }
+                    onClick = { navController.navigate(AppRoutes.FRAME_SELECTION) }
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -112,7 +113,7 @@ fun HomeScreen(navController: NavController) {
                 HomeButton(
                     icon = Icons.Default.PhotoLibrary,
                     label = "Thư Viện",
-                    onClick = { navController.navigate("gallery") }
+                    onClick = { navController.navigate(AppRoutes.GALLERY) }
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -120,7 +121,7 @@ fun HomeScreen(navController: NavController) {
                 HomeButton(
                     icon = Icons.Default.Settings,
                     label = "Cài Đặt",
-                    onClick = { navController.navigate("settings") }
+                    onClick = { navController.navigate(AppRoutes.SETTINGS) }
                 )
             }
         }

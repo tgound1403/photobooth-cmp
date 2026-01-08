@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.cameraxapp.data.repository.PhotoBoothRepository
 import com.example.cameraxapp.domain.usecase.CreatePhotoBoothImageUseCase
@@ -14,6 +12,7 @@ import com.example.cameraxapp.shared.domain.model.PhotoBooth
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class PhotoBoothViewModel(
@@ -77,14 +76,14 @@ class PhotoBoothViewModel(
             context.startActivity(Intent.createChooser(shareIntent, "Chia sẻ ảnh"))
         }
     }
-    private val _capturedImages = MutableLiveData<List<String>>(emptyList())
-    val capturedImages: LiveData<List<String>> = _capturedImages
+    private val _capturedImages = MutableStateFlow<List<String>>(emptyList())
+    val capturedImages: StateFlow<List<String>> = _capturedImages.asStateFlow()
 
-    private val _selectedImages = MutableLiveData<Set<String>>(emptySet())
-    val selectedImages: LiveData<Set<String>> = _selectedImages
+    private val _selectedImages = MutableStateFlow<Set<String>>(emptySet())
+    val selectedImages: StateFlow<Set<String>> = _selectedImages.asStateFlow()
 
-    private val _photoBooth = MutableLiveData<PhotoBooth>()
-    val photoBooth = _photoBooth
+    private val _photoBooth = MutableStateFlow<PhotoBooth?>(null)
+    val photoBooth: StateFlow<PhotoBooth?> = _photoBooth.asStateFlow()
 
     private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
     val saveState: StateFlow<SaveState> = _saveState
@@ -133,7 +132,7 @@ class PhotoBoothViewModel(
     }
 
     fun addCapturedImage(imagePath: String) {
-        val currentList = _capturedImages.value?.toMutableList() ?: mutableListOf()
+        val currentList = _capturedImages.value.toMutableList()
         if (currentList.size < 8) {
             currentList.add(imagePath)
             _capturedImages.value = currentList
@@ -141,7 +140,7 @@ class PhotoBoothViewModel(
     }
 
     fun toggleImageSelection(imagePath: String) {
-        val currentSelected = _selectedImages.value?.toMutableSet() ?: mutableSetOf()
+        val currentSelected = _selectedImages.value.toMutableSet()
         if (currentSelected.contains(imagePath)) {
             currentSelected.remove(imagePath)
         } else if (currentSelected.size < 4) {
@@ -151,7 +150,9 @@ class PhotoBoothViewModel(
     }
 
     fun getPhotoBoothById(id: Long) {
-        viewModelScope.launch { _photoBooth.value = repository.getPhotoBoothById(id) }
+        viewModelScope.launch { 
+            _photoBooth.value = repository.getPhotoBoothById(id) 
+        }
     }
 
     fun saveImages(context: Context, imagePaths: List<String>) {
