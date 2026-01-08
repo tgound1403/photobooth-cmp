@@ -7,7 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.example.cameraxapp.data.model.PhotoBooth
+import com.example.cameraxapp.shared.domain.model.PhotoBooth
 import com.example.cameraxapp.data.repository.PhotoBoothRepository
 import com.example.cameraxapp.domain.usecase.CreatePhotoBoothImageUseCase
 import com.example.cameraxapp.domain.usecase.SaveImageUseCase
@@ -18,10 +18,9 @@ import java.io.File
 import java.io.IOException
 import java.util.Date
 
-class PhotoBoothViewModel constructor(
+class PhotoBoothViewModel(
     private val repository: PhotoBoothRepository,
     private val application: Application,
-    private val saveImageUseCase: SaveImageUseCase,
     private val createPhotoBoothImageUseCase: CreatePhotoBoothImageUseCase
 ) : AndroidViewModel(application) {
     private val _capturedImages = MutableLiveData<List<String>>(emptyList())
@@ -33,11 +32,23 @@ class PhotoBoothViewModel constructor(
     private val _photoBooth = MutableLiveData<PhotoBooth>()
     val photoBooth = _photoBooth
 
-    private val _result = MutableLiveData<Long>()
-    val result = _result
-
     private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
     val saveState: StateFlow<SaveState> = _saveState
+
+    // New state for UI options
+    private val _selectedLayout = MutableStateFlow(com.example.cameraxapp.shared.domain.model.PhotoBoothLayout.GRID_2X2)
+    val selectedLayout: StateFlow<com.example.cameraxapp.shared.domain.model.PhotoBoothLayout> = _selectedLayout
+
+    private val _selectedFilter = MutableStateFlow(com.example.cameraxapp.shared.domain.model.ImageFilter.ORIGINAL)
+    val selectedFilter: StateFlow<com.example.cameraxapp.shared.domain.model.ImageFilter> = _selectedFilter
+
+    fun updateLayout(layout: com.example.cameraxapp.shared.domain.model.PhotoBoothLayout) {
+        _selectedLayout.value = layout
+    }
+
+    fun updateFilter(filter: com.example.cameraxapp.shared.domain.model.ImageFilter) {
+        _selectedFilter.value = filter
+    }
 
     fun addCapturedImage(imagePath: String) {
         val currentList = _capturedImages.value?.toMutableList() ?: mutableListOf()
@@ -57,16 +68,6 @@ class PhotoBoothViewModel constructor(
         _selectedImages.value = currentSelected
     }
 
-    suspend fun saveSelectedImages() {
-        val selectedPaths = _selectedImages.value?.toList() ?: emptyList()
-        if (selectedPaths.size == 4) {
-            val photoBooth = PhotoBooth(imagePaths = selectedPaths, createdAt = Date())
-            _result.value = repository.insertPhotoBooth(photoBooth)
-            _capturedImages.value = emptyList()
-            _selectedImages.value = emptySet()
-        }
-    }
-
     fun getPhotoBoothById(id: Long) {
         viewModelScope.launch {
             _photoBooth.value = repository.getPhotoBoothById(id)
@@ -77,7 +78,13 @@ class PhotoBoothViewModel constructor(
         viewModelScope.launch {
             _saveState.value = SaveState.Saving
             try {
-                createPhotoBoothImageUseCase.execute(context, imagePaths).getOrThrow()
+                // Use current selected layout and filter
+                createPhotoBoothImageUseCase.execute(
+                    context, 
+                    imagePaths, 
+                    _selectedLayout.value, 
+                    _selectedFilter.value
+                ).getOrThrow()
                 _saveState.value = SaveState.Success
             } catch (e: Exception) {
                 _saveState.value = SaveState.Error(e.message ?: "Unknown error")
@@ -89,7 +96,14 @@ class PhotoBoothViewModel constructor(
         viewModelScope.launch {
             _saveState.value = SaveState.Saving
             try {
-                createPhotoBoothImageUseCase.executeWithBackground(context, imagePaths, background).getOrThrow()
+                 // Use current selected layout and filter
+                createPhotoBoothImageUseCase.execute(
+                    context, 
+                    imagePaths, 
+                    _selectedLayout.value, 
+                    _selectedFilter.value,
+                    background
+                ).getOrThrow()
                 _saveState.value = SaveState.Success
             } catch (e: Exception) {
                 _saveState.value = SaveState.Error(e.message ?: "Unknown error")
