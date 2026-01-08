@@ -21,32 +21,42 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val viewmodel = koinViewModel<PhotoBoothViewModel>()
 
-    NavHost(navController = navController, startDestination = "home") {
-        composable("home") { com.example.cameraxapp.ui.view.HomeScreen(navController) }
-        composable("settings") { com.example.cameraxapp.ui.view.SettingsScreen(navController) }
-        composable("main") { CameraScreen(navController) }
-        composable("gallery") {
+    NavHost(navController = navController, startDestination = AppRoutes.HOME) {
+        composable(AppRoutes.HOME) { 
+            com.example.cameraxapp.ui.view.HomeScreen(navController) 
+        }
+        composable(AppRoutes.SETTINGS) { 
+            com.example.cameraxapp.ui.view.SettingsScreen(navController) 
+        }
+        composable(AppRoutes.MAIN) { 
+            CameraScreen(navController) 
+        }
+        composable(AppRoutes.GALLERY) {
             val galleryViewModel =
                     koinViewModel<com.example.cameraxapp.ui.viewmodel.GalleryViewModel>()
             com.example.cameraxapp.ui.view.GalleryScreen(navController, galleryViewModel)
         }
-        composable("noPermissionGranted") { NoPermissionGrantedScreen() }
-        composable(AppRoutes.photoBooth) { PhotoBoothScreen(navController, viewmodel) }
-        composable(
-                route = "photoBoothSelection",
-        ) { PhotoBoothSelectionScreen(navController, viewmodel) }
-        composable("frameSelection") {
+        composable(AppRoutes.NO_PERMISSION_GRANTED) { 
+            NoPermissionGrantedScreen() 
+        }
+        composable(AppRoutes.PHOTO_BOOTH) { 
+            PhotoBoothScreen(navController, viewmodel) 
+        }
+        composable(AppRoutes.PHOTO_BOOTH_SELECTION) { 
+            PhotoBoothSelectionScreen(navController, viewmodel) 
+        }
+        composable(AppRoutes.FRAME_SELECTION) {
             com.example.cameraxapp.ui.view.FrameSelectionScreen(navController, viewmodel)
         }
         composable(
-                route = "photoBoothResult/{photoBoothId}",
+                route = AppRoutes.PHOTO_BOOTH_RESULT,
                 arguments = listOf(navArgument("photoBoothId") { type = NavType.LongType })
         ) { backStackEntry ->
             val photoBoothId = backStackEntry.arguments?.getLong("photoBoothId") ?: 0L
             PhotoBoothResultScreen(photoBoothId, navController, viewmodel)
         }
         composable(
-                route = "imageDetail/{imagePath}",
+                route = AppRoutes.IMAGE_DETAIL,
                 arguments = listOf(navArgument("imagePath") { type = NavType.StringType })
         ) { backStackEntry ->
             val imagePath = backStackEntry.arguments?.getString("imagePath")
@@ -55,8 +65,23 @@ fun AppNavigation() {
     }
 }
 
-class AppRoutes {
-    companion object {
-        const val photoBooth = "photoBooth"
+object AppRoutes {
+    const val HOME = "home"
+    const val SETTINGS = "settings"
+    const val MAIN = "main"
+    const val GALLERY = "gallery"
+    const val NO_PERMISSION_GRANTED = "noPermissionGranted"
+    const val PHOTO_BOOTH = "photoBooth"
+    const val PHOTO_BOOTH_SELECTION = "photoBoothSelection"
+    const val FRAME_SELECTION = "frameSelection"
+    const val PHOTO_BOOTH_RESULT = "photoBoothResult/{photoBoothId}"
+    const val IMAGE_DETAIL = "imageDetail/{imagePath}"
+    
+    fun photoBoothResult(photoBoothId: Long): String {
+        return "photoBoothResult/$photoBoothId"
+    }
+    
+    fun imageDetail(imagePath: String): String {
+        return "imageDetail/$imagePath"
     }
 }
