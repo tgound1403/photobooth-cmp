@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import com.example.cameraxapp.ui.view.CameraScreen.CameraScreen
 import com.example.cameraxapp.ui.view.GaleryScreen.GalleryScreen
 import com.example.cameraxapp.ui.view.EditImageScreen.EditImageScreen
+import com.example.cameraxapp.ui.view.NoPermissionGrantedScreen
 import com.example.cameraxapp.ui.view.PhotoBoothScreen
 import com.example.cameraxapp.ui.view.PhotoBoothResultScreen
 import com.example.cameraxapp.ui.view.PhotoBoothSelectionScreen
@@ -27,7 +28,10 @@ fun AppNavigation() {
         composable("gallery") {
             GalleryScreen(navController)
         }
-        composable("photoBooth") {
+        composable("noPermissionGranted") {
+            NoPermissionGrantedScreen()
+        }
+        composable(AppRoutes.photoBooth) {
             PhotoBoothScreen(navController, viewmodel)
         }
         composable(
@@ -49,5 +53,11 @@ fun AppNavigation() {
             val imagePath = backStackEntry.arguments?.getString("imagePath")
             EditImageScreen(imagePath ?: "", navController)
         }
+    }
+}
+
+class AppRoutes {
+    companion object {
+        const val photoBooth = "photoBooth"
     }
 }

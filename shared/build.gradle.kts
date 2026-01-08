@@ -9,7 +9,7 @@ kotlin {
     // which platforms this KMP module supports.
     // See: https://kotlinlang.org/docs/multiplatform-discover-project.html#targets
     androidLibrary {
-        namespace = "com.example.cameraxapp.shared"
+        namespace = "com.tgound.cameraxapp.shared"
         compileSdk = 35
         minSdk = 24
 

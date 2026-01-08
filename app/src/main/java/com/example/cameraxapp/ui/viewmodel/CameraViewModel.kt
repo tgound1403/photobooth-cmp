@@ -25,7 +25,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private val cameraService = CameraService()
 
     private val _isCapturing = MutableStateFlow(false)
-    val isCapturing: StateFlow<Boolean> = _isCapturing.asStateFlow()
+    val isCapturing: StateFlow<Boolean> = _isCapturing.asStateFlow() // use for view
 
     private val _countdown = MutableStateFlow(3)
     val countdown: StateFlow<Int> = _countdown.asStateFlow()
@@ -34,7 +34,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     var preview = mutableStateOf<Preview?>(null)
     val executor = ContextCompat.getMainExecutor(application)
 
-    private var isTakingPicture = false
+    private var isTakingPicture = false // use for view model
 
     fun startCapturing() {
         _isCapturing.value = true
@@ -62,7 +62,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         try {
             val photoFile = imageProcessingService.createPhotoFile(getApplication())
             val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
-            
+
             imageCapture.value?.takePicture(
                 outputOptions,
                 executor,
@@ -76,15 +76,29 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                                 photoFile
                             )
                             onPhotoCaptured(croppedUri)
+//                            onPhotoCaptured(savedUri)
                         } else {
-                            Log.e("CameraViewModel", "Photo file does not exist: ${photoFile.absolutePath}")
-                            onError(ImageCaptureException(ImageCapture.ERROR_FILE_IO, "Failed to save photo", null))
+                            Log.e(
+                                "CameraViewModel",
+                                "Photo file does not exist: ${photoFile.absolutePath}"
+                            )
+                            onError(
+                                ImageCaptureException(
+                                    ImageCapture.ERROR_FILE_IO,
+                                    "Failed to save photo",
+                                    null
+                                )
+                            )
                         }
                         isTakingPicture = false
                     }
 
                     override fun onError(exception: ImageCaptureException) {
-                        Log.e("CameraViewModel", "Error capturing photo: ${exception.message}", exception)
+                        Log.e(
+                            "CameraViewModel",
+                            "Error capturing photo: ${exception.message}",
+                            exception
+                        )
                         isTakingPicture = false
                         onError(exception)
                     }
@@ -93,26 +107,28 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         } catch (e: Exception) {
             Log.e("CameraViewModel", "Error in takePhoto: ${e.message}", e)
             isTakingPicture = false
-            onError(ImageCaptureException(ImageCapture.ERROR_UNKNOWN, e.message ?: "Unknown error", e))
+            onError(
+                ImageCaptureException(
+                    ImageCapture.ERROR_UNKNOWN,
+                    e.message ?: "Unknown error",
+                    e
+                )
+            )
         }
     }
 
     fun initCamera(lifecycleOwner: LifecycleOwner) = viewModelScope.launch(Dispatchers.Default) {
         try {
-            val previewCreated = cameraService.createPreview()
-            val imageCaptureCreated = cameraService.createImageCapture()
 
             withContext(Dispatchers.Main) {
                 cameraService.bindCameraUseCases(
                     context = getApplication(),
                     lifecycleOwner = lifecycleOwner,
-                    preview = previewCreated,
-                    imageCapture = imageCaptureCreated
                 )
             }
 
-            preview.value = previewCreated
-            imageCapture.value = imageCaptureCreated
+            preview.value = cameraService.preview
+            imageCapture.value = cameraService.imageCapture
         } catch (e: Exception) {
             Log.e("CameraViewModel", "Error setting up camera: ${e.message}", e)
             preview.value = null

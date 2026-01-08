@@ -12,7 +12,8 @@ import java.util.Locale
 
 class ImageProcessingService {
     fun createPhotoFile(context: Context): File {
-        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(System.currentTimeMillis())
+        val timeStamp =
+            SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(System.currentTimeMillis())
         val storageDir = context.filesDir
         if (!storageDir.exists()) {
             storageDir.mkdirs()
@@ -23,13 +24,22 @@ class ImageProcessingService {
     private fun cropToLandscape4x3(bitmap: Bitmap): Bitmap {
         val matrix = Matrix()
         matrix.postRotate(-90f)
-        val rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        matrix.postScale(1f, -1f)
+        val rotatedBitmap =
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
         bitmap.recycle()
 
         val flippedMatrix = Matrix()
-        flippedMatrix.postScale(-1f, 1f)
-        val flippedBitmap = Bitmap.createBitmap(rotatedBitmap, 0, 0, rotatedBitmap.width, rotatedBitmap.height, flippedMatrix, true)
-        rotatedBitmap.recycle()
+        val flippedBitmap = Bitmap.createBitmap(
+            rotatedBitmap,
+            0,
+            0,
+            bitmap.width,
+            bitmap.height,
+            flippedMatrix,
+            true
+        )
+        bitmap.recycle()
 
         val width = flippedBitmap.width
         val height = flippedBitmap.height
@@ -62,12 +72,16 @@ class ImageProcessingService {
             val originalBitmap = BitmapFactory.decodeStream(inputStream)
             inputStream?.close()
 
+            if (originalBitmap == null) {
+                return originalUri
+            }
+
             val croppedBitmap = cropToLandscape4x3(originalBitmap)
-            
+
             val outputStream = FileOutputStream(photoFile)
             croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-            outputStream.close()
 
+            outputStream.close()
             originalBitmap.recycle()
             croppedBitmap.recycle()
 

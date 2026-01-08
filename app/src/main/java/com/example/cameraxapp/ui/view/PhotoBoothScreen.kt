@@ -11,7 +11,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,10 +22,10 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -34,7 +33,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults.xLargeContainerSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,23 +43,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.cameraxapp.ui.components.DefaultAppBar
 import com.example.cameraxapp.ui.viewmodel.CameraViewModel
 import com.example.cameraxapp.ui.viewmodel.PhotoBoothViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -77,8 +72,8 @@ fun PhotoBoothScreen(
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
     val TIME_TO_CAPTURE = 5
-    val PHOTO_LIMIT = 5
-    
+    val PHOTO_LIMIT = 8
+
     val isCapturing by cameraViewModel.isCapturing.collectAsState()
     val countdown by cameraViewModel.countdown.collectAsState()
 
@@ -114,58 +109,69 @@ fun PhotoBoothScreen(
     LaunchedEffect(cameraPermissionState.status.isGranted) {
         if (cameraPermissionState.status.isGranted) {
             cameraViewModel.initCamera(lifecycleOwner)
-        } else {
-            Log.d("PhotoBoothScreen", "Camera permission not granted")
         }
     }
 
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                modifier = Modifier.background(color = Color.LightGray),
-                title = { },
-                navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
+            DefaultAppBar(navController, "Photogether")
         }
     ) { padding ->
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
+                .background(color = Color.Black)
                 .fillMaxWidth()
                 .padding(padding)
         ) {
             when {
                 cameraPermissionState.status.isGranted -> {
                     if (cameraViewModel.preview.value != null) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(16.dp)
-                                .aspectRatio(4f / 3f)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            CameraView(
-                                previewUseCase = cameraViewModel.preview.value!!,
+                            Box(
+                                contentAlignment = Alignment.Center,
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(64.dp))
+                                    .weight(1f)
+                                    .padding(16.dp)
                                     .aspectRatio(4f / 3f)
-                            )
+                            ) {
+                                CameraView(
+                                    previewUseCase = cameraViewModel.preview.value!!,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(64.dp))
+                                        .border(
+                                            color = Color.White,
+                                            width = 8.dp,
+                                            shape = RoundedCornerShape(64.dp)
+                                        )
+                                        .aspectRatio(4f / 3f)
+                                )
+                            }
                             if (isCapturing) {
                                 Text(
                                     text = if (countdown >= 0) countdown.toString() else "0",
-                                    color = Color.White,
+                                    color = Color.Black,
+                                    fontSize = 16.sp,
                                     modifier = Modifier
+                                        .clip(shape = RoundedCornerShape(100.dp))
+                                        .background(color = Color.White)
                                         .padding(16.dp)
-                                        .background(
-                                            Color.Black.copy(alpha = 0.5f),
-                                            RoundedCornerShape(8.dp)
-                                        )
                                         .padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                                Box(modifier = Modifier.height(100.dp))
+                            }
+                            if (capturedImages.isNotEmpty()) {
+                                CaptureImages(capturedImages, Modifier.height(140.dp))
+                            } else {
+                                CaptureButton(
+                                    onClick = {
+                                        cameraViewModel.startCapturing()
+                                    },
+                                    isEnabled = captureCount < 8,
+                                    isCapturing = isCapturing
                                 )
                             }
                         }
@@ -180,32 +186,6 @@ fun PhotoBoothScreen(
                         }
                     }
                 }
-
-                cameraPermissionState.status.shouldShowRationale -> {
-                    PermissionRationale(modifier = Modifier.weight(1f)) {
-                        cameraPermissionState.launchPermissionRequest()
-                    }
-                }
-
-                else -> {
-                    RequestPermission(modifier = Modifier.weight(1f)) {
-                        cameraPermissionState.launchPermissionRequest()
-                    }
-                }
-            }
-
-            if (capturedImages.isNotEmpty()) {
-                CaptureImages(capturedImages, Modifier.height(140.dp))
-            }
-
-            if(!isCapturing){
-                CaptureButton(
-                    onClick = {
-                        cameraViewModel.startCapturing()
-                    },
-                    isEnabled = captureCount < 8,
-                    isCapturing = isCapturing
-                )
             }
         }
     }
@@ -235,61 +215,22 @@ fun CameraView(
 }
 
 @Composable
-fun PermissionRationale(modifier: Modifier = Modifier, onRequestPermission: () -> Unit) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            "Ứng dụng cần quyền truy cập Camera để chụp ảnh.\n" +
-                    "Vui lòng cấp quyền để tiếp tục.",
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(16.dp))
-        Button(onClick = onRequestPermission) {
-            Text("Yêu cầu lại quyền")
-        }
-    }
-}
-
-@Composable
-fun RequestPermission(modifier: Modifier = Modifier, onRequestPermission: () -> Unit) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            "Vui lòng cấp quyền truy cập Camera trong cài đặt ứng dụng.",
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(16.dp))
-        Button(onClick = onRequestPermission) {
-            Text("Cấp quyền")
-        }
-    }
-}
-
-@Composable
 fun CaptureImages(capturedImages: List<String>?, modifier: Modifier = Modifier) {
     LazyRow(
         modifier = modifier
+            .background(color = Color.White)
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         items(capturedImages ?: emptyList()) { imagePath ->
-            Box(modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .fillMaxHeight()
-                .aspectRatio(4f / 3f)
-                .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(color = Color.Black, width = 2.dp, shape = RoundedCornerShape(12.dp))
+                    .fillMaxHeight()
+                    .aspectRatio(4f / 3f)
             ) {
                 AsyncImage(
                     model = imagePath,
@@ -312,13 +253,19 @@ fun CaptureButton(
     Button(
         onClick = onClick,
         shape = ButtonDefaults.filledTonalShape,
+        colors = ButtonColors(
+            containerColor = Color.White,
+            contentColor = Color.Black,
+            disabledContainerColor = Color.LightGray,
+            disabledContentColor = Color.DarkGray
+        ),
         modifier = Modifier
             .fillMaxWidth(.8f)
             .size(xLargeContainerSize())
             .padding(16.dp),
         enabled = isEnabled
     ) {
-        Text(if (isCapturing) "Dừng chụp" else "Bắt đầu chụp")
+        Text("Bắt đầu chụp", fontSize = 20.sp)
     }
 }
 

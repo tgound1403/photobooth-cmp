@@ -6,8 +6,8 @@ plugins {
 }
 
 android {
-    namespace = "com.example.cameraxapp"
-    compileSdk = 35
+    namespace = "com.tgound.cameraxapp"
+    compileSdk = 36
 
     buildFeatures {
         compose = true
@@ -18,9 +18,9 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.cameraxapp"
+        applicationId = "com.tgound.cameraxapp"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -104,12 +104,12 @@ dependencies {
 
     // Gson
     implementation(libs.gson)
-    
+
     // Retrofit
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.logging.interceptor)
-    
+
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
