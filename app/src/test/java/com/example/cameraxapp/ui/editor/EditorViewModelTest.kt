@@ -1,0 +1,117 @@
+package com.example.cameraxapp.ui.editor
+
+import android.graphics.Bitmap
+import com.example.cameraxapp.core.render.CropAspect
+import com.example.cameraxapp.core.render.CropParams
+import com.example.cameraxapp.core.render.EditParams
+import com.example.cameraxapp.core.render.EditRenderer
+import com.example.cameraxapp.core.render.EditSnapshot
+import kotlinx.coroutines.Dispatchers
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class EditorViewModelTest {
+
+    /** Never called: these tests never load a bitmap, so the renderer is not reached. */
+    private class UnusedRenderer : EditRenderer {
+        override suspend fun render(
+            source: Bitmap,
+            snapshot: EditSnapshot,
+            background: Bitmap?,
+            density: Float,
+            maxSize: Int?,
+        ): Bitmap = throw IllegalStateException("renderer should not run in these tests")
+
+        override fun close() = Unit
+    }
+
+    private object NoImageIo : EditorImageIo {
+        override fun decode(uri: String, maxSide: Int): Bitmap? = null
+        override fun saveJpeg(bitmap: Bitmap): String? = null
+    }
+
+    private fun newViewModel() = EditorViewModel(NoImageIo, UnusedRenderer(), Dispatchers.Unconfined)
+
+    @Test
+    fun sliderDragIsOneUndoStepOnRelease() {
+        val vm = newViewModel()
+        // Five drag frames, no release yet: nothing recorded.
+        for (i in 1..5) vm.setParams(EditParams(exposure = i / 10f))
+        assertFalse(vm.state.value.canUndo)
+        assertEquals(0.5f, vm.state.value.snapshot.params.exposure, 0f)
+
+        vm.commitParams()
+        assertTrue(vm.state.value.canUndo)
+
+        vm.undo()
+        assertEquals(EditParams(), vm.state.value.snapshot.params)
+        assertFalse(vm.state.value.canUndo)
+    }
+
+    @Test
+    fun undoThenRedoRestoresTheEdit() {
+        val vm = newViewModel()
+        vm.selectFilter("warm")
+        vm.selectFilter("cool")
+
+        vm.undo()
+        assertEquals("warm", vm.state.value.snapshot.params.filterId)
+        assertTrue(vm.state.value.canRedo)
+
+        vm.redo()
+        assertEquals("cool", vm.state.value.snapshot.params.filterId)
+        assertFalse(vm.state.value.canRedo)
+    }
+
+    @Test
+    fun historyIsCappedAtThirtySteps() {
+        val vm = newViewModel()
+        for (i in 1..35) vm.selectFilter("f$i")
+
+        for (step in 1..30) {
+            vm.undo()
+        }
+        assertFalse("31st undo must have nothing to restore", vm.state.value.canUndo)
+        // 35 changes with a cap of 30 leaves the 5 earliest states unreachable: the oldest reachable is f5.
+        assertEquals("f5", vm.state.value.snapshot.params.filterId)
+    }
+
+    @Test
+    fun resetRestoresDefaultsAndCanBeUndone() {
+        val vm = newViewModel()
+        vm.setCrop(CropParams(aspect = CropAspect.SQUARE))
+        vm.selectFilter("warm")
+
+        vm.reset()
+        assertEquals(EditSnapshot(), vm.state.value.snapshot)
+
+        vm.undo()
+        assertEquals("warm", vm.state.value.snapshot.params.filterId)
+        assertEquals(CropAspect.SQUARE, vm.state.value.snapshot.params.crop.aspect)
+    }
+
+    @Test
+    fun pressAndHoldDoesNotTouchHistory() {
+        val vm = newViewModel()
+        vm.selectFilter("warm")
+
+        vm.setShowOriginal(true)
+        assertTrue(vm.state.value.showOriginal)
+        assertTrue(vm.state.value.canUndo)
+        assertEquals("warm", vm.state.value.snapshot.params.filterId)
+
+        vm.setShowOriginal(false)
+        assertFalse(vm.state.value.showOriginal)
+    }
+
+    @Test
+    fun committingWithoutChangesAddsNoStep() {
+        val vm = newViewModel()
+        vm.commitParams()
+        assertFalse(vm.state.value.canUndo)
+        assertNull(vm.state.value.preview)
+    }
+}

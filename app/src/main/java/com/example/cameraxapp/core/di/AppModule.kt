@@ -18,4 +18,13 @@ val appModule = module {
     viewModel { com.example.cameraxapp.ui.viewmodel.GalleryViewModel(get()) }
     viewModel { com.example.cameraxapp.viewmodel.EditImageViewModel(get()) }
     single { com.example.cameraxapp.core.render.FilterCatalog(androidContext()) }
+    factory<com.example.cameraxapp.ui.editor.EditorImageIo> {
+        com.example.cameraxapp.ui.editor.AndroidEditorImageIo(androidContext())
+    }
+    viewModel {
+        com.example.cameraxapp.ui.editor.EditorViewModel(
+            get(),
+            com.example.cameraxapp.core.render.EditPipeline(get()),
+        )
+    }
 }
