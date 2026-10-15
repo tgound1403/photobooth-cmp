@@ -1,6 +1,9 @@
 package com.example.cameraxapp.core.di
 
+import com.example.cameraxapp.core.analytics.Analytics
+import com.example.cameraxapp.core.analytics.NoOpAnalytics
 import com.example.cameraxapp.data.AppDatabase
+import com.example.cameraxapp.data.billing.BillingRepository
 import com.example.cameraxapp.data.repository.PhotoBoothRepository
 import com.example.cameraxapp.data.repository.RecipeRepository
 import java.io.File
@@ -12,6 +15,8 @@ import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val appModule = module {
+    single<Analytics> { NoOpAnalytics }
+    single { BillingRepository(androidContext(), get()) }
     single { PhotoBoothRepository(androidContext()) }
     single { AppDatabase.getDatabase(androidApplication()) }
     single { RecipeRepository(get<AppDatabase>().recipeDao(), File(androidContext().filesDir, "recipes")) }

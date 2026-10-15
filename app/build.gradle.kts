@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.androidx.media3.common.ktx)
     implementation(libs.androidx.datastore.core)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.billing.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
