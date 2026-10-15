@@ -93,6 +93,7 @@ dependencies {
     implementation(libs.androidx.viewfinder.compose)
 
     implementation(libs.androidx.lifecycle.livedata.ktx)
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.ui)
