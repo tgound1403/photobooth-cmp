@@ -8,13 +8,18 @@ import androidx.room.TypeConverters
 import com.example.cameraxapp.data.converter.DateConverter
 import com.example.cameraxapp.data.converter.StringListConverter
 import com.example.cameraxapp.data.dao.PhotoBoothDao
+import com.example.cameraxapp.data.dao.RecipeDao
 import com.example.cameraxapp.data.migration.PhotoBoothMigrations
+import com.example.cameraxapp.data.migration.RecipeMigrations
 import com.example.cameraxapp.data.model.PhotoBoothEntity
+import com.example.cameraxapp.data.model.RecipeEntity
 
-@Database(entities = [PhotoBoothEntity::class], version = 2)
+@Database(entities = [PhotoBoothEntity::class, RecipeEntity::class], version = 3)
 @TypeConverters(StringListConverter::class, DateConverter::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun photoBoothDao(): PhotoBoothDao
+
+    abstract fun recipeDao(): RecipeDao
 
     companion object {
         @Volatile
@@ -26,7 +31,10 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "app_database"
-                ).addMigrations(PhotoBoothMigrations.MIGRATION_1_2).build()
+                ).addMigrations(
+                    PhotoBoothMigrations.MIGRATION_1_2,
+                    RecipeMigrations.MIGRATION_2_3,
+                ).build()
                 INSTANCE = instance
                 instance
             }
