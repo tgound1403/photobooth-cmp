@@ -3,6 +3,7 @@ package com.example.cameraxapp.ui.viewmodel
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -103,6 +104,12 @@ class PhotoBoothViewModel(
             MutableStateFlow(com.example.cameraxapp.data.model.FrameThemes.CLASSIC_WHITE)
     val selectedTheme: StateFlow<com.example.cameraxapp.data.model.FrameTheme> = _selectedTheme
 
+    private val _customText = MutableStateFlow<String?>(null)
+    val customText: StateFlow<String?> = _customText.asStateFlow()
+
+    private val _backgroundImageUri = MutableStateFlow<Uri?>(null)
+    val backgroundImageUri: StateFlow<Uri?> = _backgroundImageUri.asStateFlow()
+
     fun updateLayout(layout: com.example.cameraxapp.shared.domain.model.PhotoBoothLayout) {
         _selectedLayout.value = layout
         _requiredPhotoCount.value =
@@ -121,6 +128,8 @@ class PhotoBoothViewModel(
     fun clearCapturedImages() {
         _capturedImages.value = emptyList()
         _selectedImages.value = emptySet()
+        _backgroundImageUri.value = null
+        _customText.value = null
     }
 
     fun updateFilter(filter: com.example.cameraxapp.shared.domain.model.ImageFilter) {
@@ -129,6 +138,14 @@ class PhotoBoothViewModel(
 
     fun updateTheme(theme: com.example.cameraxapp.data.model.FrameTheme) {
         _selectedTheme.value = theme
+    }
+
+    fun updateCustomText(text: String?) {
+        _customText.value = text
+    }
+
+    fun updateBackgroundImage(uri: Uri?) {
+        _backgroundImageUri.value = uri
     }
 
     fun addCapturedImage(imagePath: String) {
@@ -159,7 +176,11 @@ class PhotoBoothViewModel(
         viewModelScope.launch {
             _saveState.value = SaveState.Saving
             try {
-                // Use current selected layout, filter, and theme
+                // Use background image if available, otherwise use theme
+                val backgroundSource = _backgroundImageUri.value?.toString()
+                val themeToUse = if (backgroundSource != null) null else _selectedTheme.value
+                
+                // Use current selected layout, filter, theme or background
                 val resultPath =
                         createPhotoBoothImageUseCase
                                 .execute(
@@ -167,8 +188,9 @@ class PhotoBoothViewModel(
                                         imagePaths,
                                         _selectedLayout.value,
                                         _selectedFilter.value,
-                                        null, // backgroundSource
-                                        _selectedTheme.value
+                                        backgroundSource,
+                                        themeToUse,
+                                        _customText.value
                                 )
                                 .getOrThrow()
 
@@ -178,13 +200,37 @@ class PhotoBoothViewModel(
                                 imagePaths = listOf(resultPath),
                                 createdAt = System.currentTimeMillis()
                         )
-                repository.insertPhotoBooth(photoBooth)
+                val photoBoothId = repository.insertPhotoBooth(photoBooth)
+                val savedPhotoBooth = repository.getPhotoBoothById(photoBoothId)
+                _photoBooth.value = savedPhotoBooth
 
                 _saveState.value = SaveState.Success
             } catch (e: Exception) {
                 _saveState.value = SaveState.Error(e.message ?: "Unknown error")
             }
         }
+    }
+    
+    suspend fun createPhotoBoothPreview(
+        context: Context,
+        imagePaths: List<String>,
+        layout: com.example.cameraxapp.shared.domain.model.PhotoBoothLayout,
+        backgroundSource: String?,
+        frameTheme: com.example.cameraxapp.data.model.FrameTheme?,
+        customText: String?
+    ): Result<String> = runCatching {
+        val themeToUse = if (backgroundSource != null) null else frameTheme
+        createPhotoBoothImageUseCase
+            .execute(
+                context,
+                imagePaths,
+                layout,
+                _selectedFilter.value,
+                backgroundSource,
+                themeToUse,
+                customText
+            )
+            .getOrThrow()
     }
 
     fun saveImageWithBg(context: Context, imagePaths: List<String>, background: String) {
@@ -199,7 +245,9 @@ class PhotoBoothViewModel(
                                         imagePaths,
                                         _selectedLayout.value,
                                         _selectedFilter.value,
-                                        background
+                                        background,
+                                        null, // frameTheme
+                                        _customText.value
                                 )
                                 .getOrThrow()
 

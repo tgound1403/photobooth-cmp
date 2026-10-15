@@ -127,8 +127,10 @@ dependencies {
     implementation(libs.koin.androidx.compose.navigation)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
-    // GIF Encoder
-    implementation("com.github.nbadal:android-gif-encoder:v1.2")
+    // GIF Encoder - Using alternative library
+    // Note: Original library com.github.nbadal:android-gif-encoder is no longer available
+    // Temporarily commented out - need to find alternative or implement custom encoder
+    // implementation("com.github.nbadal:android-gif-encoder:1.2")
 
     // Lottie
     implementation("com.airbnb.android:lottie-compose:6.4.0")

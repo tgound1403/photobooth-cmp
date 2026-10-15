@@ -1,5 +1,7 @@
 package com.example.cameraxapp.ui.view
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.runtime.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,9 +29,21 @@ import com.example.cameraxapp.core.navigation.AppRoutes
 import com.example.cameraxapp.ui.components.GlassBox
 import com.example.cameraxapp.ui.theme.NeonCyan
 import com.example.cameraxapp.ui.theme.NeonPurple
+import android.net.Uri
 
 @Composable
 fun HomeScreen(navController: NavController) {
+    // Image picker launcher - opens directly without dialog
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            // Navigate to EditImageScreen with selected image
+            val imagePath = it.toString()
+            navController.navigate(AppRoutes.imageDetail(imagePath))
+        }
+    }
+    
     val infiniteTransition = rememberInfiniteTransition(label = "background")
     val animValue by
     infiniteTransition.animateFloat(
@@ -114,6 +130,14 @@ fun HomeScreen(navController: NavController) {
                     icon = Icons.Default.PhotoLibrary,
                     label = "Thư Viện",
                     onClick = { navController.navigate(AppRoutes.GALLERY) }
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                HomeButton(
+                    icon = Icons.Default.Edit,
+                    label = "Chỉnh Ảnh",
+                    onClick = { imagePickerLauncher.launch("image/*") }
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))

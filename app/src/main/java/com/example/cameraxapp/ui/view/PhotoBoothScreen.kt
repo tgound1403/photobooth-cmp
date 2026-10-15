@@ -24,6 +24,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -87,7 +88,13 @@ fun PhotoBoothScreen(
                 mediaActionSound.play(android.media.MediaActionSound.SHUTTER_CLICK) // Click
                 cameraViewModel.takePhoto(
                     onPhotoCaptured = { uri ->
-                        photoBoothViewModel.addCapturedImage(uri.path.toString())
+                        // Get file path from URI - handle both file:// and content:// URIs
+                        val imagePath = when {
+                            uri.scheme == "file" -> uri.path ?: uri.toString()
+                            uri.scheme == "content" -> uri.toString() // Keep full URI for content://
+                            else -> uri.path ?: uri.toString()
+                        }
+                        photoBoothViewModel.addCapturedImage(imagePath)
                         cameraViewModel.updateCountdown(TIME_TO_CAPTURE)
                         // Check against live value or local constant
                         if (photoBoothViewModel.capturedImages.value.size == PHOTO_LIMIT) {
@@ -112,6 +119,15 @@ fun PhotoBoothScreen(
         }
     }
 
+
+    val view = LocalView.current
+    
+    DisposableEffect(isCapturing) {
+        view.keepScreenOn = isCapturing
+        onDispose {
+            view.keepScreenOn = false
+        }
+    }
 
     Scaffold(
         topBar = {

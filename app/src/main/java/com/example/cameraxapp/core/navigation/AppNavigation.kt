@@ -10,6 +10,7 @@ import com.example.cameraxapp.ui.view.CameraScreen.CameraScreen
 import com.example.cameraxapp.ui.view.EditImageScreen.EditImageScreen
 import com.example.cameraxapp.ui.view.GaleryScreen.GalleryScreen
 import com.example.cameraxapp.ui.view.NoPermissionGrantedScreen
+import com.example.cameraxapp.ui.view.PhotoBoothEditScreen
 import com.example.cameraxapp.ui.view.PhotoBoothResultScreen
 import com.example.cameraxapp.ui.view.PhotoBoothScreen
 import com.example.cameraxapp.ui.view.PhotoBoothSelectionScreen
@@ -59,8 +60,31 @@ fun AppNavigation() {
                 route = AppRoutes.IMAGE_DETAIL,
                 arguments = listOf(navArgument("imagePath") { type = NavType.StringType })
         ) { backStackEntry ->
-            val imagePath = backStackEntry.arguments?.getString("imagePath")
-            EditImageScreen(imagePath ?: "", navController)
+            val encodedPath = backStackEntry.arguments?.getString("imagePath") ?: ""
+            // Decode URI if it was encoded
+            val imagePath = try {
+                android.net.Uri.decode(encodedPath)
+            } catch (e: Exception) {
+                encodedPath
+            }
+            EditImageScreen(imagePath, navController)
+        }
+        composable(
+                route = AppRoutes.PHOTO_BOOTH_EDIT,
+                arguments = listOf(navArgument("imagePaths") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val encodedPaths = backStackEntry.arguments?.getString("imagePaths") ?: ""
+            // Decode và parse danh sách ảnh (comma-separated hoặc JSON)
+            val imagePaths = try {
+                if (encodedPaths.contains(",")) {
+                    encodedPaths.split(",").map { android.net.Uri.decode(it) }
+                } else {
+                    listOf(android.net.Uri.decode(encodedPaths))
+                }
+            } catch (e: Exception) {
+                emptyList()
+            }
+            PhotoBoothEditScreen(imagePaths, navController, viewmodel)
         }
     }
 }
@@ -75,13 +99,22 @@ object AppRoutes {
     const val PHOTO_BOOTH_SELECTION = "photoBoothSelection"
     const val FRAME_SELECTION = "frameSelection"
     const val PHOTO_BOOTH_RESULT = "photoBoothResult/{photoBoothId}"
+    const val PHOTO_BOOTH_EDIT = "photoBoothEdit/{imagePaths}"
     const val IMAGE_DETAIL = "imageDetail/{imagePath}"
     
     fun photoBoothResult(photoBoothId: Long): String {
         return "photoBoothResult/$photoBoothId"
     }
     
+    fun photoBoothEdit(imagePaths: List<String>): String {
+        // Encode danh sách ảnh thành comma-separated string
+        val encoded = imagePaths.joinToString(",") { android.net.Uri.encode(it) }
+        return "photoBoothEdit/$encoded"
+    }
+    
     fun imageDetail(imagePath: String): String {
-        return "imageDetail/$imagePath"
+        // Encode the URI path to handle special characters like : and /
+        val encoded = android.net.Uri.encode(imagePath)
+        return "imageDetail/$encoded"
     }
 }

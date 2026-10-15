@@ -2,8 +2,10 @@ package com.example.cameraxapp.ui.view.EditImageScreen
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,8 +32,10 @@ import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeviceThermostat
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,6 +49,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -66,8 +71,11 @@ import com.airbnb.lottie.compose.*
 import com.example.cameraxapp.core.enum.EditType
 import com.example.cameraxapp.core.enum.ImageInfo
 import com.example.cameraxapp.core.enum.TabType
+import com.example.cameraxapp.data.model.FrameTheme
+import com.example.cameraxapp.data.model.FrameThemes
 import com.example.cameraxapp.data.model.Preset
 import com.example.cameraxapp.ui.components.GlassButton
+import com.example.cameraxapp.ui.view.DeviceImagePicker
 import com.example.cameraxapp.viewmodel.EditImageViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -76,6 +84,17 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import com.example.cameraxapp.core.navigation.AppRoutes
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.text.input.ImeAction
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,10 +114,154 @@ fun EditImageScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // State Management Fix: Use remember { mutableStateOf } for bitmaps to trigger recomposition
-    val originalBitmap by remember { mutableStateOf<Bitmap>(BitmapFactory.decodeFile(imagePath)) }
-    var temporaryBitmap by remember { mutableStateOf(originalBitmap) }
-    var filteredBitmap by remember { mutableStateOf(originalBitmap) }
+    // Helper function to load bitmap from path or URI
+    suspend fun loadBitmap(pathOrUri: String): Bitmap? = withContext(Dispatchers.IO) {
+        try {
+            when {
+                // Check if it's a URI string (content:// or file://)
+                pathOrUri.startsWith("content://") || pathOrUri.startsWith("file://") -> {
+                    val uri = Uri.parse(pathOrUri)
+                    context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                        BitmapFactory.decodeStream(inputStream)
+                    }
+                }
+                // Check if it's a file path
+                else -> {
+                    // Try direct file path first
+                    val file = java.io.File(pathOrUri)
+                    if (file.exists() && file.canRead()) {
+                        BitmapFactory.decodeFile(file.absolutePath)
+                    } else {
+                        // Try as file:// URI
+                        try {
+                            val fileUri = Uri.fromFile(file)
+                            context.contentResolver.openInputStream(fileUri)?.use { inputStream ->
+                                BitmapFactory.decodeStream(inputStream)
+                            }
+                        } catch (e: Exception) {
+                            // Last resort: try parsing as URI string
+                            try {
+                                val uri = Uri.parse(pathOrUri)
+                                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                                    BitmapFactory.decodeStream(inputStream)
+                                }
+                            } catch (e2: Exception) {
+                                android.util.Log.e("EditImageScreen", "Failed to load bitmap: ${e2.message}", e2)
+                                null
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("EditImageScreen", "Error loading bitmap from: $pathOrUri", e)
+            null
+        }
+    }
+
+    // State Management Fix: Load bitmap asynchronously
+    var originalBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var temporaryBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var filteredBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var isLoadingBitmap by remember { mutableStateOf(true) }
+    
+    // Load bitmap in coroutine
+    LaunchedEffect(imagePath) {
+        isLoadingBitmap = true
+        originalBitmap = loadBitmap(imagePath)
+        temporaryBitmap = originalBitmap
+        filteredBitmap = originalBitmap
+        isLoadingBitmap = false
+    }
+    
+    // Show loading or error state
+    if (isLoadingBitmap) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Black,
+                        titleContentColor = Color.White,
+                        navigationIconContentColor = Color.White
+                    ),
+                    title = { Text("Loading...") },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "Loading image...",
+                    color = Color.White,
+                    fontSize = 18.sp
+                )
+            }
+        }
+        return
+    }
+    
+    // Early return if bitmap is null
+    if (originalBitmap == null) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Black,
+                        titleContentColor = Color.White,
+                        navigationIconContentColor = Color.White
+                    ),
+                    title = { Text("Error") },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Default.Cancel,
+                        contentDescription = "Error",
+                        tint = Color.Red,
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Could not load image",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Please check if the file exists",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+        return
+    }
 
     // Debounce Job
     var processingJob by remember { mutableStateOf<Job?>(null) }
@@ -124,6 +287,17 @@ fun EditImageScreen(
     var selectedScratch by remember { mutableStateOf(scratches[0]) }
     var selectedTab by remember { mutableStateOf(tabs[0]) }
     var selectedInfo by remember { mutableStateOf(ImageInfo.NONE) }
+    
+    // Frame background state
+    var selectedFrameTheme by remember { mutableStateOf<FrameTheme?>(null) }
+    var selectedBackgroundImageUri by remember { mutableStateOf<Uri?>(null) }
+    var showImagePicker by remember { mutableStateOf(false) }
+    
+    // Text overlay state
+    var customText by remember { mutableStateOf<String?>(null) }
+    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+    val defaultText = remember { dateFormat.format(Date()) }
+    var textFieldValue by remember { mutableStateOf(defaultText) }
 
     var brightness by remember { mutableFloatStateOf(0f) }
     var contrast by remember { mutableFloatStateOf(0f) }
@@ -232,17 +406,96 @@ fun EditImageScreen(
     }
 
     fun onAcceptChangeInfo() {
-        filteredBitmap = temporaryBitmap
+        temporaryBitmap?.let { filteredBitmap = it }
         selectedInfo = ImageInfo.NONE
     }
 
     fun onCancelChangeInfo() {
         selectedInfo = ImageInfo.NONE
-        temporaryBitmap = filteredBitmap
+        filteredBitmap?.let { temporaryBitmap = it }
+    }
+
+    // Helper function to apply all basic edits (brightness, contrast, etc.)
+    suspend fun applyAllBasicEdits(baseBitmap: Bitmap): Bitmap {
+        var result = baseBitmap
+        
+        // Apply basic edits in order
+        if (brightness != 0f) {
+            result = viewmodel.applyBrightness(result, brightness)
+        }
+        if (contrast != 0f) {
+            result = viewmodel.applyContrast(result, contrast)
+        }
+        if (saturation != 0f) {
+            result = viewmodel.applySaturation(result, saturation)
+        }
+        if (temperature != 0f) {
+            result = viewmodel.applyTemperature(result, temperature)
+        }
+        if (sharpness != 0f) {
+            result = viewmodel.applySharpness(result, sharpness)
+        }
+        if (highlight != 0f) {
+            result = viewmodel.applyHighlight(result, highlight)
+        }
+        if (shadow != 0f) {
+            result = viewmodel.applyShadow(result, shadow)
+        }
+        if (grain != 0f) {
+            result = viewmodel.applyGrain(result, grain)
+        }
+        if (vignette != 0f) {
+            result = viewmodel.applyVignette(result, vignette)
+        }
+        if (chromaticAberration != 0f) {
+            result = viewmodel.applyChromaticAberration(result, chromaticAberration)
+        }
+        
+        return result
+    }
+    
+    // Helper function to apply all selected edits sequentially
+    suspend fun applyAllEdits(baseBitmap: Bitmap): Bitmap {
+        var result = baseBitmap
+        
+        // Apply basic edits first (brightness, contrast, etc.)
+        result = applyAllBasicEdits(result)
+        
+        // Apply filter (color correction)
+        if (selectedFilter.name != "None") {
+            result = viewmodel.applyPresetFilter(result, selectedFilter.matrix)
+        }
+        
+        // Apply light leak
+        if (selectedLightLeak != lightLeaks[0]) {
+            result = viewmodel.applyLightLeak(result, selectedLightLeak)
+        }
+        
+        // Apply distortion
+        if (selectedDistortion != distortions[0]) {
+            result = viewmodel.applyDistortion(result, selectedDistortion)
+        }
+        
+        // Apply scratch
+        if (selectedScratch != scratches[0]) {
+            result = viewmodel.applyScratch(result, selectedScratch)
+        }
+        
+        return result
     }
 
     @Composable
     fun BasicEditDetail() {
+        val currentBitmap = filteredBitmap
+        if (currentBitmap == null) {
+            Text(
+                "Error: Could not load image",
+                color = Color.White,
+                modifier = Modifier.padding(16.dp)
+            )
+            return
+        }
+        
         when (selectedInfo) {
             ImageInfo.BRIGHTNESS ->
                 EditSlider(
@@ -255,7 +508,7 @@ fun EditImageScreen(
                             scope.launch {
                                 temporaryBitmap =
                                     viewmodel.applyBrightness(
-                                        filteredBitmap,
+                                        currentBitmap,
                                         brightness
                                     )
                                 isProcessing = false
@@ -277,7 +530,7 @@ fun EditImageScreen(
                             scope.launch {
                                 temporaryBitmap =
                                     viewmodel.applyContrast(
-                                        filteredBitmap,
+                                        currentBitmap,
                                         contrast
                                     )
                                 isProcessing = false
@@ -299,7 +552,7 @@ fun EditImageScreen(
                             scope.launch {
                                 temporaryBitmap =
                                     viewmodel.applySaturation(
-                                        filteredBitmap,
+                                        currentBitmap,
                                         saturation
                                     )
                                 isProcessing = false
@@ -321,7 +574,7 @@ fun EditImageScreen(
                             scope.launch {
                                 temporaryBitmap =
                                     viewmodel.applyTemperature(
-                                        filteredBitmap,
+                                        currentBitmap,
                                         temperature
                                     )
                                 isProcessing = false
@@ -343,7 +596,7 @@ fun EditImageScreen(
                             scope.launch {
                                 temporaryBitmap =
                                     viewmodel.applySharpness(
-                                        filteredBitmap,
+                                        currentBitmap,
                                         sharpness
                                     )
                                 isProcessing = false
@@ -365,7 +618,7 @@ fun EditImageScreen(
                             scope.launch {
                                 temporaryBitmap =
                                     viewmodel.applyHighlight(
-                                        filteredBitmap,
+                                        currentBitmap,
                                         highlight
                                     )
                                 isProcessing = false
@@ -386,7 +639,7 @@ fun EditImageScreen(
                         processingJob =
                             scope.launch {
                                 temporaryBitmap =
-                                    viewmodel.applyShadow(filteredBitmap, shadow)
+                                    viewmodel.applyShadow(currentBitmap, shadow)
                                 isProcessing = false
                             }
                     },
@@ -405,7 +658,7 @@ fun EditImageScreen(
                         processingJob =
                             scope.launch {
                                 temporaryBitmap =
-                                    viewmodel.applyGrain(filteredBitmap, grain)
+                                    viewmodel.applyGrain(currentBitmap, grain)
                                 isProcessing = false
                             }
                     },
@@ -425,7 +678,7 @@ fun EditImageScreen(
                             scope.launch {
                                 temporaryBitmap =
                                     viewmodel.applyVignette(
-                                        filteredBitmap,
+                                        currentBitmap,
                                         vignette
                                     )
                                 isProcessing = false
@@ -447,7 +700,7 @@ fun EditImageScreen(
                             scope.launch {
                                 temporaryBitmap =
                                     viewmodel.applyChromaticAberration(
-                                        filteredBitmap,
+                                        currentBitmap,
                                         chromaticAberration
                                     )
                                 isProcessing = false
@@ -459,6 +712,204 @@ fun EditImageScreen(
                 )
 
             ImageInfo.NONE -> Unit
+        }
+    }
+
+    @Composable
+    fun FrameBackgroundSelector() {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            // Upload image button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                GlassButton(
+                    onClick = { showImagePicker = true },
+                    modifier = Modifier.weight(1f),
+                    text = if (selectedBackgroundImageUri != null) "Đổi ảnh nền" else "Chọn ảnh nền"
+                )
+                if (selectedBackgroundImageUri != null) {
+                    IconButton(
+                        onClick = {
+                            selectedBackgroundImageUri = null
+                            selectedFrameTheme = null
+                            // Reset frame
+                            originalBitmap?.let { filteredBitmap = it }
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Xóa ảnh nền",
+                            tint = Color.White
+                        )
+                    }
+                }
+            }
+            
+            // Preview selected background image
+            selectedBackgroundImageUri?.let { uri ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.White.copy(alpha = 0.1f))
+                ) {
+                    AsyncImage(
+                        model = uri,
+                        contentDescription = "Background preview",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                "Hoặc chọn theme màu",
+                color = Color.White,
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            
+            // Theme selection
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp)
+            ) {
+                items(FrameThemes.ALL_THEMES) { theme ->
+                    val isSelected = selectedFrameTheme?.id == theme.id && selectedBackgroundImageUri == null
+                    Box(
+                        modifier = Modifier
+                            .width(80.dp)
+                            .height(100.dp)
+                            .background(
+                                color = Color(theme.backgroundColor),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .clickable {
+                                selectedFrameTheme = theme
+                                selectedBackgroundImageUri = null
+                                // Apply theme - margin = 0 để nền là nền của ảnh, không tạo frame
+                                originalBitmap?.let { bitmap ->
+                                    isProcessing = true
+                                    scope.launch {
+                                        filteredBitmap = viewmodel.applyFrameBackground(
+                                            context,
+                                            bitmap,
+                                            theme,
+                                            null,
+                                            margin = 0f,
+                                            customText = if (textFieldValue.isNotBlank() && textFieldValue != defaultText) textFieldValue else null
+                                        )
+                                        isProcessing = false
+                                    }
+                                }
+                            }
+                            .then(
+                                if (isSelected) {
+                                    Modifier.border(2.dp, Color.Cyan, RoundedCornerShape(8.dp))
+                                } else Modifier
+                            )
+                            .padding(8.dp),
+                        contentAlignment = Alignment.BottomStart
+                    ) {
+                        if (isSelected) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(20.dp)
+                                    .background(
+                                        Color.Cyan,
+                                        shape = androidx.compose.foundation.shape.CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("✓", color = Color.Black, fontSize = 12.sp)
+                            }
+                        }
+                        Text(
+                            text = theme.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (theme.backgroundColor == android.graphics.Color.WHITE ||
+                                theme.backgroundColor == android.graphics.Color.parseColor("#F5E6D3")
+                            ) Color.Black else Color.White,
+                            maxLines = 2
+                        )
+                    }
+                }
+            }
+            
+            // Text input section
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                "Chỉnh sửa dòng chữ trên ảnh",
+                color = Color.White,
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            OutlinedTextField(
+                value = textFieldValue,
+                onValueChange = { newValue ->
+                    textFieldValue = newValue
+                    customText = if (newValue.isBlank() || newValue == defaultText) null else newValue
+                    // Apply text to current bitmap
+                    filteredBitmap?.let { bitmap ->
+                        isProcessing = true
+                        scope.launch {
+                            val textToApply = if (newValue.isBlank() || newValue == defaultText) null else newValue
+                            if (selectedFrameTheme != null || selectedBackgroundImageUri != null) {
+                                // If background is applied, reapply with new text - margin = 0
+                                originalBitmap?.let { original ->
+                                    filteredBitmap = viewmodel.applyFrameBackground(
+                                        context,
+                                        original,
+                                        selectedFrameTheme,
+                                        selectedBackgroundImageUri,
+                                        margin = 0f,
+                                        customText = textToApply
+                                    )
+                                }
+                            } else {
+                                // Apply text directly to bitmap
+                                filteredBitmap = if (textToApply != null) {
+                                    viewmodel.applyTextToBitmap(bitmap, textToApply)
+                                } else {
+                                    originalBitmap
+                                }
+                            }
+                            isProcessing = false
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = { 
+                    Text(
+                        "Nhập text (để trống để dùng thời gian mặc định)",
+                        color = Color.White.copy(alpha = 0.7f)
+                    ) 
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White.copy(alpha = 0.8f),
+                    focusedBorderColor = Color.Cyan,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                    focusedLabelColor = Color.Cyan,
+                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f)
+                ),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        // Text is already updated via onValueChange
+                    }
+                ),
+                singleLine = true
+            )
         }
     }
 
@@ -487,23 +938,29 @@ fun EditImageScreen(
             }
 
         fun onSelectItem(selection: Any) {
+            val baseBitmap = originalBitmap ?: return // Early return if bitmap is null
+            
             when (editType) {
                 EditType.FILTER -> {
                     selectedFilter = selection as Preset
-                    filteredBitmap =
-                        viewmodel.applyPresetFilter(originalBitmap, selectedFilter.matrix)
+                    isProcessing = true
+                    scope.launch {
+                        // Apply all edits from original bitmap to ensure all edits are included
+                        filteredBitmap = applyAllEdits(baseBitmap)
+                        isProcessing = false
+                    }
                 }
 
                 EditType.FRAME -> {
-                    selectedFrame = (selection as String)
-                    filteredBitmap = viewmodel.createPolaroidFrameWithDate(context, originalBitmap)
+                    // Frame background is handled separately in FrameBackgroundSelector
                 }
 
                 EditType.LIGHT_LEAK -> {
                     selectedLightLeak = (selection as String)
                     isProcessing = true
                     scope.launch {
-                        filteredBitmap = viewmodel.applyLightLeak(originalBitmap, selectedLightLeak)
+                        // Apply all edits from original bitmap to ensure all edits are included
+                        filteredBitmap = applyAllEdits(baseBitmap)
                         isProcessing = false
                     }
                 }
@@ -512,8 +969,8 @@ fun EditImageScreen(
                     selectedDistortion = (selection as String)
                     isProcessing = true
                     scope.launch {
-                        filteredBitmap =
-                            viewmodel.applyDistortion(originalBitmap, selectedDistortion)
+                        // Apply all edits from original bitmap to ensure all edits are included
+                        filteredBitmap = applyAllEdits(baseBitmap)
                         isProcessing = false
                     }
                 }
@@ -522,7 +979,9 @@ fun EditImageScreen(
                     selectedScratch = (selection as String)
                     isProcessing = true
                     scope.launch {
-                        filteredBitmap = viewmodel.applyScratch(originalBitmap, selectedScratch)
+                        // Apply all edits from original bitmap to ensure all edits are included
+                        filteredBitmap = applyAllEdits(baseBitmap)
+                        isProcessing = false
                     }
                 }
 
@@ -536,12 +995,15 @@ fun EditImageScreen(
             }
         }
 
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.height(160.dp)
-        ) {
+        if (editType == EditType.FRAME) {
+            FrameBackgroundSelector()
+        } else {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.height(160.dp)
+            ) {
             items(items.size) {
                 Row {
                     Box(
@@ -561,57 +1023,9 @@ fun EditImageScreen(
                             EditType.FILTER ->
                                 FilterItem(filter = items[it] as Preset, imagePath = imagePath)
 
-                            EditType.FRAME ->
-                                Box(
-                                    modifier =
-                                        Modifier
-                                            .width(96.dp)
-                                            .height(120.dp)
-                                            .background(
-                                                color = Color.White,
-                                                shape = RoundedCornerShape(8.dp)
-                                            )
-                                            .padding(8.dp)
-                                ) {
-                                    Column {
-                                        Box(
-                                            modifier =
-                                                Modifier
-                                                    .size(80.dp)
-                                                    .background(
-                                                        shape =
-                                                            RoundedCornerShape(
-                                                                8.dp
-                                                            ),
-                                                        color = Color.Black
-                                                    )
-                                        ) {
-                                            AsyncImage(
-                                                contentScale = ContentScale.Crop,
-                                                modifier =
-                                                    Modifier
-                                                        .fillMaxSize()
-                                                        .clip(
-                                                            shape =
-                                                                RoundedCornerShape(
-                                                                    8.dp
-                                                                )
-                                                        ),
-                                                model = imagePath,
-                                                contentDescription = null,
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            frames[0],
-                                            fontSize =
-                                                MaterialTheme.typography
-                                                    .bodyLarge
-                                                    .fontSize,
-                                            fontWeight = FontWeight.Black
-                                        )
-                                    }
-                                }
+                            EditType.FRAME -> {
+                                // Frame background selector is shown separately
+                            }
 
                             EditType.LIGHT_LEAK, EditType.DISTORTION, EditType.SCRATCH ->
                                 Box(
@@ -673,6 +1087,34 @@ fun EditImageScreen(
                 }
             }
         }
+        }
+    }
+
+    // Image picker dialog
+    if (showImagePicker) {
+        DeviceImagePicker(
+            onImageSelected = { uri ->
+                selectedBackgroundImageUri = uri
+                selectedFrameTheme = null
+                showImagePicker = false
+                // Apply background image - margin = 0 để nền là nền của ảnh, không tạo frame
+                originalBitmap?.let { bitmap ->
+                    isProcessing = true
+                    scope.launch {
+                        filteredBitmap = viewmodel.applyFrameBackground(
+                            context,
+                            bitmap,
+                            null,
+                            uri,
+                            margin = 0f,
+                            customText = if (textFieldValue.isNotBlank() && textFieldValue != defaultText) textFieldValue else null
+                        )
+                        isProcessing = false
+                    }
+                }
+            },
+            onDismiss = { showImagePicker = false }
+        )
     }
 
     Scaffold(
@@ -707,33 +1149,77 @@ fun EditImageScreen(
                                 )
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                                 .clickable {
+                                    val baseBitmap = originalBitmap
+                                    if (baseBitmap == null) {
+                                        Toast.makeText(
+                                            context,
+                                            "No image to save",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        return@clickable
+                                    }
+                                    isProcessing = true
                                     CoroutineScope(Dispatchers.IO).launch {
-                                        viewmodel.saveBitmapToDevice(
-                                            filteredBitmap,
+                                        // Apply all edits from original to ensure everything is included
+                                        val bitmapToSave = applyAllEdits(baseBitmap)
+                                        
+                                        // Apply frame background if selected
+                                        val finalBitmap = if (selectedFrameTheme != null || selectedBackgroundImageUri != null) {
+                                            viewmodel.applyFrameBackground(
+                                                context,
+                                                bitmapToSave,
+                                                selectedFrameTheme,
+                                                selectedBackgroundImageUri,
+                                                margin = 0f,
+                                                customText = if (textFieldValue.isNotBlank() && textFieldValue != defaultText) textFieldValue else null
+                                            )
+                                        } else {
+                                            bitmapToSave
+                                        }
+                                        
+                                        // Apply overlays if any
+                                        val bitmapWithOverlays = if (viewmodel.overlays.isNotEmpty()) {
+                                            viewmodel.applyOverlaysToBitmap(finalBitmap)
+                                        } else {
+                                            finalBitmap
+                                        }
+                                        
+                                        val savedUri = viewmodel.saveBitmapToDevice(
+                                            context,
+                                            bitmapWithOverlays,
                                             imagePath
                                         )
-                                            .apply {
-                                                val result = this
-                                                withContext(
-                                                    Dispatchers.Main
-                                                ) {
-                                                    if (result) {
-                                                        Toast.makeText(
-                                                            context,
-                                                            "Successfully Saved",
-                                                            Toast.LENGTH_SHORT
-                                                        )
-                                                            .show()
-                                                    } else {
-                                                        Toast.makeText(
-                                                            context,
-                                                            "Failed on Save",
-                                                            Toast.LENGTH_SHORT
-                                                        )
-                                                            .show()
-                                                    }
+                                        withContext(Dispatchers.Main) {
+                                            isProcessing = false
+                                            if (savedUri != null) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Successfully Saved",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                // Navigate to Result screen (Image Detail) with saved image
+                                                try {
+                                                    val route = AppRoutes.imageDetail(savedUri)
+                                                    android.util.Log.d("EditImageScreen", "Navigating to: $route with savedUri: $savedUri")
+                                                    // Pop current screen and navigate to result
+                                                    navController.popBackStack()
+                                                    navController.navigate(route)
+                                                } catch (e: Exception) {
+                                                    android.util.Log.e("EditImageScreen", "Navigation error: ${e.message}", e)
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Saved but navigation failed: ${e.message}",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 }
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Failed on Save",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
                                             }
+                                        }
                                     }
                                 }
                     )
@@ -791,6 +1277,7 @@ fun EditImageScreen(
                             // Sticker Button
                             GlassButton(
                                 onClick = {
+                                    val currentBitmap = filteredBitmap ?: return@GlassButton
                                     // Add a random sticker to center
                                     val sticker = viewmodel.stickers.random()
                                     viewmodel.addOverlay(
@@ -799,13 +1286,13 @@ fun EditImageScreen(
                                                 com.example.cameraxapp.data.model
                                                     .OverlayType.STICKER,
                                             content = sticker,
-                                            offsetX = filteredBitmap.width / 2f,
-                                            offsetY = filteredBitmap.height / 2f
+                                            offsetX = currentBitmap.width / 2f,
+                                            offsetY = currentBitmap.height / 2f
                                         )
                                     )
                                     scope.launch {
                                         filteredBitmap =
-                                            viewmodel.applyOverlaysToBitmap(filteredBitmap)
+                                            viewmodel.applyOverlaysToBitmap(currentBitmap)
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
@@ -815,6 +1302,7 @@ fun EditImageScreen(
                             // Text Button
                             GlassButton(
                                 onClick = {
+                                    val currentBitmap = filteredBitmap ?: return@GlassButton
                                     // Add sample text
                                     viewmodel.addOverlay(
                                         com.example.cameraxapp.data.model.StickerOverlay(
@@ -822,13 +1310,13 @@ fun EditImageScreen(
                                                 com.example.cameraxapp.data.model
                                                     .OverlayType.TEXT,
                                             content = "Your Text",
-                                            offsetX = filteredBitmap.width / 2f,
-                                            offsetY = filteredBitmap.height / 2f
+                                            offsetX = currentBitmap.width / 2f,
+                                            offsetY = currentBitmap.height / 2f
                                         )
                                     )
                                     scope.launch {
                                         filteredBitmap =
-                                            viewmodel.applyOverlaysToBitmap(filteredBitmap)
+                                            viewmodel.applyOverlaysToBitmap(currentBitmap)
                                     }
                                 },
                                 modifier = Modifier.weight(1f),
@@ -861,6 +1349,7 @@ fun EditImageScreen(
                                                 shape = RoundedCornerShape(8.dp)
                                             )
                                             .clickable {
+                                                val currentBitmap = filteredBitmap ?: return@clickable
                                                 viewmodel.addOverlay(
                                                     com.example.cameraxapp.data
                                                         .model.StickerOverlay(
@@ -873,11 +1362,11 @@ fun EditImageScreen(
                                                                     .STICKER,
                                                             content = sticker,
                                                             offsetX =
-                                                                filteredBitmap
+                                                                currentBitmap
                                                                     .width /
                                                                         2f,
                                                             offsetY =
-                                                                filteredBitmap
+                                                                currentBitmap
                                                                     .height /
                                                                         2f
                                                         )
@@ -886,7 +1375,7 @@ fun EditImageScreen(
                                                     filteredBitmap =
                                                         viewmodel
                                                             .applyOverlaysToBitmap(
-                                                                filteredBitmap
+                                                                currentBitmap
                                                             )
                                                 }
                                             },

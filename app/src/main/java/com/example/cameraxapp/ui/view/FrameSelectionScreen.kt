@@ -132,34 +132,6 @@ fun FrameSelectionScreen(navController: NavController, viewModel: PhotoBoothView
                             }
                     )
                 }
-
-                // Theme Selection
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                            "Chọn giao diện khung",
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
-
-                items(com.example.cameraxapp.data.model.FrameThemes.ALL_THEMES.chunked(2)) {
-                        themeRow ->
-                    Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        themeRow.forEach { theme ->
-                            ThemeOption(
-                                    theme = theme,
-                                    isSelected = viewModel.selectedTheme.value.id == theme.id,
-                                    onClick = { viewModel.updateTheme(theme) },
-                                    modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-                }
             }
         }
     }
@@ -183,48 +155,3 @@ fun FrameOption(label: String, description: String, color: Color, onClick: () ->
     }
 }
 
-@Composable
-fun ThemeOption(
-        theme: com.example.cameraxapp.data.model.FrameTheme,
-        isSelected: Boolean,
-        onClick: () -> Unit,
-        modifier: Modifier = Modifier
-) {
-    Box(
-            modifier =
-                    modifier.aspectRatio(1.5f)
-                            .background(
-                                    color = Color(theme.backgroundColor),
-                                    shape = RoundedCornerShape(12.dp)
-                            )
-                            .clickable(onClick = onClick)
-                            .padding(12.dp),
-            contentAlignment = Alignment.BottomStart
-    ) {
-        if (isSelected) {
-            Box(
-                    modifier =
-                            Modifier.align(Alignment.TopEnd)
-                                    .size(24.dp)
-                                    .background(
-                                            NeonCyan,
-                                            shape = androidx.compose.foundation.shape.CircleShape
-                                    ),
-                    contentAlignment = Alignment.Center
-            ) { Text("✓", color = Color.White) }
-        }
-        Text(
-                text = theme.name,
-                style = MaterialTheme.typography.labelSmall,
-                color =
-                        if (theme.backgroundColor == android.graphics.Color.WHITE ||
-                                        theme.backgroundColor ==
-                                                android.graphics.Color.parseColor("#F5E6D3")
-                        ) {
-                            Color.Black
-                        } else {
-                            Color.White
-                        }
-        )
-    }
-}

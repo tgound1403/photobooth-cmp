@@ -23,15 +23,11 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.cameraxapp.core.navigation.AppRoutes
-import com.example.cameraxapp.shared.domain.model.ImageFilter
-import com.example.cameraxapp.shared.domain.model.PhotoBoothLayout
 import com.example.cameraxapp.ui.components.DefaultAppBar
 import com.example.cameraxapp.ui.components.GlassButton
 import com.example.cameraxapp.ui.theme.DeepBlack
 import com.example.cameraxapp.ui.theme.NeonCyan
-import com.example.cameraxapp.ui.theme.NeonPurple
 import com.example.cameraxapp.ui.viewmodel.PhotoBoothViewModel
-import kotlinx.coroutines.delay
 
 @Composable
 fun PhotoBoothSelectionScreen(
@@ -43,6 +39,7 @@ fun PhotoBoothSelectionScreen(
     val saveState by viewModel.saveState.collectAsState()
     val selectedLayout by viewModel.selectedLayout.collectAsState()
     val selectedFilter by viewModel.selectedFilter.collectAsState()
+    val requiredPhotoCount by viewModel.requiredPhotoCount.collectAsState()
 
     // Animation state
     val alphaAnim = remember { Animatable(0f) }
@@ -51,14 +48,8 @@ fun PhotoBoothSelectionScreen(
         alphaAnim.animateTo(1f, animationSpec = tween(1000))
     }
 
-    // LaunchedEffect to navigate when save is successful
-    LaunchedEffect(saveState) {
-        if (saveState is PhotoBoothViewModel.SaveState.Success) {
-            navController.navigate(AppRoutes.GALLERY) {
-                popUpTo(AppRoutes.MAIN)
-            }
-        }
-    }
+    // Navigate to Edit screen when images are selected
+    // Removed LaunchedEffect for saveState - will navigate to Edit instead
 
     Scaffold(
         topBar = {
@@ -76,14 +67,14 @@ fun PhotoBoothSelectionScreen(
                 GlassButton(
                     onClick = {
                         val images = selectedImages.toList()
-                        if (images.size == viewModel.requiredPhotoCount.value) {
-                            val context = navController.context
-                            viewModel.saveImages(context, images)
+                        if (images.size == requiredPhotoCount) {
+                            // Navigate to Edit screen với danh sách ảnh đã chọn
+                            navController.navigate(AppRoutes.photoBoothEdit(images))
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    text = "Xem Kết Quả",
-                    enabled = selectedImages.size == viewModel.requiredPhotoCount.value
+                    text = "Chỉnh Sửa",
+                    enabled = selectedImages.size == requiredPhotoCount
                 )
             }
         },

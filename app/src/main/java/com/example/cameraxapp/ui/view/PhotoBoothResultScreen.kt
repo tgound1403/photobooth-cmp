@@ -133,31 +133,27 @@ fun PhotoBoothResultScreen(
                     )
                 }
 
-                // Images Layout (2x2 Grid to maintain 3:4 Aspect Ratio)
-                Column(
+                // Photo Booth Result Image
+                Box(
                         modifier = Modifier.fillMaxSize().padding(16.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        contentAlignment = Alignment.Center
                 ) {
                     val images = photoBooth?.imagePaths ?: emptyList()
-                    if (images.size >= 4) {
-                        // Row 1
-                        Row(
-                                modifier = Modifier.weight(1f),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            ResultImageItem(images[0], Modifier.weight(1f))
-                            ResultImageItem(images[1], Modifier.weight(1f))
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        // Row 2
-                        Row(
-                                modifier = Modifier.weight(1f),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            ResultImageItem(images[2], Modifier.weight(1f))
-                            ResultImageItem(images[3], Modifier.weight(1f))
-                        }
+                    if (images.isNotEmpty()) {
+                        // Hiển thị ảnh photo booth đã tạo (chỉ có 1 ảnh)
+                        AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                        .data(images[0])
+                                        .crossfade(true)
+                                        .build(),
+                                contentDescription = "Photo booth result",
+                                modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(16.dp)),
+                                contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        Text("Không có ảnh", color = Color.White)
                     }
                 }
             }

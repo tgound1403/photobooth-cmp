@@ -1,13 +1,16 @@
 package com.example.cameraxapp.viewmodel
 
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.LightingColorFilter
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
@@ -16,15 +19,26 @@ import android.graphics.RadialGradient
 import android.graphics.Rect
 import android.graphics.Shader
 import android.graphics.Typeface
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.util.Log
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.ViewModel
+import coil.ImageLoader
+import coil.request.ImageRequest
 import com.example.cameraxapp.core.enum.EditType
 import com.example.cameraxapp.core.enum.ImageInfo
 import com.example.cameraxapp.core.enum.TabType
+import com.example.cameraxapp.data.model.FrameTheme
 import com.example.cameraxapp.data.model.OverlayType
 import com.example.cameraxapp.data.model.Preset
 import com.example.cameraxapp.data.model.StickerOverlay
+import com.example.cameraxapp.data.model.ThemePattern
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.random.Random
@@ -35,6 +49,12 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withTranslation
 
 class EditImageViewModel : ViewModel() {
+    /**
+     * Một số nguồn ảnh (vd: decode từ file) có thể có config = null.
+     * Để tránh crash khi dùng bitmap.config!!, luôn fallback về ARGB_8888.
+     */
+    private fun Bitmap.safeConfig(): Bitmap.Config = this.config ?: Bitmap.Config.ARGB_8888
+
     val photoEditFeatures =
         listOf(
             EditType.FILTER,
@@ -313,7 +333,7 @@ class EditImageViewModel : ViewModel() {
 
             val paint = Paint().apply { colorFilter = ColorMatrixColorFilter(colorMatrix) }
 
-            val resultBitmap = createBitmap(bitmap.width, bitmap.height, bitmap.config!!)
+            val resultBitmap = createBitmap(bitmap.width, bitmap.height, bitmap.safeConfig())
             Canvas(resultBitmap).drawBitmap(bitmap, 0f, 0f, paint)
             resultBitmap
         }
@@ -328,7 +348,7 @@ class EditImageViewModel : ViewModel() {
 
             val paint = Paint().apply { colorFilter = ColorMatrixColorFilter(colorMatrix) }
 
-            val resultBitmap = createBitmap(bitmap.width, bitmap.height, bitmap.config!!)
+            val resultBitmap = createBitmap(bitmap.width, bitmap.height, bitmap.safeConfig())
             Canvas(resultBitmap).drawBitmap(bitmap, 0f, 0f, paint)
             resultBitmap
         }
@@ -340,7 +360,7 @@ class EditImageViewModel : ViewModel() {
 
             val paint = Paint().apply { colorFilter = ColorMatrixColorFilter(colorMatrix) }
 
-            val resultBitmap = createBitmap(bitmap.width, bitmap.height, bitmap.config!!)
+            val resultBitmap = createBitmap(bitmap.width, bitmap.height, bitmap.safeConfig())
             Canvas(resultBitmap).drawBitmap(bitmap, 0f, 0f, paint)
             resultBitmap
         }
@@ -378,7 +398,7 @@ class EditImageViewModel : ViewModel() {
 
             val paint = Paint().apply { colorFilter = ColorMatrixColorFilter(colorMatrix) }
 
-            val resultBitmap = createBitmap(bitmap.width, bitmap.height, bitmap.config!!)
+            val resultBitmap = createBitmap(bitmap.width, bitmap.height, bitmap.safeConfig())
             Canvas(resultBitmap).drawBitmap(bitmap, 0f, 0f, paint)
             resultBitmap
         }
@@ -386,7 +406,7 @@ class EditImageViewModel : ViewModel() {
 
     suspend fun applyScratch(bitmap: Bitmap, type: String): Bitmap {
         return withContext(Dispatchers.IO) {
-            val resultBitmap = bitmap.copy(bitmap.config!!, true)
+            val resultBitmap = bitmap.copy(bitmap.safeConfig(), true)
             val canvas = Canvas(resultBitmap)
             val paint =
                 Paint().apply {
@@ -417,7 +437,7 @@ class EditImageViewModel : ViewModel() {
             val shift = 20f * intensity
             val width = bitmap.width
             val height = bitmap.height
-            val resultBitmap = createBitmap(width, height, bitmap.config!!)
+            val resultBitmap = createBitmap(width, height, bitmap.safeConfig())
             val canvas = Canvas(resultBitmap)
 
             val paint = Paint()
@@ -442,7 +462,7 @@ class EditImageViewModel : ViewModel() {
 
     suspend fun applyLightLeak(bitmap: Bitmap, type: String): Bitmap {
         return withContext(Dispatchers.IO) {
-            val resultBitmap = bitmap.copy(bitmap.config!!, true)
+            val resultBitmap = bitmap.copy(bitmap.safeConfig(), true)
             val canvas = Canvas(resultBitmap)
 
             val width = bitmap.width.toFloat()
@@ -590,7 +610,7 @@ class EditImageViewModel : ViewModel() {
                 resultPixels[y * width + width - 1] = pixels[y * width + width - 1]
             }
 
-            val result = createBitmap(width, height, bitmap.config!!)
+            val result = createBitmap(width, height, bitmap.safeConfig())
             result.setPixels(resultPixels, 0, width, 0, 0, width, height)
             result
         }
@@ -630,7 +650,7 @@ class EditImageViewModel : ViewModel() {
                 pixels[i] = Color.argb(Color.alpha(p), r, g, b)
             }
 
-            val result = createBitmap(width, height, bitmap.config!!)
+            val result = createBitmap(width, height, bitmap.safeConfig())
             result.setPixels(pixels, 0, width, 0, 0, width, height)
             result
         }
@@ -662,7 +682,7 @@ class EditImageViewModel : ViewModel() {
                 }
                 pixels[i] = Color.argb(Color.alpha(p), r, g, b)
             }
-            val result = createBitmap(width, height, bitmap.config!!)
+            val result = createBitmap(width, height, bitmap.safeConfig())
             result.setPixels(pixels, 0, width, 0, 0, width, height)
             result
         }
@@ -672,7 +692,7 @@ class EditImageViewModel : ViewModel() {
         return withContext(Dispatchers.IO) {
             val width = bitmap.width
             val height = bitmap.height
-            val resultBitmap = bitmap.copy(bitmap.config!!, true)
+            val resultBitmap = bitmap.copy(bitmap.safeConfig(), true)
             val canvas = Canvas(resultBitmap)
             val paint =
                 Paint().apply {
@@ -713,7 +733,7 @@ class EditImageViewModel : ViewModel() {
         return withContext(Dispatchers.IO) {
             val width = bitmap.width
             val height = bitmap.height
-            val resultBitmap = bitmap.copy(bitmap.config!!, true)
+            val resultBitmap = bitmap.copy(bitmap.safeConfig(), true)
             val canvas = Canvas(resultBitmap)
 
             val radius = (width.coerceAtLeast(height) * 0.9f)
@@ -755,24 +775,69 @@ class EditImageViewModel : ViewModel() {
 
         val paint = Paint().apply { colorFilter = ColorMatrixColorFilter(matrix) }
 
-        val resultBitmap = createBitmap(bitmap.width, bitmap.height, bitmap.config!!)
+        val resultBitmap = createBitmap(bitmap.width, bitmap.height, bitmap.safeConfig())
         Canvas(resultBitmap).drawBitmap(bitmap, 0f, 0f, paint)
         return resultBitmap
     }
 
-    suspend fun saveBitmapToDevice(bitmap: Bitmap, filePath: String): Boolean {
-        try {
+    suspend fun saveBitmapToDevice(context: Context, bitmap: Bitmap, filePath: String): String? {
+        return try {
             withContext(Dispatchers.IO) {
-                val file = File(filePath)
-                val outputStream = FileOutputStream(file)
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                outputStream.flush()
-                outputStream.close()
+                // Always save to MediaStore to create a new file, never overwrite the original
+                // This ensures that during editing, we only work with bitmaps in memory,
+                // and only save the final result when user clicks Save
+                saveBitmapToMediaStore(context, bitmap)
             }
-            return true
         } catch (e: Exception) {
+            Log.e("EditImageViewModel", "Error saving bitmap: ${e.message}", e)
             e.printStackTrace()
-            return false
+            null
+        }
+    }
+
+    private suspend fun saveBitmapToMediaStore(context: Context, bitmap: Bitmap): String? {
+        return try {
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+            val contentValues = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, "Edited_${timeStamp}.jpg")
+                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
+            }
+
+            val resolver = context.contentResolver
+            val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                ?: throw IOException("Failed to create new MediaStore record.")
+
+            try {
+                resolver.openOutputStream(uri)?.use { outputStream ->
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                } ?: throw IOException("Failed to open output stream.")
+
+                // Mark as not pending (Android Q+)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    contentValues.clear()
+                    contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+                    resolver.update(uri, contentValues, null, null)
+                }
+                // Return URI string
+                val uriString = uri.toString()
+                Log.d("EditImageViewModel", "Image saved successfully to MediaStore: $uriString")
+                uriString
+            } catch (e: Exception) {
+                // Clean up on error
+                try {
+                    resolver.delete(uri, null, null)
+                } catch (deleteException: Exception) {
+                    Log.e("EditImageViewModel", "Error deleting failed file", deleteException)
+                }
+                throw e
+            }
+        } catch (e: Exception) {
+            Log.e("EditImageViewModel", "Error saving to MediaStore: ${e.message}", e)
+            null
         }
     }
 
@@ -796,7 +861,7 @@ class EditImageViewModel : ViewModel() {
 
     suspend fun applyOverlaysToBitmap(bitmap: Bitmap): Bitmap {
         return withContext(Dispatchers.IO) {
-            val resultBitmap = bitmap.copy(bitmap.config!!, true)
+            val resultBitmap = bitmap.copy(bitmap.safeConfig(), true)
             val canvas = Canvas(resultBitmap)
 
             overlays.forEach { overlay ->
@@ -947,6 +1012,196 @@ class EditImageViewModel : ViewModel() {
         canvas.drawBitmap(originalBitmap, margin, margin, null)
 
         return resultBitmap
+    }
+
+    suspend fun applyFrameBackground(
+        context: Context,
+        originalBitmap: Bitmap,
+        frameTheme: FrameTheme? = null,
+        backgroundImageUri: Uri? = null,
+        margin: Float = 0f, // Default 0 - sẽ dùng padding mặc định như photo booth
+        customText: String? = null
+    ): Bitmap = withContext(Dispatchers.IO) {
+        val density = context.resources.displayMetrics.density
+        
+        // Load background image nếu có
+        val backgroundBitmap = backgroundImageUri?.let { uri ->
+            try {
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    BitmapFactory.decodeStream(inputStream)
+                }
+            } catch (e: Exception) {
+                Log.e("EditImageViewModel", "Error loading background image", e)
+                null
+            }
+        }
+        
+        // Nếu có nền (background image hoặc theme), vẫn có padding nhỏ để nền hiển thị xung quanh ảnh
+        // Nếu không có nền, sẽ có padding trắng như photo booth
+        val hasBackground = backgroundBitmap != null || frameTheme != null
+        
+        val paddingPx = if (margin > 0) {
+            margin.toInt()
+        } else if (hasBackground) {
+            // Có padding nhỏ để nền hiển thị xung quanh, nhưng không có viền trắng
+            (20 * density).toInt()
+        } else {
+            (40 * density).toInt() // Có padding khi không có nền
+        }
+        
+        val bottomPaddingPx = if (customText != null) {
+            if (hasBackground) (80 * density).toInt() else (120 * density).toInt()
+        } else {
+            paddingPx
+        }
+        
+        // Kích thước canvas
+        val frameWidth = originalBitmap.width + (paddingPx * 2)
+        val frameHeight = originalBitmap.height + (paddingPx * 2) + bottomPaddingPx
+
+        val resultBitmap = Bitmap.createBitmap(frameWidth, frameHeight, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(resultBitmap)
+
+        // Vẽ background: ưu tiên ảnh nền, sau đó mới đến theme, cuối cùng là màu trắng
+        // QUAN TRỌNG: Chỉ vẽ màu trắng khi KHÔNG có nền
+        if (backgroundBitmap != null) {
+            Log.d("EditImageViewModel", "Drawing background image: ${frameWidth}x${frameHeight}")
+            // Vẽ nền ảnh phủ toàn bộ canvas
+            val resizedBackground = Bitmap.createScaledBitmap(backgroundBitmap, frameWidth, frameHeight, true)
+            val paint = Paint().apply {
+                isAntiAlias = true
+                isFilterBitmap = true
+            }
+            canvas.drawBitmap(resizedBackground, 0f, 0f, paint)
+            resizedBackground.recycle()
+            backgroundBitmap.recycle()
+        } else if (frameTheme != null) {
+            Log.d("EditImageViewModel", "Drawing theme background: ${frameTheme.name}, size: ${frameWidth}x${frameHeight}")
+            // Vẽ theme nền phủ toàn bộ canvas
+            drawThemedBackground(canvas, frameWidth, frameHeight, frameTheme)
+        } else {
+            // CHỈ vẽ màu trắng khi KHÔNG có nền
+            canvas.drawColor(Color.WHITE)
+        }
+
+        // Vẽ ảnh gốc: nếu có nền thì phủ toàn bộ (padding = 0), nếu không có nền thì có padding
+        canvas.drawBitmap(originalBitmap, paddingPx.toFloat(), paddingPx.toFloat(), null)
+
+        // Vẽ text nếu có
+        customText?.let { text ->
+            val textPaint = Paint().apply {
+                color = if (hasBackground) Color.WHITE else Color.BLACK
+                textSize = 40f * density
+                typeface = Typeface.DEFAULT_BOLD
+                textAlign = Paint.Align.CENTER
+                isAntiAlias = true
+                if (hasBackground) {
+                    setShadowLayer(5f, 0f, 0f, Color.BLACK)
+                }
+            }
+            val textY = frameHeight - (bottomPaddingPx / 2)
+            canvas.drawText(text, frameWidth / 2f, textY.toFloat(), textPaint)
+        }
+
+        resultBitmap
+    }
+
+    suspend fun applyTextToBitmap(
+        bitmap: Bitmap,
+        text: String,
+        textColor: Int = Color.WHITE,
+        textSize: Float = 40f,
+        position: TextPosition = TextPosition.BOTTOM_CENTER
+    ): Bitmap = withContext(Dispatchers.IO) {
+        val resultBitmap = bitmap.copy(bitmap.safeConfig(), true)
+        val canvas = Canvas(resultBitmap)
+
+        val textPaint = Paint().apply {
+            color = textColor
+            this.textSize = textSize
+            typeface = Typeface.DEFAULT_BOLD
+            textAlign = Paint.Align.CENTER
+            isAntiAlias = true
+            setShadowLayer(5f, 0f, 0f, Color.BLACK)
+        }
+
+        val (x, y) = when (position) {
+            TextPosition.BOTTOM_CENTER -> {
+                Pair(resultBitmap.width / 2f, resultBitmap.height - 50f)
+            }
+            TextPosition.TOP_CENTER -> {
+                Pair(resultBitmap.width / 2f, 50f)
+            }
+            TextPosition.CENTER -> {
+                Pair(resultBitmap.width / 2f, resultBitmap.height / 2f)
+            }
+        }
+
+        canvas.drawText(text, x, y, textPaint)
+        resultBitmap
+    }
+
+    enum class TextPosition {
+        BOTTOM_CENTER,
+        TOP_CENTER,
+        CENTER
+    }
+
+    private fun drawThemedBackground(
+        canvas: Canvas,
+        width: Int,
+        height: Int,
+        theme: FrameTheme
+    ) {
+        when (theme.pattern) {
+            ThemePattern.SOLID -> {
+                canvas.drawColor(theme.backgroundColor)
+            }
+            ThemePattern.GRADIENT -> {
+                val paint = Paint().apply {
+                    shader = LinearGradient(
+                        0f,
+                        0f,
+                        0f,
+                        height.toFloat(),
+                        theme.backgroundColor,
+                        theme.accentColor ?: theme.backgroundColor,
+                        Shader.TileMode.CLAMP
+                    )
+                }
+                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+            }
+            ThemePattern.DOTS -> {
+                canvas.drawColor(theme.backgroundColor)
+                val dotPaint = Paint().apply {
+                    color = theme.accentColor ?: Color.WHITE
+                    alpha = 100
+                    style = Paint.Style.FILL
+                }
+                val dotSize = 10f
+                val spacing = 30f
+                for (y in 0 until height step spacing.toInt()) {
+                    for (x in 0 until width step spacing.toInt()) {
+                        canvas.drawCircle(x.toFloat(), y.toFloat(), dotSize, dotPaint)
+                    }
+                }
+            }
+            ThemePattern.STRIPES -> {
+                canvas.drawColor(theme.backgroundColor)
+                val stripePaint = Paint().apply {
+                    color = theme.accentColor ?: Color.WHITE
+                    alpha = 80
+                    style = Paint.Style.FILL
+                }
+                val stripeWidth = 40f
+                val spacing = 80f
+                var x = 0f
+                while (x < width) {
+                    canvas.drawRect(x, 0f, x + stripeWidth, height.toFloat(), stripePaint)
+                    x += spacing
+                }
+            }
+        }
     }
 
     suspend fun applyDistortion(bitmap: Bitmap, type: String): Bitmap {

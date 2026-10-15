@@ -9,7 +9,6 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
-import com.nbadal.androidgifencoder.AnimatedGifEncoder
 import java.io.ByteArrayOutputStream
 import java.io.FileOutputStream
 import java.io.IOException
@@ -50,13 +49,12 @@ class GifExportUseCase {
                     Log.d(TAG, "Bắt đầu tạo GIF từ ${imagePaths.size} ảnh")
 
                     // Create GIF encoder
-                    val encoder = AnimatedGifEncoder()
+                    val encoder = SimpleGifEncoder()
                     val bos = ByteArrayOutputStream()
                     
                     encoder.start(bos)
                     encoder.setDelay(delayMs)
                     encoder.setRepeat(0) // 0 = infinite repeat
-                    encoder.setQuality(GIF_QUALITY)
 
                     // Process each image
                     val processedCount = imagePaths.count { imagePath ->

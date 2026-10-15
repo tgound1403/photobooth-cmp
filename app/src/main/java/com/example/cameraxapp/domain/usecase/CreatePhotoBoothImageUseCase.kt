@@ -18,7 +18,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import androidx.core.graphics.drawable.toBitmap
-import coil.Coil
+import coil.ImageLoader
 import coil.request.ImageRequest
 import com.example.cameraxapp.data.model.FrameTheme
 import com.example.cameraxapp.data.model.ThemePattern
@@ -38,197 +38,202 @@ class CreatePhotoBoothImageUseCase {
             layout: PhotoBoothLayout = PhotoBoothLayout.GRID_2X2,
             filter: ImageFilter = ImageFilter.ORIGINAL,
             backgroundSource: String? = null,
-            frameTheme: FrameTheme? = null
+            frameTheme: FrameTheme? = null,
+            customText: String? = null
     ): Result<String> = runCatching {
-        val requiredCount =
-                when (layout) {
-                    PhotoBoothLayout.SINGLE -> 1
-                    PhotoBoothLayout.STRIP_1X2 -> 2
-                    PhotoBoothLayout.STRIP_1X3 -> 3
-                    PhotoBoothLayout.GRID_2X2, PhotoBoothLayout.STRIP_1X4 -> 4
-                }
-
-        if (imagePaths.size != requiredCount) {
-            throw IllegalArgumentException("Cần chính xác $requiredCount ảnh cho layout $layout")
-        }
-
-        // Load background image nếu có
-        val backgroundBitmap =
-                backgroundSource?.let { source -> loadBackgroundImage(context, source) }
-
-        // Đọc và resize các ảnh photobooth
-        val bitmaps =
-                imagePaths.mapNotNull { path ->
-                    val options = BitmapFactory.Options().apply { inSampleSize = 2 }
-                    BitmapFactory.decodeFile(path, options)
-                }
-
-        if (bitmaps.size != requiredCount) {
-            throw IOException("Không thể đọc một hoặc nhiều ảnh")
-        }
-
-        // Apply filter to bitmaps BEFORE drawing (optional optimization: apply paint filter during
-        // draw)
-        // We will apply filter during draw using Paint
-
-        // Tính toán kích thước và vị trí
-        val density = context.resources.displayMetrics.density
-        val paddingPx = (40 * density).toInt()
-        val spacingPx = (20 * density).toInt()
-        val bottomPaddingPx = (120 * density).toInt()
-
-        val singleImageWidth = bitmaps[0].width
-        val singleImageHeight = bitmaps[0].height
-
-        val totalWidth: Int
-        val totalHeight: Int
-
-        when (layout) {
-            PhotoBoothLayout.GRID_2X2 -> {
-                totalWidth = (singleImageWidth * 2) + (paddingPx * 2) + spacingPx
-                totalHeight =
-                        (singleImageHeight * 2) + (paddingPx * 2) + spacingPx + bottomPaddingPx
-            }
-            PhotoBoothLayout.SINGLE -> {
-                totalWidth = singleImageWidth + (paddingPx * 2)
-                totalHeight = singleImageHeight + (paddingPx * 2) + bottomPaddingPx
-            }
-            PhotoBoothLayout.STRIP_1X2, PhotoBoothLayout.STRIP_1X3, PhotoBoothLayout.STRIP_1X4 -> {
-                val count = requiredCount
-                totalWidth = singleImageWidth + (paddingPx * 2)
-                totalHeight =
-                        (singleImageHeight * count) +
-                                (spacingPx * (count - 1)) +
-                                (paddingPx * 2) +
-                                bottomPaddingPx
-            }
-        }
-
-        // Tạo canvas
-        val resultBitmap = Bitmap.createBitmap(totalWidth, totalHeight, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(resultBitmap)
-
-        // Vẽ background với theme nếu có
-        if (frameTheme != null) {
-            drawThemedBackground(canvas, totalWidth, totalHeight, frameTheme)
-        } else if (backgroundBitmap != null) {
-            val resizedBackground =
-                    Bitmap.createScaledBitmap(backgroundBitmap, totalWidth, totalHeight, true)
-            canvas.drawBitmap(resizedBackground, 0f, 0f, null)
-            resizedBackground.recycle()
-        } else {
-            canvas.drawColor(Color.WHITE)
-        }
-
-        // Prepare Paint with Filter
-        val paintFilter =
-                Paint().apply {
-                    colorFilter =
-                            when (filter) {
-                                ImageFilter.BLACK_AND_WHITE -> {
-                                    val matrix = ColorMatrix()
-                                    matrix.setSaturation(0f)
-                                    ColorMatrixColorFilter(matrix)
-                                }
-                                ImageFilter.SEPIA -> {
-                                    val matrix = ColorMatrix()
-                                    matrix.setSaturation(0f) // Desaturate first
-                                    // Sepia matrix provided by Android docs/StackOverflow common
-                                    // impl
-                                    val sepiaMatrix = ColorMatrix()
-                                    sepiaMatrix.setScale(1f, 0.95f, 0.82f, 1f)
-                                    matrix.postConcat(sepiaMatrix)
-                                    ColorMatrixColorFilter(matrix)
-                                }
-                                ImageFilter.ORIGINAL -> null
-                            }
-                }
-
-        // Vẽ các ảnh photobooth theo layout
-        when (layout) {
-            PhotoBoothLayout.GRID_2X2 -> {
-                // Row 1
-                canvas.drawBitmap(bitmaps[0], paddingPx.toFloat(), paddingPx.toFloat(), paintFilter)
-                canvas.drawBitmap(
-                        bitmaps[1],
-                        (paddingPx + singleImageWidth + spacingPx).toFloat(),
-                        paddingPx.toFloat(),
-                        paintFilter
-                )
-
-                // Row 2
-                val row2Y = paddingPx + singleImageHeight + spacingPx
-                canvas.drawBitmap(bitmaps[2], paddingPx.toFloat(), row2Y.toFloat(), paintFilter)
-                canvas.drawBitmap(
-                        bitmaps[3],
-                        (paddingPx + singleImageWidth + spacingPx).toFloat(),
-                        row2Y.toFloat(),
-                        paintFilter
-                )
-            }
-            else -> { // SINGLE, STRIP_1X2, STRIP_1X3, STRIP_1X4
-                var currentY = paddingPx
-                bitmaps.forEach { bitmap ->
-                    canvas.drawBitmap(bitmap, paddingPx.toFloat(), currentY.toFloat(), paintFilter)
-                    currentY += bitmap.height + spacingPx
-                }
-            }
-        }
-
-        // Thêm ngày chụp
-        val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-        val currentDate = dateFormat.format(Date())
-
-        val textPaint =
-                Paint().apply {
-                    color = if (backgroundBitmap != null) Color.WHITE else Color.BLACK
-                    textSize = 40f * density
-                    typeface = Typeface.DEFAULT_BOLD
-                    textAlign = Paint.Align.CENTER
-                    if (backgroundBitmap != null) {
-                        setShadowLayer(5f, 0f, 0f, Color.BLACK)
+        withContext(Dispatchers.IO) {
+            val requiredCount =
+                    when (layout) {
+                        PhotoBoothLayout.SINGLE -> 1
+                        PhotoBoothLayout.STRIP_1X2 -> 2
+                        PhotoBoothLayout.STRIP_1X3 -> 3
+                        PhotoBoothLayout.GRID_2X2, PhotoBoothLayout.STRIP_1X4 -> 4
                     }
+
+            if (imagePaths.size != requiredCount) {
+                throw IllegalArgumentException("Cần chính xác $requiredCount ảnh cho layout $layout")
+            }
+
+            // Load background image nếu có
+            val backgroundBitmap =
+                    backgroundSource?.let { source -> loadBackgroundImage(context, source) }
+
+            // Đọc và resize các ảnh photobooth
+            val bitmaps =
+                    imagePaths.mapNotNull { path ->
+                        val options = BitmapFactory.Options().apply { inSampleSize = 2 }
+                        BitmapFactory.decodeFile(path, options)
+                    }
+
+            if (bitmaps.size != requiredCount) {
+                throw IOException("Không thể đọc một hoặc nhiều ảnh")
+            }
+
+            // Apply filter to bitmaps BEFORE drawing (optional optimization: apply paint filter during
+            // draw)
+            // We will apply filter during draw using Paint
+
+            // Tính toán kích thước và vị trí
+            val density = context.resources.displayMetrics.density
+            val paddingPx = (40 * density).toInt()
+            val spacingPx = (20 * density).toInt()
+            val bottomPaddingPx = (120 * density).toInt()
+
+            val singleImageWidth = bitmaps[0].width
+            val singleImageHeight = bitmaps[0].height
+
+            val totalWidth: Int
+            val totalHeight: Int
+
+            when (layout) {
+                PhotoBoothLayout.GRID_2X2 -> {
+                    totalWidth = (singleImageWidth * 2) + (paddingPx * 2) + spacingPx
+                    totalHeight =
+                            (singleImageHeight * 2) + (paddingPx * 2) + spacingPx + bottomPaddingPx
                 }
+                PhotoBoothLayout.SINGLE -> {
+                    totalWidth = singleImageWidth + (paddingPx * 2)
+                    totalHeight = singleImageHeight + (paddingPx * 2) + bottomPaddingPx
+                }
+                PhotoBoothLayout.STRIP_1X2, PhotoBoothLayout.STRIP_1X3, PhotoBoothLayout.STRIP_1X4 -> {
+                    val count = requiredCount
+                    totalWidth = singleImageWidth + (paddingPx * 2)
+                    totalHeight =
+                            (singleImageHeight * count) +
+                                    (spacingPx * (count - 1)) +
+                                    (paddingPx * 2) +
+                                    bottomPaddingPx
+                }
+            }
 
-        val textY = totalHeight - (bottomPaddingPx / 2)
-        canvas.drawText(currentDate, totalWidth / 2f, textY.toFloat(), textPaint)
+            // Tạo canvas
+            val resultBitmap = Bitmap.createBitmap(totalWidth, totalHeight, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(resultBitmap)
 
-        // Lưu ảnh
-        val contentValues =
-                ContentValues().apply {
-                    put(
-                            MediaStore.Images.Media.DISPLAY_NAME,
-                            "PhotoBooth_${System.currentTimeMillis()}.jpg"
+            // Vẽ background: ưu tiên ảnh nền, sau đó mới đến theme, cuối cùng là màu trắng
+            if (backgroundBitmap != null) {
+                val resizedBackground =
+                        Bitmap.createScaledBitmap(backgroundBitmap, totalWidth, totalHeight, true)
+                canvas.drawBitmap(resizedBackground, 0f, 0f, null)
+                resizedBackground.recycle()
+            } else if (frameTheme != null) {
+                drawThemedBackground(canvas, totalWidth, totalHeight, frameTheme)
+            } else {
+                canvas.drawColor(Color.WHITE)
+            }
+
+            // Prepare Paint with Filter
+            val paintFilter =
+                    Paint().apply {
+                        colorFilter =
+                                when (filter) {
+                                    ImageFilter.BLACK_AND_WHITE -> {
+                                        val matrix = ColorMatrix()
+                                        matrix.setSaturation(0f)
+                                        ColorMatrixColorFilter(matrix)
+                                    }
+                                    ImageFilter.SEPIA -> {
+                                        val matrix = ColorMatrix()
+                                        matrix.setSaturation(0f) // Desaturate first
+                                        // Sepia matrix provided by Android docs/StackOverflow common
+                                        // impl
+                                        val sepiaMatrix = ColorMatrix()
+                                        sepiaMatrix.setScale(1f, 0.95f, 0.82f, 1f)
+                                        matrix.postConcat(sepiaMatrix)
+                                        ColorMatrixColorFilter(matrix)
+                                    }
+                                    ImageFilter.ORIGINAL -> null
+                                }
+                    }
+
+            // Vẽ các ảnh photobooth theo layout
+            when (layout) {
+                PhotoBoothLayout.GRID_2X2 -> {
+                    // Row 1
+                    canvas.drawBitmap(bitmaps[0], paddingPx.toFloat(), paddingPx.toFloat(), paintFilter)
+                    canvas.drawBitmap(
+                            bitmaps[1],
+                            (paddingPx + singleImageWidth + spacingPx).toFloat(),
+                            paddingPx.toFloat(),
+                            paintFilter
                     )
-                    put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
-                        put(MediaStore.Images.Media.IS_PENDING, 1)
+
+                    // Row 2
+                    val row2Y = paddingPx + singleImageHeight + spacingPx
+                    canvas.drawBitmap(bitmaps[2], paddingPx.toFloat(), row2Y.toFloat(), paintFilter)
+                    canvas.drawBitmap(
+                            bitmaps[3],
+                            (paddingPx + singleImageWidth + spacingPx).toFloat(),
+                            row2Y.toFloat(),
+                            paintFilter
+                    )
+                }
+                else -> { // SINGLE, STRIP_1X2, STRIP_1X3, STRIP_1X4
+                    var currentY = paddingPx
+                    bitmaps.forEach { bitmap ->
+                        canvas.drawBitmap(bitmap, paddingPx.toFloat(), currentY.toFloat(), paintFilter)
+                        currentY += bitmap.height + spacingPx
                     }
                 }
+            }
 
-        val resolver = context.contentResolver
-        val uri =
-                resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-                        ?: throw IOException("Failed to create new MediaStore record.")
+            // Thêm ngày chụp hoặc text tùy chỉnh
+            val displayText = customText ?: run {
+                val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                dateFormat.format(Date())
+            }
 
-        resolver.openOutputStream(uri)?.use { outputStream ->
-            resultBitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+            val textPaint =
+                    Paint().apply {
+                        color = if (backgroundBitmap != null) Color.WHITE else Color.BLACK
+                        textSize = 40f * density
+                        typeface = Typeface.DEFAULT_BOLD
+                        textAlign = Paint.Align.CENTER
+                        if (backgroundBitmap != null) {
+                            setShadowLayer(5f, 0f, 0f, Color.BLACK)
+                        }
+                    }
+
+            val textY = totalHeight - (bottomPaddingPx / 2)
+            canvas.drawText(displayText, totalWidth / 2f, textY.toFloat(), textPaint)
+
+            // Lưu ảnh
+            val contentValues =
+                    ContentValues().apply {
+                        put(
+                                MediaStore.Images.Media.DISPLAY_NAME,
+                                "PhotoBooth_${System.currentTimeMillis()}.jpg"
+                        )
+                        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+                            put(MediaStore.Images.Media.IS_PENDING, 1)
+                        }
+                    }
+
+            val resolver = context.contentResolver
+            val uri =
+                    resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                            ?: throw IOException("Failed to create new MediaStore record.")
+
+            resolver.openOutputStream(uri)?.use { outputStream ->
+                resultBitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+            }
+                    ?: throw IOException("Failed to open output stream.")
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                contentValues.clear()
+                contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+                resolver.update(uri, contentValues, null, null)
+            }
+
+            // Giải phóng bộ nhớ
+            bitmaps.forEach { it.recycle() }
+            backgroundBitmap?.recycle()
+            resultBitmap.recycle()
+
+            uri.toString()
         }
-                ?: throw IOException("Failed to open output stream.")
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            contentValues.clear()
-            contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
-            resolver.update(uri, contentValues, null, null)
-        }
-
-        // Giải phóng bộ nhớ
-        bitmaps.forEach { it.recycle() }
-        backgroundBitmap?.recycle()
-        resultBitmap.recycle()
-
-        uri.toString()
     }
 
     private fun drawThemedBackground(
@@ -299,7 +304,8 @@ class CreatePhotoBoothImageUseCase {
                         source.startsWith("http") -> {
                             // Load từ URL (Unsplash)
                             val request = ImageRequest.Builder(context).data(source).build()
-                            val result = Coil.imageLoader(context).execute(request)
+                            val imageLoader = ImageLoader(context)
+                            val result = imageLoader.execute(request)
                             result.drawable?.toBitmap()
                         }
                         source.startsWith("content://") -> {
