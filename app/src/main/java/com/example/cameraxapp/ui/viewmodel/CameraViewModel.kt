@@ -47,6 +47,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
     val preview = mutableStateOf<Preview?>(null)
     val camera = mutableStateOf<Camera?>(null)
+    val editParams = mutableStateOf(EditParams())
 
     private var isTakingPicture = false // use for view model
 
@@ -81,7 +82,13 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
     /** Sets the live and captured filter. Does not rebind the camera. */
     fun setFilter(params: EditParams) {
+        editParams.value = params
         cameraService.setFilter(params)
+    }
+
+    /** Selects a catalog filter by id, keeping the other edit values. */
+    fun selectFilter(filterId: String) {
+        setFilter(editParams.value.copy(filterId = filterId))
     }
 
     /** Manual exposure (ns) and ISO. Applied to the bound camera only when the user changes them. */
