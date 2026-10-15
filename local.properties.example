@@ -1,0 +1,5 @@
+# Copy this file to local.properties (gitignored) and fill in the values.
+# sdk.dir is written by Android Studio and is not listed here.
+
+# Unsplash API access key, exposed to the app as BuildConfig.UNSPLASH_ACCESS_KEY.
+UNSPLASH_ACCESS_KEY=

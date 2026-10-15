@@ -1,5 +1,6 @@
 package com.example.cameraxapp.data.api
 
+import com.tgound.cameraxapp.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -8,7 +9,8 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
     private const val BASE_URL = "https://api.unsplash.com/"
-    private const val API_KEY = "YOUR_UNSPLASH_API_KEY" // Note: Move to secure storage in production
+    /** Read from local.properties at build time (see BuildConfig in app/build.gradle.kts). */
+    private val API_KEY = BuildConfig.UNSPLASH_ACCESS_KEY
 
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor { chain ->
