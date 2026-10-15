@@ -17,6 +17,10 @@ val localProperties = Properties().apply {
 
 fun secret(name: String): String = localProperties.getProperty(name, "")
 
+// Optional, for size-limited debug uploads only: ./gradlew assembleDebug -PdebugAbi=arm64-v8a
+// Unset (the default) leaves the ABI config unchanged.
+val debugAbi: String? = providers.gradleProperty("debugAbi").orNull?.takeIf { it.isNotBlank() }
+
 android {
     namespace = "com.tgound.cameraxapp"
     compileSdk = 36
@@ -40,6 +44,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            if (debugAbi != null) {
+                ndk {
+                    abiFilters += debugAbi
+                }
+            }
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
