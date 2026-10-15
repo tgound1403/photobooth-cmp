@@ -37,7 +37,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.cameraxapp.core.navigation.AppRoutes
+import com.example.cameraxapp.core.render.FilterInfo
 import com.example.cameraxapp.ui.components.DefaultAppBar
+import com.example.cameraxapp.ui.components.FilterStrip
 import com.example.cameraxapp.ui.components.GlassButton
 import com.example.cameraxapp.ui.theme.AppColors
 import com.example.cameraxapp.ui.theme.Motion
@@ -55,11 +57,15 @@ fun PhotoBoothSelectionScreen(
     val selectedImages by viewModel.selectedImages.collectAsState()
     val capturedImages by viewModel.capturedImages.collectAsState()
     val requiredCount by viewModel.requiredPhotoCount.collectAsState()
+    val editParams by viewModel.editParams.collectAsState()
 
     PhotoBoothSelectionContent(
         capturedImages = capturedImages,
         selectedImages = selectedImages,
         requiredCount = requiredCount,
+        filters = viewModel.filters,
+        selectedFilterId = editParams.filterId,
+        onFilterSelect = { viewModel.updateFilter(it) },
         onBack = { navController.navigateUp() },
         onToggle = { viewModel.toggleImageSelection(it) },
         onConfirm = {
@@ -78,6 +84,9 @@ fun PhotoBoothSelectionContent(
     capturedImages: List<String>,
     selectedImages: Collection<String>,
     requiredCount: Int,
+    filters: List<FilterInfo>,
+    selectedFilterId: String,
+    onFilterSelect: (String) -> Unit,
     onBack: () -> Unit,
     onToggle: (String) -> Unit,
     onConfirm: () -> Unit,
@@ -114,6 +123,14 @@ fun PhotoBoothSelectionContent(
                 .graphicsLayer { alpha = alphaAnim.value }
         ) {
             Spacer(modifier = Modifier.height(Spacing.lg))
+
+            FilterStrip(
+                filters = filters,
+                selectedId = selectedFilterId,
+                onSelect = onFilterSelect,
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.md))
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
@@ -172,6 +189,9 @@ private fun PhotoBoothSelectionPreview() {
             capturedImages = emptyList(),
             selectedImages = emptySet(),
             requiredCount = 2,
+            filters = emptyList(),
+            selectedFilterId = "original",
+            onFilterSelect = {},
             onBack = {},
             onToggle = {},
             onConfirm = {}

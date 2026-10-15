@@ -1,6 +1,7 @@
 package com.example.cameraxapp.data.repository
 
 import android.content.Context
+import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.data.AppDatabase
 import com.example.cameraxapp.data.model.PhotoBoothEntity
 import com.example.cameraxapp.shared.domain.model.PhotoBooth
@@ -11,8 +12,8 @@ class PhotoBoothRepository(private val context: Context) {
     private val database = AppDatabase.getDatabase(context)
     private val photoBoothDao = database.photoBoothDao()
 
-    suspend fun insertPhotoBooth(photoBooth: PhotoBooth): Long {
-        return photoBoothDao.insertPhotoBooth(PhotoBoothEntity.fromDomain(photoBooth))
+    suspend fun insertPhotoBooth(photoBooth: PhotoBooth, editParams: EditParams = EditParams()): Long {
+        return photoBoothDao.insertPhotoBooth(PhotoBoothEntity.fromDomain(photoBooth, editParams))
     }
 
     suspend fun getPhotoBoothById(id: Long): PhotoBooth? {

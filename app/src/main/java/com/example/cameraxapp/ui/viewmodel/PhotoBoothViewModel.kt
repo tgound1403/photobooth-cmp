@@ -7,6 +7,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.FilterCatalog
 import com.example.cameraxapp.data.repository.PhotoBoothRepository
 import com.example.cameraxapp.domain.usecase.CreatePhotoBoothImageUseCase
@@ -96,8 +97,10 @@ class PhotoBoothViewModel(
     val selectedLayout: StateFlow<com.example.cameraxapp.shared.domain.model.PhotoBoothLayout> =
             _selectedLayout
 
-    private val _selectedFilterId = MutableStateFlow(FilterCatalog.ORIGINAL_ID)
-    val selectedFilterId: StateFlow<String> = _selectedFilterId
+    val filters = FilterCatalog(application).filters
+
+    private val _editParams = MutableStateFlow(EditParams())
+    val editParams: StateFlow<EditParams> = _editParams.asStateFlow()
 
     private val _selectedTheme =
             MutableStateFlow(com.example.cameraxapp.data.model.FrameThemes.CLASSIC_WHITE)
@@ -132,7 +135,7 @@ class PhotoBoothViewModel(
     }
 
     fun updateFilter(filterId: String) {
-        _selectedFilterId.value = filterId
+        _editParams.value = _editParams.value.copy(filterId = filterId)
     }
 
     fun updateTheme(theme: com.example.cameraxapp.data.model.FrameTheme) {
@@ -186,7 +189,7 @@ class PhotoBoothViewModel(
                                         context,
                                         imagePaths,
                                         _selectedLayout.value,
-                                        _selectedFilterId.value,
+                                        _editParams.value,
                                         backgroundSource,
                                         themeToUse,
                                         _customText.value
@@ -199,7 +202,7 @@ class PhotoBoothViewModel(
                                 imagePaths = listOf(resultPath),
                                 createdAt = System.currentTimeMillis()
                         )
-                val photoBoothId = repository.insertPhotoBooth(photoBooth)
+                val photoBoothId = repository.insertPhotoBooth(photoBooth, _editParams.value)
                 val savedPhotoBooth = repository.getPhotoBoothById(photoBoothId)
                 _photoBooth.value = savedPhotoBooth
 
@@ -224,7 +227,7 @@ class PhotoBoothViewModel(
                 context,
                 imagePaths,
                 layout,
-                _selectedFilterId.value,
+                _editParams.value,
                 backgroundSource,
                 themeToUse,
                 customText
@@ -243,7 +246,7 @@ class PhotoBoothViewModel(
                                         context,
                                         imagePaths,
                                         _selectedLayout.value,
-                                        _selectedFilterId.value,
+                                        _editParams.value,
                                         background,
                                         null, // frameTheme
                                         _customText.value
@@ -256,7 +259,7 @@ class PhotoBoothViewModel(
                                 imagePaths = listOf(resultPath),
                                 createdAt = System.currentTimeMillis()
                         )
-                repository.insertPhotoBooth(photoBooth)
+                repository.insertPhotoBooth(photoBooth, _editParams.value)
 
                 _saveState.value = SaveState.Success
             } catch (e: Exception) {

@@ -1,6 +1,7 @@
 package com.example.cameraxapp.data.converter
 
 import androidx.room.TypeConverter
+import com.example.cameraxapp.core.render.EditParams
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.Date
@@ -16,6 +17,14 @@ class StringListConverter {
     fun fromList(list: List<String>): String {
         return Gson().toJson(list)
     }
+}
+
+class EditParamsConverter {
+    @TypeConverter
+    fun fromJsonString(value: String): EditParams = EditParams.fromJson(value)
+
+    @TypeConverter
+    fun toJsonString(params: EditParams): String = params.toJson()
 }
 
 class DateConverter {

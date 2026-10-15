@@ -36,7 +36,7 @@ class CreatePhotoBoothImageUseCase {
             context: Context,
             imagePaths: List<String>,
             layout: PhotoBoothLayout = PhotoBoothLayout.GRID_2X2,
-            filterId: String = FilterCatalog.ORIGINAL_ID,
+            editParams: EditParams = EditParams(),
             backgroundSource: String? = null,
             frameTheme: FrameTheme? = null,
             customText: String? = null
@@ -71,8 +71,8 @@ class CreatePhotoBoothImageUseCase {
 
             // Áp dụng filter (LUT) trên GPU trước khi vẽ layout
             val bitmaps =
-                    if (filterId == FilterCatalog.ORIGINAL_ID) decoded
-                    else renderFilter(context, decoded, filterId)
+                    if (editParams.isIdentity) decoded
+                    else renderFilter(context, decoded, editParams)
 
             // Tính toán kích thước và vị trí
             val density = context.resources.displayMetrics.density
@@ -217,12 +217,12 @@ class CreatePhotoBoothImageUseCase {
     private suspend fun renderFilter(
             context: Context,
             photos: List<Bitmap>,
-            filterId: String
+            params: EditParams
     ): List<Bitmap> {
-        val lut = FilterCatalog(context.applicationContext).loadLut(filterId)
+        val lut = FilterCatalog(context.applicationContext).loadLut(params.filterId)
         return GlRenderer().use { renderer ->
             photos.map { photo ->
-                renderer.render(photo, EditParams(filterId = filterId), lut).also { photo.recycle() }
+                renderer.render(photo, params, lut).also { photo.recycle() }
             }
         }
     }

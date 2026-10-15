@@ -8,9 +8,10 @@ import androidx.room.TypeConverters
 import com.example.cameraxapp.data.converter.DateConverter
 import com.example.cameraxapp.data.converter.StringListConverter
 import com.example.cameraxapp.data.dao.PhotoBoothDao
+import com.example.cameraxapp.data.migration.PhotoBoothMigrations
 import com.example.cameraxapp.data.model.PhotoBoothEntity
 
-@Database(entities = [PhotoBoothEntity::class], version = 1)
+@Database(entities = [PhotoBoothEntity::class], version = 2)
 @TypeConverters(StringListConverter::class, DateConverter::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun photoBoothDao(): PhotoBoothDao
@@ -25,7 +26,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "app_database"
-                ).build()
+                ).addMigrations(PhotoBoothMigrations.MIGRATION_1_2).build()
                 INSTANCE = instance
                 instance
             }
