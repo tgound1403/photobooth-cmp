@@ -11,15 +11,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import com.example.cameraxapp.ui.theme.AppColors
 import com.example.cameraxapp.ui.theme.IconSize
-import com.example.cameraxapp.ui.theme.NeonCyan
 import com.example.cameraxapp.ui.theme.Spacing
+import com.example.cameraxapp.ui.theme.PhotogetherTheme
 
 /**
  * Empty state component to display when there's no data
@@ -40,43 +41,56 @@ fun EmptyState(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(Spacing.lg),
+            .padding(Spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = Icons.Default.PhotoLibrary,
-            contentDescription = "Empty",
-            tint = NeonCyan.copy(alpha = 0.5f),
-            modifier = Modifier.size(IconSize.emptyState)
+            contentDescription = null,
+            tint = AppColors.textSecondary,
+            modifier = Modifier.size(IconSize.hero)
         )
-        
-        Spacer(modifier = Modifier.height(Spacing.md))
-        
+
+        Spacer(modifier = Modifier.height(Spacing.lg))
+
         Text(
             text = title,
-            style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
-            color = Color.White,
+            style = MaterialTheme.typography.titleLarge,
+            color = AppColors.textPrimary,
             textAlign = TextAlign.Center
         )
-        
+
         Spacer(modifier = Modifier.height(Spacing.sm))
-        
+
         Text(
             text = message,
-            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.7f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppColors.textSecondary,
             textAlign = TextAlign.Center
         )
-        
+
         if (actionLabel != null && onAction != null) {
-            Spacer(modifier = Modifier.height(Spacing.lg))
-            
+            Spacer(modifier = Modifier.height(Spacing.xl))
+
             GlassButton(
                 onClick = onAction,
                 text = actionLabel,
                 modifier = Modifier.fillMaxWidth(0.7f)
             )
         }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+private fun EmptyStatePreview() {
+    PhotogetherTheme {
+        EmptyState(
+            title = "Chưa có ảnh nào",
+            message = "Chụp ảnh PhotoBooth đầu tiên của bạn!",
+            actionLabel = "Chụp ảnh",
+            onAction = {}
+        )
     }
 }

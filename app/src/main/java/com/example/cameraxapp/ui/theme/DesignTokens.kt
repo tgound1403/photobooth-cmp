@@ -1,113 +1,61 @@
 package com.example.cameraxapp.ui.theme
 
-import androidx.compose.ui.unit.Dp
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.ui.unit.dp
 
-/**
- * Design tokens for consistent spacing throughout the app
- */
+/** Spacing scale: 4 / 8 / 12 / 16 / 24 / 32 dp. */
 object Spacing {
-    val xs: Dp = 4.dp
-    val sm: Dp = 8.dp
-    val md: Dp = 16.dp
-    val lg: Dp = 24.dp
-    val xl: Dp = 32.dp
-    val xxl: Dp = 48.dp
-    val xxxl: Dp = 64.dp
-    
-    // Common spacing values
-    val extraSmall: Dp = xs
-    val small: Dp = sm
-    val medium: Dp = md
-    val large: Dp = lg
-    val extraLarge: Dp = xl
-    
-    // Specific spacing for common use cases
-    val cardPadding: Dp = md
-    val screenPadding: Dp = md
-    val itemSpacing: Dp = sm
-    val sectionSpacing: Dp = lg
+    val xs = 4.dp
+    val sm = 8.dp
+    val md = 12.dp
+    val lg = 16.dp
+    val xl = 24.dp
+    val xxl = 32.dp
 }
 
-/**
- * Design tokens for consistent corner radius throughout the app
- */
-object CornerRadius {
-    val xs: Dp = 4.dp
-    val sm: Dp = 8.dp
-    val md: Dp = 12.dp
-    val lg: Dp = 16.dp
-    val xl: Dp = 24.dp
-    val xxl: Dp = 32.dp
-    
-    // Common corner radius values
-    val small: Dp = sm
-    val medium: Dp = md
-    val large: Dp = lg
-    val extraLarge: Dp = xl
-    
-    // Specific corner radius for common components
-    val button: Dp = xl
-    val card: Dp = lg
-    val image: Dp = md
-    val dialog: Dp = lg
+/** Corner radius scale: 12 / 20 / 28 dp. */
+object Radius {
+    val sm = 12.dp
+    val md = 20.dp
+    val lg = 28.dp
 }
 
-/**
- * Design tokens for consistent icon sizes throughout the app
- */
+/** Icon and touch-target sizes. */
 object IconSize {
-    val xs: Dp = 16.dp
-    val sm: Dp = 20.dp
-    val md: Dp = 24.dp
-    val lg: Dp = 32.dp
-    val xl: Dp = 40.dp
-    val xxl: Dp = 48.dp
-    val xxxl: Dp = 64.dp
-    
-    // Common icon sizes
-    val small: Dp = sm
-    val medium: Dp = md
-    val large: Dp = lg
-    val extraLarge: Dp = xl
-    
-    // Specific icon sizes for common use cases
-    val button: Dp = md
-    val appBar: Dp = md
-    val listItem: Dp = lg
-    val emptyState: Dp = xxxl
-    val errorState: Dp = xxxl
+    val xs = 16.dp
+    val sm = 20.dp
+    val md = 24.dp
+    val lg = 32.dp
+    /** Touch target for round icon buttons. */
+    val xl = 40.dp
+    /** Hero icons on empty and error states. */
+    val hero = 64.dp
+}
+
+/** Stroke widths. */
+object Stroke {
+    val hairline = 1.dp
+    val selected = 3.dp
+}
+
+/** Motion tokens. */
+object Motion {
+    val DefaultSpring: SpringSpec<Float> = spring(dampingRatio = 0.85f, stiffness = 400f)
+
+    const val DurationShort = 150
+    const val DurationMedium = 250
+    const val DurationLong = 400
+
+    /** Scale applied to a card while it is pressed. */
+    const val PressedScale = 0.97f
 }
 
 /**
- * Design tokens for consistent border widths throughout the app
+ * Deprecated. Use [Radius]. Kept only for out-of-scope callers, if any.
  */
-object BorderWidth {
-    val none: Dp = 0.dp
-    val thin: Dp = 1.dp
-    val medium: Dp = 2.dp
-    val thick: Dp = 3.dp
-    val extraThick: Dp = 4.dp
-    
-    // Common border widths
-    val default: Dp = thin
-    val selected: Dp = thick
-    val focused: Dp = medium
-}
-
-/**
- * Design tokens for consistent elevation/shadow values
- */
-object Elevation {
-    val none: Dp = 0.dp
-    val sm: Dp = 2.dp
-    val md: Dp = 4.dp
-    val lg: Dp = 8.dp
-    val xl: Dp = 16.dp
-    
-    // Common elevation values
-    val card: Dp = md
-    val button: Dp = sm
-    val dialog: Dp = xl
-    val appBar: Dp = md
+@Deprecated("Use Radius", ReplaceWith("Radius", "com.example.cameraxapp.ui.theme.Radius"))
+object CornerRadius {
+    val card = Radius.lg
+    val button = Radius.md
 }

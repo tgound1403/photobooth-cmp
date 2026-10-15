@@ -2,140 +2,152 @@ package com.example.cameraxapp.ui.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.cameraxapp.core.navigation.AppRoutes
 import com.example.cameraxapp.shared.domain.model.PhotoBooth
+import com.example.cameraxapp.ui.components.DefaultAppBar
 import com.example.cameraxapp.ui.components.GlassBox
-import com.example.cameraxapp.ui.theme.DeepBlack
+import com.example.cameraxapp.ui.theme.AppColors
+import com.example.cameraxapp.ui.theme.IconSize
+import com.example.cameraxapp.ui.theme.PhotogetherTheme
+import com.example.cameraxapp.ui.theme.Radius
+import com.example.cameraxapp.ui.theme.Spacing
 import com.example.cameraxapp.ui.viewmodel.GalleryViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GalleryScreen(navController: NavController, viewModel: GalleryViewModel) {
     val photoBooths by viewModel.photoBooths.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<PhotoBooth?>(null) }
 
-    Scaffold(
-            topBar = {
-                TopAppBar(
-                        title = { Text("Bộ Sưu Tập", color = Color.White) },
-                        navigationIcon = {
-                            IconButton(onClick = { navController.navigateUp() }) {
-                                Icon(
-                                        Icons.Default.ArrowBack,
-                                        contentDescription = "Back",
-                                        tint = Color.White
-                                )
-                            }
-                        },
-                        colors =
-                                TopAppBarDefaults.topAppBarColors(
-                                        containerColor = Color.Transparent
-                                )
-                )
+    GalleryContent(
+        photoBooths = photoBooths,
+        onBack = { navController.navigateUp() },
+        onOpen = { photoBooth ->
+            val encodedPath = java.net.URLEncoder.encode(photoBooth.imagePaths.first(), "UTF-8")
+            navController.navigate(AppRoutes.imageDetail(encodedPath))
+        },
+        onDeleteRequest = { photoBooth ->
+            itemToDelete = photoBooth
+            showDeleteDialog = true
+        }
+    )
+
+    if (showDeleteDialog && itemToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Xóa ảnh?", style = MaterialTheme.typography.titleLarge) },
+            text = { Text("Bạn có chắc muốn xóa ảnh này không?", style = MaterialTheme.typography.bodyMedium) },
+            containerColor = AppColors.surfaceElevated,
+            titleContentColor = AppColors.textPrimary,
+            textContentColor = AppColors.textSecondary,
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        itemToDelete?.let { viewModel.deletePhotoBooth(it) }
+                        showDeleteDialog = false
+                        itemToDelete = null
+                    }
+                ) { Text("Xóa", color = AppColors.danger) }
             },
-            containerColor = DeepBlack
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Hủy", color = AppColors.textPrimary)
+                }
+            }
+        )
+    }
+}
+
+/** Stateless gallery body. Takes plain data and callbacks so it can be previewed without Koin. */
+@Composable
+fun GalleryContent(
+    photoBooths: List<PhotoBooth>,
+    onBack: () -> Unit,
+    onOpen: (PhotoBooth) -> Unit,
+    onDeleteRequest: (PhotoBooth) -> Unit
+) {
+    Scaffold(
+        topBar = { DefaultAppBar(onBack = onBack, title = "Bộ Sưu Tập") },
+        containerColor = AppColors.background
     ) { padding ->
         Column(
-                modifier =
-                        Modifier.fillMaxSize()
-                                .padding(padding)
-                                .background(
-                                        brush =
-                                                Brush.verticalGradient(
-                                                        colors =
-                                                                listOf(DeepBlack, Color(0xFF1a0b2e))
-                                                )
-                                )
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
         ) {
             if (photoBooths.isEmpty()) {
                 Box(
-                        modifier = Modifier.fillMaxSize().padding(32.dp),
-                        contentAlignment = Alignment.Center
+                    modifier = Modifier.fillMaxSize().padding(Spacing.xxl),
+                    contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                                "Chưa có ảnh nào",
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
+                            "Chưa có ảnh nào",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = AppColors.textPrimary
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(Spacing.sm))
                         Text(
-                                "Chụp ảnh PhotoBooth đầu tiên của bạn!",
-                                color = Color.White.copy(alpha = 0.5f),
-                                fontSize = 14.sp
+                            "Chụp ảnh PhotoBooth đầu tiên của bạn!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.textSecondary
                         )
                     }
                 }
             } else {
                 LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(Spacing.lg),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.lg)
                 ) {
                     items(photoBooths) { photoBooth ->
                         PhotoBoothItem(
-                                photoBooth = photoBooth,
-                                onDelete = {
-                                    itemToDelete = photoBooth
-                                    showDeleteDialog = true
-                                },
-                                onClick = {
-                                    val encodedPath =
-                                            java.net.URLEncoder.encode(
-                                                    photoBooth.imagePaths.first(),
-                                                    "UTF-8"
-                                            )
-                                    navController.navigate(AppRoutes.imageDetail(encodedPath))
-                                }
+                            photoBooth = photoBooth,
+                            onDelete = { onDeleteRequest(photoBooth) },
+                            onClick = { onOpen(photoBooth) }
                         )
                     }
                 }
             }
         }
-    }
-
-    // Delete Confirmation Dialog
-    if (showDeleteDialog && itemToDelete != null) {
-        AlertDialog(
-                onDismissRequest = { showDeleteDialog = false },
-                title = { Text("Xóa ảnh?") },
-                text = { Text("Bạn có chắc muốn xóa ảnh này không?") },
-                confirmButton = {
-                    TextButton(
-                            onClick = {
-                                itemToDelete?.let { viewModel.deletePhotoBooth(it) }
-                                showDeleteDialog = false
-                                itemToDelete = null
-                            }
-                    ) { Text("Xóa", color = Color.Red) }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = false }) { Text("Hủy") }
-                }
-        )
     }
 }
 
@@ -143,35 +155,39 @@ fun GalleryScreen(navController: NavController, viewModel: GalleryViewModel) {
 fun PhotoBoothItem(photoBooth: PhotoBooth, onDelete: () -> Unit, onClick: () -> Unit) {
     Box {
         GlassBox(
-                modifier = Modifier.fillMaxWidth().aspectRatio(0.75f).clickable(onClick = onClick),
-                cornerRadius = 16.dp
+            modifier = Modifier.fillMaxWidth().aspectRatio(0.75f).clickable(onClick = onClick),
+            cornerRadius = Radius.sm
         ) {
             AsyncImage(
-                    model = photoBooth.imagePaths.first(),
-                    contentDescription = "Photo Booth",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                model = photoBooth.imagePaths.first(),
+                contentDescription = "Photo Booth",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
         }
 
-        // Delete button
         IconButton(
-                onClick = onDelete,
-                modifier =
-                        Modifier.align(Alignment.TopEnd)
-                                .padding(8.dp)
-                                .size(32.dp)
-                                .background(
-                                        color = Color.Red.copy(alpha = 0.8f),
-                                        shape = RoundedCornerShape(8.dp)
-                                )
+            onClick = onDelete,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(Spacing.sm)
+                .size(IconSize.xl)
+                .background(color = AppColors.danger.copy(alpha = 0.85f), shape = RoundedCornerShape(Radius.sm))
         ) {
             Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
+                Icons.Default.Delete,
+                contentDescription = "Delete",
+                tint = AppColors.textPrimary,
+                modifier = Modifier.size(IconSize.sm)
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun GalleryEmptyPreview() {
+    PhotogetherTheme {
+        GalleryContent(photoBooths = emptyList(), onBack = {}, onOpen = {}, onDeleteRequest = {})
     }
 }

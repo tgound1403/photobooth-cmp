@@ -7,100 +7,97 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
-import com.example.cameraxapp.ui.theme.BorderWidth
-import com.example.cameraxapp.ui.theme.CornerRadius
-import com.example.cameraxapp.ui.theme.GlassWhite
-import com.example.cameraxapp.ui.theme.NeonPurple
+import com.example.cameraxapp.ui.theme.AppColors
+import com.example.cameraxapp.ui.theme.Radius
 import com.example.cameraxapp.ui.theme.Spacing
+import com.example.cameraxapp.ui.theme.Stroke
 
+/**
+ * A solid card: surface fill with a hairline outline. Name kept from the earlier glass style
+ * so existing callers compile.
+ */
 @Composable
 fun GlassBox(
         modifier: Modifier = Modifier,
-        cornerRadius: Dp = CornerRadius.card,
-        backgroundColor: Color = GlassWhite,
+        cornerRadius: Dp = Radius.md,
+        backgroundColor: Color = AppColors.surface,
         content: @Composable BoxScope.() -> Unit
 ) {
+    val shape = RoundedCornerShape(cornerRadius)
     Box(
             modifier =
-                    modifier.clip(RoundedCornerShape(cornerRadius))
+                    modifier.clip(shape)
                             .background(backgroundColor)
-                            .border(
-                                    width = BorderWidth.default,
-                                    brush =
-                                            Brush.linearGradient(
-                                                    colors =
-                                                            listOf(
-                                                                    Color.White.copy(alpha = 0.3f),
-                                                                    Color.White.copy(alpha = 0.05f),
-                                                                    Color.White.copy(alpha = 0.2f)
-                                                            )
-                                            ),
-                                    shape = RoundedCornerShape(cornerRadius)
-                            ),
+                            .border(width = Stroke.hairline, color = AppColors.outline, shape = shape),
             content = content
     )
 }
 
+/** Primary action: solid accent fill with dark text. */
 @Composable
 fun GlassButton(
         onClick: () -> Unit,
         modifier: Modifier = Modifier,
         text: String,
-        containerColor: Color = NeonPurple,
+        containerColor: Color = AppColors.accent,
+        enabled: Boolean = true
+) {
+    val contentColor = if (containerColor == AppColors.accent) AppColors.onAccent else AppColors.textPrimary
+    Box(
+            modifier =
+                    modifier.clip(RoundedCornerShape(Radius.sm))
+                            .background(
+                                    if (enabled) containerColor else containerColor.copy(alpha = 0.4f)
+                            )
+                            .clickable(enabled = enabled, onClick = onClick)
+                            .padding(vertical = Spacing.md, horizontal = Spacing.xl),
+            contentAlignment = Alignment.Center
+    ) {
+        Text(
+                text = text,
+                color = if (enabled) contentColor else contentColor.copy(alpha = 0.5f),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+/** Secondary action: elevated surface with a hairline outline. */
+@Composable
+fun SecondaryButton(
+        onClick: () -> Unit,
+        modifier: Modifier = Modifier,
+        text: String,
         enabled: Boolean = true
 ) {
     val alpha = if (enabled) 1f else 0.5f
     Box(
             modifier =
-                    modifier.clip(RoundedCornerShape(CornerRadius.button))
-                            .background(
-                                    brush =
-                                            Brush.verticalGradient(
-                                                    colors =
-                                                            listOf(
-                                                                    containerColor.copy(
-                                                                            alpha = 0.4f * alpha
-                                                                    ),
-                                                                    containerColor.copy(
-                                                                            alpha = 0.2f * alpha
-                                                                    )
-                                                            )
-                                            )
-                            )
+                    modifier.clip(RoundedCornerShape(Radius.sm))
+                            .background(AppColors.surfaceElevated.copy(alpha = alpha))
                             .border(
-                                    width = BorderWidth.default,
-                                    brush =
-                                            Brush.linearGradient(
-                                                    colors =
-                                                            listOf(
-                                                                    Color.White.copy(
-                                                                            alpha = 0.4f * alpha
-                                                                    ),
-                                                                    Color.Transparent,
-                                                                    Color.White.copy(
-                                                                            alpha = 0.2f * alpha
-                                                                    )
-                                                            )
-                                            ),
-                                    shape = RoundedCornerShape(CornerRadius.button)
+                                    width = Stroke.hairline,
+                                    color = AppColors.outline.copy(alpha = alpha),
+                                    shape = RoundedCornerShape(Radius.sm)
                             )
                             .clickable(enabled = enabled, onClick = onClick)
-                            .padding(vertical = Spacing.sm, horizontal = Spacing.lg),
+                            .padding(vertical = Spacing.md, horizontal = Spacing.xl),
             contentAlignment = Alignment.Center
     ) {
         Text(
                 text = text,
-                color = Color.White.copy(alpha = alpha),
-                style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                color = AppColors.textPrimary.copy(alpha = alpha),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
         )
     }
 }
