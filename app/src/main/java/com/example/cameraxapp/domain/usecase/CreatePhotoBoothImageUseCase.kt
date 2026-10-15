@@ -6,8 +6,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
@@ -20,9 +18,11 @@ import android.util.Log
 import androidx.core.graphics.drawable.toBitmap
 import coil.ImageLoader
 import coil.request.ImageRequest
+import com.example.cameraxapp.core.render.EditParams
+import com.example.cameraxapp.core.render.FilterCatalog
+import com.example.cameraxapp.core.render.GlRenderer
 import com.example.cameraxapp.data.model.FrameTheme
 import com.example.cameraxapp.data.model.ThemePattern
-import com.example.cameraxapp.shared.domain.model.ImageFilter
 import com.example.cameraxapp.shared.domain.model.PhotoBoothLayout
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -36,7 +36,7 @@ class CreatePhotoBoothImageUseCase {
             context: Context,
             imagePaths: List<String>,
             layout: PhotoBoothLayout = PhotoBoothLayout.GRID_2X2,
-            filter: ImageFilter = ImageFilter.ORIGINAL,
+            filterId: String = FilterCatalog.ORIGINAL_ID,
             backgroundSource: String? = null,
             frameTheme: FrameTheme? = null,
             customText: String? = null
@@ -59,19 +59,20 @@ class CreatePhotoBoothImageUseCase {
                     backgroundSource?.let { source -> loadBackgroundImage(context, source) }
 
             // Đọc và resize các ảnh photobooth
-            val bitmaps =
+            val decoded =
                     imagePaths.mapNotNull { path ->
                         val options = BitmapFactory.Options().apply { inSampleSize = 2 }
                         BitmapFactory.decodeFile(path, options)
                     }
 
-            if (bitmaps.size != requiredCount) {
+            if (decoded.size != requiredCount) {
                 throw IOException("Không thể đọc một hoặc nhiều ảnh")
             }
 
-            // Apply filter to bitmaps BEFORE drawing (optional optimization: apply paint filter during
-            // draw)
-            // We will apply filter during draw using Paint
+            // Áp dụng filter (LUT) trên GPU trước khi vẽ layout
+            val bitmaps =
+                    if (filterId == FilterCatalog.ORIGINAL_ID) decoded
+                    else renderFilter(context, decoded, filterId)
 
             // Tính toán kích thước và vị trí
             val density = context.resources.displayMetrics.density
@@ -122,56 +123,32 @@ class CreatePhotoBoothImageUseCase {
                 canvas.drawColor(Color.WHITE)
             }
 
-            // Prepare Paint with Filter
-            val paintFilter =
-                    Paint().apply {
-                        colorFilter =
-                                when (filter) {
-                                    ImageFilter.BLACK_AND_WHITE -> {
-                                        val matrix = ColorMatrix()
-                                        matrix.setSaturation(0f)
-                                        ColorMatrixColorFilter(matrix)
-                                    }
-                                    ImageFilter.SEPIA -> {
-                                        val matrix = ColorMatrix()
-                                        matrix.setSaturation(0f) // Desaturate first
-                                        // Sepia matrix provided by Android docs/StackOverflow common
-                                        // impl
-                                        val sepiaMatrix = ColorMatrix()
-                                        sepiaMatrix.setScale(1f, 0.95f, 0.82f, 1f)
-                                        matrix.postConcat(sepiaMatrix)
-                                        ColorMatrixColorFilter(matrix)
-                                    }
-                                    ImageFilter.ORIGINAL -> null
-                                }
-                    }
-
             // Vẽ các ảnh photobooth theo layout
             when (layout) {
                 PhotoBoothLayout.GRID_2X2 -> {
                     // Row 1
-                    canvas.drawBitmap(bitmaps[0], paddingPx.toFloat(), paddingPx.toFloat(), paintFilter)
+                    canvas.drawBitmap(bitmaps[0], paddingPx.toFloat(), paddingPx.toFloat(), null)
                     canvas.drawBitmap(
                             bitmaps[1],
                             (paddingPx + singleImageWidth + spacingPx).toFloat(),
                             paddingPx.toFloat(),
-                            paintFilter
+                            null
                     )
 
                     // Row 2
                     val row2Y = paddingPx + singleImageHeight + spacingPx
-                    canvas.drawBitmap(bitmaps[2], paddingPx.toFloat(), row2Y.toFloat(), paintFilter)
+                    canvas.drawBitmap(bitmaps[2], paddingPx.toFloat(), row2Y.toFloat(), null)
                     canvas.drawBitmap(
                             bitmaps[3],
                             (paddingPx + singleImageWidth + spacingPx).toFloat(),
                             row2Y.toFloat(),
-                            paintFilter
+                            null
                     )
                 }
                 else -> { // SINGLE, STRIP_1X2, STRIP_1X3, STRIP_1X4
                     var currentY = paddingPx
                     bitmaps.forEach { bitmap ->
-                        canvas.drawBitmap(bitmap, paddingPx.toFloat(), currentY.toFloat(), paintFilter)
+                        canvas.drawBitmap(bitmap, paddingPx.toFloat(), currentY.toFloat(), null)
                         currentY += bitmap.height + spacingPx
                     }
                 }
@@ -233,6 +210,20 @@ class CreatePhotoBoothImageUseCase {
             resultBitmap.recycle()
 
             uri.toString()
+        }
+    }
+
+    /** Renders each photo through the GPU filter pipeline (LUT). Source photos are recycled. */
+    private suspend fun renderFilter(
+            context: Context,
+            photos: List<Bitmap>,
+            filterId: String
+    ): List<Bitmap> {
+        val lut = FilterCatalog(context.applicationContext).loadLut(filterId)
+        return GlRenderer().use { renderer ->
+            photos.map { photo ->
+                renderer.render(photo, EditParams(filterId = filterId), lut).also { photo.recycle() }
+            }
         }
     }
 

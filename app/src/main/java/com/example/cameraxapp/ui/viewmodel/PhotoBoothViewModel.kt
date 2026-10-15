@@ -7,6 +7,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cameraxapp.core.render.FilterCatalog
 import com.example.cameraxapp.data.repository.PhotoBoothRepository
 import com.example.cameraxapp.domain.usecase.CreatePhotoBoothImageUseCase
 import com.example.cameraxapp.shared.domain.model.PhotoBooth
@@ -95,10 +96,8 @@ class PhotoBoothViewModel(
     val selectedLayout: StateFlow<com.example.cameraxapp.shared.domain.model.PhotoBoothLayout> =
             _selectedLayout
 
-    private val _selectedFilter =
-            MutableStateFlow(com.example.cameraxapp.shared.domain.model.ImageFilter.ORIGINAL)
-    val selectedFilter: StateFlow<com.example.cameraxapp.shared.domain.model.ImageFilter> =
-            _selectedFilter
+    private val _selectedFilterId = MutableStateFlow(FilterCatalog.ORIGINAL_ID)
+    val selectedFilterId: StateFlow<String> = _selectedFilterId
 
     private val _selectedTheme =
             MutableStateFlow(com.example.cameraxapp.data.model.FrameThemes.CLASSIC_WHITE)
@@ -132,8 +131,8 @@ class PhotoBoothViewModel(
         _customText.value = null
     }
 
-    fun updateFilter(filter: com.example.cameraxapp.shared.domain.model.ImageFilter) {
-        _selectedFilter.value = filter
+    fun updateFilter(filterId: String) {
+        _selectedFilterId.value = filterId
     }
 
     fun updateTheme(theme: com.example.cameraxapp.data.model.FrameTheme) {
@@ -187,7 +186,7 @@ class PhotoBoothViewModel(
                                         context,
                                         imagePaths,
                                         _selectedLayout.value,
-                                        _selectedFilter.value,
+                                        _selectedFilterId.value,
                                         backgroundSource,
                                         themeToUse,
                                         _customText.value
@@ -225,7 +224,7 @@ class PhotoBoothViewModel(
                 context,
                 imagePaths,
                 layout,
-                _selectedFilter.value,
+                _selectedFilterId.value,
                 backgroundSource,
                 themeToUse,
                 customText
@@ -244,7 +243,7 @@ class PhotoBoothViewModel(
                                         context,
                                         imagePaths,
                                         _selectedLayout.value,
-                                        _selectedFilter.value,
+                                        _selectedFilterId.value,
                                         background,
                                         null, // frameTheme
                                         _customText.value

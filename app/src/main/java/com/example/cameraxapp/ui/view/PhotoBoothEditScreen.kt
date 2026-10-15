@@ -36,6 +36,7 @@ import com.example.cameraxapp.ui.theme.DeepBlack
 import com.example.cameraxapp.ui.theme.NeonCyan
 import com.example.cameraxapp.ui.view.DeviceImagePicker
 import com.example.cameraxapp.ui.viewmodel.PhotoBoothViewModel
+import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.viewmodel.EditImageViewModel
 import com.example.cameraxapp.core.enum.TabType
 import org.koin.androidx.compose.koinViewModel
@@ -284,7 +285,7 @@ fun PhotoBoothEditScreen(
                             contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp)
                         ) {
                             items(editImageViewModel.filters) { filter ->
-                                val isSelected = selectedFilter.name == filter.name
+                                val isSelected = selectedFilter.id == filter.id
                                 Box(
                                     modifier = Modifier
                                         .width(100.dp)
@@ -305,7 +306,7 @@ fun PhotoBoothEditScreen(
                                                             android.graphics.BitmapFactory.decodeFile(imagePath)
                                                         }
                                                         if (bitmap != null) {
-                                                            val filteredBitmap = editImageViewModel.applyPresetFilter(bitmap, filter.matrix)
+                                                            val filteredBitmap = editImageViewModel.renderEdit(bitmap, EditParams(filterId = filter.id))
                                                             val file = java.io.File(context.cacheDir, "filtered_${index}_${System.currentTimeMillis()}.jpg")
                                                             file.outputStream().use { out ->
                                                                 filteredBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, out)

@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -71,9 +73,10 @@ import com.airbnb.lottie.compose.*
 import com.example.cameraxapp.core.enum.EditType
 import com.example.cameraxapp.core.enum.ImageInfo
 import com.example.cameraxapp.core.enum.TabType
+import com.example.cameraxapp.core.render.EditParams
+import com.example.cameraxapp.core.render.FilterInfo
 import com.example.cameraxapp.data.model.FrameTheme
 import com.example.cameraxapp.data.model.FrameThemes
-import com.example.cameraxapp.data.model.Preset
 import com.example.cameraxapp.ui.components.GlassButton
 import com.example.cameraxapp.ui.view.DeviceImagePicker
 import com.example.cameraxapp.viewmodel.EditImageViewModel
@@ -415,42 +418,28 @@ fun EditImageScreen(
         filteredBitmap?.let { temporaryBitmap = it }
     }
 
-    // Helper function to apply all basic edits (brightness, contrast, etc.)
+    // EditParams built from the current slider values and the selected filter.
+    // Slider ranges: brightness -1..1 maps to exposure (about -1..+1 EV), temperature -3..3 maps to -1..1.
+    fun currentEditParams(): EditParams =
+        EditParams(
+            filterId = selectedFilter.id,
+            exposure = brightness * 0.5f,
+            contrast = contrast,
+            saturation = saturation,
+            temperature = temperature / 3f,
+            highlight = highlight,
+            shadow = shadow,
+            sharpness = sharpness,
+            grain = grain,
+            vignette = vignette
+        )
+
+    // Filter and global adjustments in one GPU pass, then chromatic aberration (CPU).
     suspend fun applyAllBasicEdits(baseBitmap: Bitmap): Bitmap {
-        var result = baseBitmap
-        
-        // Apply basic edits in order
-        if (brightness != 0f) {
-            result = viewmodel.applyBrightness(result, brightness)
-        }
-        if (contrast != 0f) {
-            result = viewmodel.applyContrast(result, contrast)
-        }
-        if (saturation != 0f) {
-            result = viewmodel.applySaturation(result, saturation)
-        }
-        if (temperature != 0f) {
-            result = viewmodel.applyTemperature(result, temperature)
-        }
-        if (sharpness != 0f) {
-            result = viewmodel.applySharpness(result, sharpness)
-        }
-        if (highlight != 0f) {
-            result = viewmodel.applyHighlight(result, highlight)
-        }
-        if (shadow != 0f) {
-            result = viewmodel.applyShadow(result, shadow)
-        }
-        if (grain != 0f) {
-            result = viewmodel.applyGrain(result, grain)
-        }
-        if (vignette != 0f) {
-            result = viewmodel.applyVignette(result, vignette)
-        }
+        var result = viewmodel.renderEdit(baseBitmap, currentEditParams())
         if (chromaticAberration != 0f) {
             result = viewmodel.applyChromaticAberration(result, chromaticAberration)
         }
-        
         return result
     }
     
@@ -460,11 +449,6 @@ fun EditImageScreen(
         
         // Apply basic edits first (brightness, contrast, etc.)
         result = applyAllBasicEdits(result)
-        
-        // Apply filter (color correction)
-        if (selectedFilter.name != "None") {
-            result = viewmodel.applyPresetFilter(result, selectedFilter.matrix)
-        }
         
         // Apply light leak
         if (selectedLightLeak != lightLeaks[0]) {
@@ -507,10 +491,7 @@ fun EditImageScreen(
                         processingJob =
                             scope.launch {
                                 temporaryBitmap =
-                                    viewmodel.applyBrightness(
-                                        currentBitmap,
-                                        brightness
-                                    )
+                                    viewmodel.renderEdit(currentBitmap, EditParams(exposure = brightness * 0.5f))
                                 isProcessing = false
                             }
                     },
@@ -529,10 +510,7 @@ fun EditImageScreen(
                         processingJob =
                             scope.launch {
                                 temporaryBitmap =
-                                    viewmodel.applyContrast(
-                                        currentBitmap,
-                                        contrast
-                                    )
+                                    viewmodel.renderEdit(currentBitmap, EditParams(contrast = contrast))
                                 isProcessing = false
                             }
                     },
@@ -551,10 +529,7 @@ fun EditImageScreen(
                         processingJob =
                             scope.launch {
                                 temporaryBitmap =
-                                    viewmodel.applySaturation(
-                                        currentBitmap,
-                                        saturation
-                                    )
+                                    viewmodel.renderEdit(currentBitmap, EditParams(saturation = saturation))
                                 isProcessing = false
                             }
                     },
@@ -573,10 +548,7 @@ fun EditImageScreen(
                         processingJob =
                             scope.launch {
                                 temporaryBitmap =
-                                    viewmodel.applyTemperature(
-                                        currentBitmap,
-                                        temperature
-                                    )
+                                    viewmodel.renderEdit(currentBitmap, EditParams(temperature = temperature / 3f))
                                 isProcessing = false
                             }
                     },
@@ -595,10 +567,7 @@ fun EditImageScreen(
                         processingJob =
                             scope.launch {
                                 temporaryBitmap =
-                                    viewmodel.applySharpness(
-                                        currentBitmap,
-                                        sharpness
-                                    )
+                                    viewmodel.renderEdit(currentBitmap, EditParams(sharpness = sharpness))
                                 isProcessing = false
                             }
                     },
@@ -617,10 +586,7 @@ fun EditImageScreen(
                         processingJob =
                             scope.launch {
                                 temporaryBitmap =
-                                    viewmodel.applyHighlight(
-                                        currentBitmap,
-                                        highlight
-                                    )
+                                    viewmodel.renderEdit(currentBitmap, EditParams(highlight = highlight))
                                 isProcessing = false
                             }
                     },
@@ -639,7 +605,7 @@ fun EditImageScreen(
                         processingJob =
                             scope.launch {
                                 temporaryBitmap =
-                                    viewmodel.applyShadow(currentBitmap, shadow)
+                                    viewmodel.renderEdit(currentBitmap, EditParams(shadow = shadow))
                                 isProcessing = false
                             }
                     },
@@ -658,7 +624,7 @@ fun EditImageScreen(
                         processingJob =
                             scope.launch {
                                 temporaryBitmap =
-                                    viewmodel.applyGrain(currentBitmap, grain)
+                                    viewmodel.renderEdit(currentBitmap, EditParams(grain = grain))
                                 isProcessing = false
                             }
                     },
@@ -677,10 +643,7 @@ fun EditImageScreen(
                         processingJob =
                             scope.launch {
                                 temporaryBitmap =
-                                    viewmodel.applyVignette(
-                                        currentBitmap,
-                                        vignette
-                                    )
+                                    viewmodel.renderEdit(currentBitmap, EditParams(vignette = vignette))
                                 isProcessing = false
                             }
                     },
@@ -942,7 +905,7 @@ fun EditImageScreen(
             
             when (editType) {
                 EditType.FILTER -> {
-                    selectedFilter = selection as Preset
+                    selectedFilter = selection as FilterInfo
                     isProcessing = true
                     scope.launch {
                         // Apply all edits from original bitmap to ensure all edits are included
@@ -997,6 +960,14 @@ fun EditImageScreen(
 
         if (editType == EditType.FRAME) {
             FrameBackgroundSelector()
+        } else if (editType == EditType.FILTER) {
+            FilterGroups(
+                filters = filters,
+                groups = viewmodel.filterGroups,
+                selected = selectedFilter,
+                imagePath = imagePath,
+                onSelect = { onSelectItem(it) }
+            )
         } else {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -1021,7 +992,7 @@ fun EditImageScreen(
                     ) {
                         when (editType) {
                             EditType.FILTER ->
-                                FilterItem(filter = items[it] as Preset, imagePath = imagePath)
+                                FilterItem(filter = items[it] as FilterInfo, imagePath = imagePath)
 
                             EditType.FRAME -> {
                                 // Frame background selector is shown separately
@@ -1462,7 +1433,51 @@ fun EditSlider(
 }
 
 @Composable
-fun FilterItem(filter: Preset, imagePath: String) {
+fun FilterGroups(
+    filters: List<FilterInfo>,
+    groups: List<String>,
+    selected: FilterInfo,
+    imagePath: String,
+    onSelect: (FilterInfo) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        groups.forEach { group ->
+            Text(
+                group,
+                color = Color.White,
+                fontSize = MaterialTheme.typography.titleSmall.fontSize,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.height(136.dp)
+            ) {
+                items(filters.filter { it.group == group }) { filter ->
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (selected == filter) Color.Yellow.copy(alpha = 0.8f) else Color.Transparent
+                            )
+                            .padding(if (selected == filter) 4.dp else 0.dp)
+                            .clickable { onSelect(filter) }
+                    ) {
+                        FilterItem(filter = filter, imagePath = imagePath)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FilterItem(filter: FilterInfo, imagePath: String) {
     return Box(
         modifier =
             Modifier

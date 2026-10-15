@@ -16,6 +16,6 @@ val appModule = module {
     single { com.example.cameraxapp.domain.usecase.GifExportUseCase() }
     viewModel { PhotoBoothViewModel(get(), get(), get(), get()) }
     viewModel { com.example.cameraxapp.ui.viewmodel.GalleryViewModel(get()) }
-    viewModel { com.example.cameraxapp.viewmodel.EditImageViewModel() }
+    viewModel { com.example.cameraxapp.viewmodel.EditImageViewModel(get()) }
     single { com.example.cameraxapp.core.render.FilterCatalog(androidContext()) }
 }
