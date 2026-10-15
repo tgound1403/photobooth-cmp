@@ -43,3 +43,6 @@ fun requiresPaywall(filterId: String, filters: List<FilterInfo>, isPremium: Bool
     if (isPremium) return false
     return filters.any { it.id == filterId && it.premium }
 }
+
+/** Free users get a small watermark on photobooth images. Premium removes it. */
+fun shouldShowWatermark(isPremium: Boolean): Boolean = !isPremium

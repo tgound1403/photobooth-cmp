@@ -46,6 +46,12 @@ class PremiumRulesTest {
     }
 
     @Test
+    fun watermark_shownForFree_hiddenForPremium() {
+        assertTrue(shouldShowWatermark(isPremium = false))
+        assertFalse(shouldShowWatermark(isPremium = true))
+    }
+
+    @Test
     fun premium_isFalseForNoneOrPendingOnly() {
         assertFalse(isPremiumFrom(emptyList()))
         assertFalse(isPremiumFrom(listOf(PurchaseStatus.NONE)))

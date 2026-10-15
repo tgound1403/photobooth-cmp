@@ -18,10 +18,12 @@ import android.util.Log
 import androidx.core.graphics.drawable.toBitmap
 import coil.ImageLoader
 import coil.request.ImageRequest
+import com.tgound.cameraxapp.R
 import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.FilterCatalog
 import com.example.cameraxapp.core.render.GlRenderer
 import com.example.cameraxapp.data.model.FrameTheme
+import com.example.cameraxapp.data.billing.shouldShowWatermark
 import com.example.cameraxapp.data.model.ThemePattern
 import com.example.cameraxapp.shared.domain.model.PhotoBoothLayout
 import java.io.IOException
@@ -29,9 +31,23 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 
-class CreatePhotoBoothImageUseCase {
+/**
+ * Builds the photobooth strip or grid. [isPremium] is read at each call, so a purchase made while
+ * the app is open takes effect on the next image. Free users get a small watermark.
+ */
+class CreatePhotoBoothImageUseCase(
+        private val isPremium: StateFlow<Boolean> = MutableStateFlow(false),
+) {
+    private companion object {
+        const val WATERMARK_TEXT_SIZE = 12f
+        const val WATERMARK_BOTTOM_OFFSET = 14f
+        const val WATERMARK_ALPHA = 150
+    }
+
     suspend fun execute(
             context: Context,
             imagePaths: List<String>,
@@ -174,6 +190,10 @@ class CreatePhotoBoothImageUseCase {
             val textY = totalHeight - (bottomPaddingPx / 2)
             canvas.drawText(displayText, totalWidth / 2f, textY.toFloat(), textPaint)
 
+            if (shouldShowWatermark(isPremium.value)) {
+                drawWatermark(context, canvas, totalWidth, totalHeight, density, paddingPx, textPaint)
+            }
+
             // Lưu ảnh
             val contentValues =
                     ContentValues().apply {
@@ -211,6 +231,31 @@ class CreatePhotoBoothImageUseCase {
 
             uri.toString()
         }
+    }
+
+    /** Small corner text in the bottom margin, using the date text colour at reduced opacity. */
+    private fun drawWatermark(
+            context: Context,
+            canvas: Canvas,
+            width: Int,
+            height: Int,
+            density: Float,
+            paddingPx: Int,
+            base: Paint
+    ) {
+        val paint =
+                Paint(base).apply {
+                    textSize = WATERMARK_TEXT_SIZE * density
+                    textAlign = Paint.Align.RIGHT
+                    typeface = Typeface.DEFAULT
+                    alpha = WATERMARK_ALPHA
+                }
+        canvas.drawText(
+                context.getString(R.string.watermark_text),
+                (width - paddingPx).toFloat(),
+                height - WATERMARK_BOTTOM_OFFSET * density,
+                paint
+        )
     }
 
     /** Renders each photo through the GPU filter pipeline (LUT). Source photos are recycled. */
