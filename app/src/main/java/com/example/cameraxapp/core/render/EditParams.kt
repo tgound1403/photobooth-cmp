@@ -3,6 +3,38 @@ package com.example.cameraxapp.core.render
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+/** Crop aspect ratios. [ratio] is width / height; null means the full image. */
+@Serializable
+enum class CropAspect(val ratio: Float?) {
+    FREE(null),
+    SQUARE(1f),
+    R4_5(4f / 5f),
+    R3_4(3f / 4f),
+    R9_16(9f / 16f),
+}
+
+/**
+ * Geometric edit, applied after the GPU pass: rotation, flips and an aspect-ratio crop.
+ * Every field has a default so recipes saved before crop existed still decode.
+ */
+@Serializable
+data class CropParams(
+    val aspect: CropAspect = CropAspect.FREE,
+    val quarterTurns: Int = 0,         // rotation in 90 degree steps, clockwise
+    val flipHorizontal: Boolean = false,
+    val flipVertical: Boolean = false,
+) {
+    /** Same crop with [quarterTurns] wrapped into 0..3. */
+    fun normalized(): CropParams = copy(quarterTurns = ((quarterTurns % 4) + 4) % 4)
+
+    val isIdentity: Boolean
+        get() =
+            aspect == CropAspect.FREE &&
+                normalized().quarterTurns == 0 &&
+                !flipHorizontal &&
+                !flipVertical
+}
+
 /**
  * Serializable description of a photo edit: one LUT filter plus global adjustments.
  * Stored as JSON so old recipes keep parsing when fields are added later.
@@ -22,6 +54,8 @@ data class EditParams(
     val sharpness: Float = 0f,       // 0..1
     val grain: Float = 0f,           // 0..1
     val vignette: Float = 0f,        // 0..1
+    val chromatic: Float = 0f,       // 0..1, RGB channel split (CPU pass, not in the GPU shader)
+    val crop: CropParams = CropParams(),
 ) {
     /** Returns a copy with every field clamped to its documented range. */
     fun clamped(): EditParams =
@@ -38,6 +72,8 @@ data class EditParams(
             sharpness = sharpness.coerceIn(0f, 1f),
             grain = grain.coerceIn(0f, 1f),
             vignette = vignette.coerceIn(0f, 1f),
+            chromatic = chromatic.coerceIn(0f, 1f),
+            crop = crop.normalized(),
         )
 
     /** True when rendering these params would leave the photo unchanged. */
@@ -54,7 +90,9 @@ data class EditParams(
                 fade == 0f &&
                 sharpness == 0f &&
                 grain == 0f &&
-                vignette == 0f
+                vignette == 0f &&
+                chromatic == 0f &&
+                crop.isIdentity
 
     fun toJson(): String = JSON.encodeToString(serializer(), this)
 
