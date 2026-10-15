@@ -57,15 +57,16 @@ fun PhotoBoothSelectionScreen(
     val selectedImages by viewModel.selectedImages.collectAsState()
     val capturedImages by viewModel.capturedImages.collectAsState()
     val requiredCount by viewModel.requiredPhotoCount.collectAsState()
-    val editParams by viewModel.editParams.collectAsState()
+    val filterSources by viewModel.filterSources.collectAsState()
+    val selectedSourceId by viewModel.selectedSourceId.collectAsState()
 
     PhotoBoothSelectionContent(
         capturedImages = capturedImages,
         selectedImages = selectedImages,
         requiredCount = requiredCount,
-        filters = viewModel.filters,
-        selectedFilterId = editParams.filterId,
-        onFilterSelect = { viewModel.updateFilter(it) },
+        filters = filterSources,
+        selectedFilterId = selectedSourceId,
+        onFilterSelect = { viewModel.selectFilterSource(it) },
         onBack = { navController.navigateUp() },
         onToggle = { viewModel.toggleImageSelection(it) },
         onConfirm = {

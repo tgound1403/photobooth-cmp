@@ -9,20 +9,29 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.FilterCatalog
+import com.example.cameraxapp.core.render.FilterInfo
+import com.example.cameraxapp.core.render.Recipe
+import com.example.cameraxapp.core.render.RecipeFilters
 import com.example.cameraxapp.data.repository.PhotoBoothRepository
+import com.example.cameraxapp.data.repository.RecipeRepository
 import com.example.cameraxapp.domain.usecase.CreatePhotoBoothImageUseCase
 import com.example.cameraxapp.shared.domain.model.PhotoBooth
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class PhotoBoothViewModel(
         private val repository: PhotoBoothRepository,
         private val application: Application,
         private val createPhotoBoothImageUseCase: CreatePhotoBoothImageUseCase,
-        private val gifExportUseCase: com.example.cameraxapp.domain.usecase.GifExportUseCase
+        private val gifExportUseCase: com.example.cameraxapp.domain.usecase.GifExportUseCase,
+        private val recipeRepository: RecipeRepository
 ) : AndroidViewModel(application) {
 
     private val _gifExportState = MutableStateFlow<GifExportState>(GifExportState.Idle)
@@ -99,8 +108,25 @@ class PhotoBoothViewModel(
 
     val filters = FilterCatalog(application).filters
 
+    private val recipes: StateFlow<List<Recipe>> =
+            recipeRepository
+                    .observeRecipes()
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Catalog filters followed by saved recipes, as one list for the selection strip. */
+    val filterSources: StateFlow<List<FilterInfo>> =
+            recipes
+                    .map { list -> filters + list.map(RecipeFilters::toFilterInfo) }
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), filters)
+
     private val _editParams = MutableStateFlow(EditParams())
     val editParams: StateFlow<EditParams> = _editParams.asStateFlow()
+
+    /** Id of the source picked in the strip. Null until the user picks one. */
+    private val _selectedSourceId = MutableStateFlow<String?>(null)
+    val selectedSourceId: StateFlow<String> =
+            combine(_selectedSourceId, _editParams) { source, params -> source ?: params.filterId }
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "original")
 
     private val _selectedTheme =
             MutableStateFlow(com.example.cameraxapp.data.model.FrameThemes.CLASSIC_WHITE)
@@ -136,6 +162,20 @@ class PhotoBoothViewModel(
 
     fun updateFilter(filterId: String) {
         _editParams.value = _editParams.value.copy(filterId = filterId)
+    }
+
+    /**
+     * Picks a strip entry. A recipe replaces the edit values with its own; a catalog filter only
+     * changes filterId, as before.
+     */
+    fun selectFilterSource(sourceId: String) {
+        val recipe = RecipeFilters.recipeFor(sourceId, recipes.value)
+        if (recipe != null) {
+            _editParams.value = recipe.params
+        } else {
+            updateFilter(sourceId)
+        }
+        _selectedSourceId.value = sourceId
     }
 
     fun updateTheme(theme: com.example.cameraxapp.data.model.FrameTheme) {
