@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 fun ManualControls(
     onExposureChange: (Long) -> Unit,
     onISOChange: (Int) -> Unit,
-    onClickCapture:  Unit
+    onClickCapture: () -> Unit
 ) {
     val context = LocalContext.current
     var isoValue by remember { mutableIntStateOf(100) }
@@ -78,9 +78,7 @@ fun ManualControls(
             modifier = Modifier
                 .size(40.dp)
                 .background(Color.White, shape = CircleShape)
-                .clickable {
-                    onClickCapture
-                },
+                .clickable { onClickCapture() },
             contentAlignment = Alignment.Center
         ) {
             Box(
