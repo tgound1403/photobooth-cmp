@@ -53,7 +53,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.cameraxapp.core.extension.findActivity
+import com.example.cameraxapp.data.billing.BillingRepository
 import com.example.cameraxapp.ui.components.GlassButton
+import com.example.cameraxapp.ui.view.PaywallScreen
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.Box
+import org.koin.androidx.compose.get
 import com.example.cameraxapp.ui.theme.AppColors
 import com.example.cameraxapp.ui.theme.IconSize
 import com.example.cameraxapp.ui.theme.Radius
@@ -81,11 +87,16 @@ fun EditorScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val recipes by viewModel.recipes.collectAsState()
+    val isPremium by viewModel.isPremium.collectAsState()
+    val billing: BillingRepository = get()
+    val prices by billing.prices.collectAsState()
+    val activity = LocalContext.current.findActivity()
     val density = LocalDensity.current.density
     val snackbar = remember { SnackbarHostState() }
     var tab by rememberSaveable { mutableStateOf(EditorTab.FILTER) }
 
     LaunchedEffect(imagePath, density) { viewModel.load(imagePath, density) }
+    LaunchedEffect(isPremium) { if (isPremium) viewModel.dismissPaywall() }
     LaunchedEffect(viewModel) {
         viewModel.saved.collect { snackbar.showSnackbar("Image saved") }
     }
@@ -99,52 +110,66 @@ fun EditorScreen(
         }
     }
 
-    Scaffold(
-        containerColor = AppColors.background,
-        snackbarHost = { SnackbarHost(snackbar) },
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            EditorTopBar(
-                state = state,
-                onBack = { navController.popBackStack() },
-                onUndo = viewModel::undo,
-                onRedo = viewModel::redo,
-                onReset = viewModel::reset,
-                onSave = viewModel::save,
-            )
-            PreviewArea(
-                state = state,
-                onPressOriginal = viewModel::setShowOriginal,
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-            )
-            EditorTabRow(selected = tab, onSelect = { tab = it })
-            Box(modifier = Modifier.fillMaxWidth().background(AppColors.surface)) {
-                val params = state.snapshot.params
-                when (tab) {
-                    EditorTab.FILTER -> FilterPanel(
-                        params = params,
-                        filters = viewModel.filters,
-                        thumbnails = state.thumbnails,
-                        onRequestThumbnail = viewModel::requestThumbnail,
-                        onSelect = viewModel::selectFilter,
-                        onLive = viewModel::updateParams,
-                        onCommit = viewModel::commitParams,
-                        recipes = recipes,
-                        canSaveRecipe = state.sourceLoaded && !state.isSaving,
-                        onSaveRecipe = viewModel::saveRecipe,
-                        onApplyRecipe = viewModel::applyRecipe,
-                        onImportRecipe = viewModel::importRecipeCode,
-                    )
-                    EditorTab.ADJUST -> AdjustPanel(
-                        params = params,
-                        onLive = viewModel::updateParams,
-                        onCommit = viewModel::commitParams,
-                    )
-                    EditorTab.CROP -> CropPanel(crop = params.crop, onCrop = viewModel::setCrop)
-                    EditorTab.FRAME -> FramePanel(frame = state.snapshot.frame, onFrame = viewModel::setFrame)
-                    EditorTab.OVERLAY -> OverlayPanel(overlays = state.snapshot.overlays, onOverlays = viewModel::setOverlays)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            containerColor = AppColors.background,
+            snackbarHost = { SnackbarHost(snackbar) },
+        ) { padding ->
+            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                EditorTopBar(
+                    state = state,
+                    onBack = { navController.popBackStack() },
+                    onUndo = viewModel::undo,
+                    onRedo = viewModel::redo,
+                    onReset = viewModel::reset,
+                    onSave = viewModel::save,
+                )
+                PreviewArea(
+                    state = state,
+                    onPressOriginal = viewModel::setShowOriginal,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                )
+                EditorTabRow(selected = tab, onSelect = { tab = it })
+                Box(modifier = Modifier.fillMaxWidth().background(AppColors.surface)) {
+                    val params = state.snapshot.params
+                    when (tab) {
+                        EditorTab.FILTER -> FilterPanel(
+                            params = params,
+                            filters = viewModel.filters,
+                        isPremium = isPremium,
+                            thumbnails = state.thumbnails,
+                            onRequestThumbnail = viewModel::requestThumbnail,
+                            onSelect = viewModel::selectFilter,
+                            onLive = viewModel::updateParams,
+                            onCommit = viewModel::commitParams,
+                            recipes = recipes,
+                            canSaveRecipe = state.sourceLoaded && !state.isSaving,
+                            onSaveRecipe = viewModel::saveRecipe,
+                            onApplyRecipe = viewModel::applyRecipe,
+                            onImportRecipe = viewModel::importRecipeCode,
+                        )
+                        EditorTab.ADJUST -> AdjustPanel(
+                            params = params,
+                            onLive = viewModel::updateParams,
+                            onCommit = viewModel::commitParams,
+                        )
+                        EditorTab.CROP -> CropPanel(crop = params.crop, onCrop = viewModel::setCrop)
+                        EditorTab.FRAME -> FramePanel(frame = state.snapshot.frame, onFrame = viewModel::setFrame)
+                        EditorTab.OVERLAY -> OverlayPanel(overlays = state.snapshot.overlays, onOverlays = viewModel::setOverlays)
+                    }
                 }
             }
+        }
+
+        if (state.showPaywall) {
+            PaywallScreen(
+                before = state.original,
+                after = state.preview,
+                monthlyPrice = prices[BillingRepository.MONTHLY_PRODUCT_ID],
+                yearlyPrice = prices[BillingRepository.YEARLY_PRODUCT_ID],
+                onPurchase = { productId -> activity?.let { billing.launchPurchase(it, productId) } },
+                onDismiss = viewModel::dismissPaywall,
+            )
         }
     }
 }

@@ -4,4 +4,15 @@
     <string name="start_capture">Start Capture</string>
     <string name="stop_capture">Stop Capture</string>
     <string name="watermark_text">Made with CameraXApp</string>
+    <string name="pro_badge">PRO</string>
+    <string name="paywall_title">Unlock Premium filters</string>
+    <string name="paywall_body">Keep the look you just chose. Premium also removes the watermark from photobooth images.</string>
+    <string name="paywall_before">Before</string>
+    <string name="paywall_after">After</string>
+    <string name="paywall_yearly">Yearly</string>
+    <string name="paywall_monthly">Monthly</string>
+    <string name="paywall_best_value">Best value</string>
+    <string name="paywall_subscribe">Subscribe</string>
+    <string name="paywall_price_loading">Loading price</string>
+    <string name="paywall_not_now">Not now</string>
 </resources>

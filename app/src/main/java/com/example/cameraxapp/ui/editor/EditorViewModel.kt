@@ -3,6 +3,9 @@ package com.example.cameraxapp.ui.editor
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import com.example.cameraxapp.core.render.CropParams
+import com.example.cameraxapp.core.analytics.Analytics
+import com.example.cameraxapp.core.analytics.AnalyticsEvent
+import com.example.cameraxapp.core.analytics.NoOpAnalytics
 import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.EditRenderer
 import com.example.cameraxapp.core.render.EditSnapshot
@@ -12,6 +15,7 @@ import com.example.cameraxapp.core.render.OverlaySpec
 import com.example.cameraxapp.core.render.Recipe
 import com.example.cameraxapp.core.render.RecipeCode
 import com.example.cameraxapp.core.render.RecipeCodeResult
+import com.example.cameraxapp.data.billing.requiresPaywall
 import com.example.cameraxapp.data.repository.RecipeRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -42,6 +46,9 @@ class EditorViewModel(
     /** Filter list for the filter strip, supplied by DI. */
     val filters: List<FilterInfo> = emptyList(),
     private val recipeRepository: RecipeRepository,
+    /** Premium entitlement. Saving a premium filter while this is false opens the paywall. */
+    val isPremium: StateFlow<Boolean> = MutableStateFlow(false),
+    private val analytics: Analytics = NoOpAnalytics,
     uiDispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
 ) : ViewModel() {
 
@@ -108,7 +115,10 @@ class EditorViewModel(
     /** Ends a slider drag: records the change since the last commit as one undo step. */
     fun commitParams() = commitEdit()
 
-    fun selectFilter(filterId: String) = discreteEdit { it.copy(params = it.params.copy(filterId = filterId)) }
+    fun selectFilter(filterId: String) {
+        discreteEdit { it.copy(params = it.params.copy(filterId = filterId)) }
+        analytics.log(AnalyticsEvent.FILTER_APPLIED, mapOf("filter_id" to filterId))
+    }
 
     fun setCrop(crop: CropParams) = discreteEdit { it.copy(params = it.params.copy(crop = crop)) }
 
@@ -144,6 +154,10 @@ class EditorViewModel(
     /** Renders the edit at full size and saves it as a new JPEG. */
     fun save() {
         if (_state.value.isSaving) return
+        if (requiresPaywall(history.present.params.filterId, filters, isPremium.value)) {
+            openPaywall()
+            return
+        }
         val src = source ?: return
         scope.launch {
             _state.update { it.copy(isSaving = true, error = null) }
@@ -152,7 +166,10 @@ class EditorViewModel(
             val full = renderer.render(src, snapshot, bg, density, maxSize = null)
             val uri = withContext(Dispatchers.IO) { io.saveJpeg(full) }
             _state.update { it.copy(isSaving = false, error = if (uri == null) "Could not save image" else null) }
-            if (uri != null) _saved.emit(uri)
+            if (uri != null) {
+                analytics.log(AnalyticsEvent.IMAGE_SAVED)
+                _saved.emit(uri)
+            }
         }
     }
 
@@ -163,6 +180,10 @@ class EditorViewModel(
     fun saveRecipe() {
         val src = source
         val params = history.present.params
+        if (requiresPaywall(params.filterId, filters, isPremium.value)) {
+            openPaywall()
+            return
+        }
         val name = "Recipe ${recipes.value.size + 1}"
         scope.launch {
             val thumb = src?.let { renderer.render(it, EditSnapshot(params = params), null, density, THUMB_MAX_SIDE) }
@@ -180,6 +201,16 @@ class EditorViewModel(
                 _notices.tryEmit("Recipe imported")
             }
         }
+    }
+
+    /** Closes the paywall. Nothing is saved until the user taps Save again. */
+    fun dismissPaywall() {
+        _state.update { it.copy(showPaywall = false) }
+    }
+
+    private fun openPaywall() {
+        _state.update { it.copy(showPaywall = true) }
+        analytics.log(AnalyticsEvent.PAYWALL_SHOWN, mapOf("trigger" to "save"))
     }
 
     fun clearError() {

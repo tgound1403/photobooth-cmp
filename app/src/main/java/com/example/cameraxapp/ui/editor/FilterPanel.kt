@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.FilterCatalog
@@ -42,6 +43,7 @@ import com.example.cameraxapp.ui.theme.AppColors
 import com.example.cameraxapp.ui.theme.Radius
 import com.example.cameraxapp.ui.theme.Spacing
 import com.example.cameraxapp.ui.theme.Stroke
+import com.tgound.cameraxapp.R
 
 private val THUMB_SIZE = 64.dp
 
@@ -66,6 +68,8 @@ fun FilterPanel(
     onSaveRecipe: () -> Unit,
     onApplyRecipe: (EditParams) -> Unit,
     onImportRecipe: (String) -> Unit,
+    /** Premium filters get a PRO badge until the user has Premium. */
+    isPremium: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var section by rememberSaveable { mutableStateOf(FilterSection.FILTERS) }
@@ -75,7 +79,7 @@ fun FilterPanel(
     ) {
         SectionRow(selected = section, onSelect = { section = it })
         when (section) {
-            FilterSection.FILTERS -> FilterStripSection(params, filters, thumbnails, onRequestThumbnail, onSelect, onLive, onCommit)
+            FilterSection.FILTERS -> FilterStripSection(params, filters, thumbnails, onRequestThumbnail, onSelect, onLive, onCommit, isPremium)
             FilterSection.RECIPES -> RecipePanel(
                 params = params,
                 recipes = recipes,
@@ -117,6 +121,7 @@ private fun FilterStripSection(
     onSelect: (String) -> Unit,
     onLive: (ParamsEdit) -> Unit,
     onCommit: () -> Unit,
+    isPremium: Boolean,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         LazyRow(
@@ -129,6 +134,7 @@ private fun FilterStripSection(
                     filter = filter,
                     selected = params.filterId == filter.id,
                     thumbnail = thumbnails[filter.id],
+                    showPro = filter.premium && !isPremium,
                     onClick = { onSelect(filter.id) },
                 )
             }
@@ -153,6 +159,7 @@ private fun FilterThumb(
     filter: FilterInfo,
     selected: Boolean,
     thumbnail: Bitmap?,
+    showPro: Boolean,
     onClick: () -> Unit,
 ) {
     val shape = RoundedCornerShape(Radius.sm)
@@ -178,6 +185,18 @@ private fun FilterThumb(
                     contentDescription = filter.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
+                )
+            }
+            if (showPro) {
+                Text(
+                    text = stringResource(R.string.pro_badge),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.onAccent,
+                    modifier = Modifier
+                        .align(androidx.compose.ui.Alignment.TopEnd)
+                        .padding(Spacing.xs)
+                        .background(AppColors.accent, RoundedCornerShape(Radius.sm))
+                        .padding(horizontal = Spacing.xs),
                 )
             }
         }

@@ -35,6 +35,8 @@ val appModule = module {
             renderer = com.example.cameraxapp.core.render.EditPipeline(get()),
             filters = get<com.example.cameraxapp.core.render.FilterCatalog>().filters,
             recipeRepository = get(),
+            isPremium = get<com.example.cameraxapp.data.billing.BillingRepository>().isPremium,
+            analytics = get(),
         )
     }
 }

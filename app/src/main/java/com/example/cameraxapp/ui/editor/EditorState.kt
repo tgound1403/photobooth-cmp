@@ -22,5 +22,7 @@ data class EditorState(
     /** Filter id to small preview, for the filter strip. */
     val thumbnails: Map<String, Bitmap> = emptyMap(),
     val isSaving: Boolean = false,
+    /** True when a save or recipe save needs Premium and the paywall is open. */
+    val showPaywall: Boolean = false,
     val error: String? = null,
 )

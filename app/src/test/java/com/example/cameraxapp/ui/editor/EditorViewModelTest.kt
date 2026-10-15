@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import com.example.cameraxapp.core.render.CropAspect
 import com.example.cameraxapp.core.render.CropParams
 import com.example.cameraxapp.core.render.EditParams
+import com.example.cameraxapp.core.render.FilterInfo
 import com.example.cameraxapp.core.render.EditRenderer
 import com.example.cameraxapp.core.render.EditSnapshot
 import com.example.cameraxapp.core.render.RecipeCode
@@ -14,6 +15,7 @@ import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -163,5 +165,70 @@ class EditorViewModelTest {
         assertEquals(1, vm.recipes.value.size)
         assertEquals("kodak", vm.recipes.value.single().params.filterId)
         assertEquals(EditParams(), vm.state.value.snapshot.params)
+    }
+
+    private val premiumFilters = listOf(
+        FilterInfo(id = "kodak", name = "Kodak", group = "Classic", premium = false),
+        FilterInfo(id = "rose_skin", name = "Rose Skin", group = "Portrait", premium = true),
+    )
+
+    private fun gatedViewModel(premium: Boolean) =
+        EditorViewModel(
+            io = NoImageIo,
+            renderer = UnusedRenderer(),
+            filters = premiumFilters,
+            recipeRepository = RecipeRepository(FakeRecipeDao(), File(System.getProperty("java.io.tmpdir"), "editor-test")),
+            isPremium = MutableStateFlow(premium),
+            uiDispatcher = Dispatchers.Unconfined,
+        )
+
+    @Test
+    fun previewingPremiumFilter_isAllowedForFreeUser() {
+        val vm = gatedViewModel(premium = false)
+        vm.selectFilter("rose_skin")
+        assertEquals("rose_skin", vm.state.value.snapshot.params.filterId)
+        assertFalse(vm.state.value.showPaywall)
+    }
+
+    @Test
+    fun saveWithPremiumFilter_forFreeUser_opensPaywallAndDoesNotSave() {
+        val vm = gatedViewModel(premium = false)
+        vm.selectFilter("rose_skin")
+        vm.save()
+        assertTrue(vm.state.value.showPaywall)
+        assertFalse(vm.state.value.isSaving)
+    }
+
+    @Test
+    fun saveWithFreeFilter_neverOpensPaywall() {
+        val vm = gatedViewModel(premium = false)
+        vm.selectFilter("kodak")
+        vm.save()
+        assertFalse(vm.state.value.showPaywall)
+    }
+
+    @Test
+    fun saveWithPremiumFilter_forPremiumUser_doesNotOpenPaywall() {
+        val vm = gatedViewModel(premium = true)
+        vm.selectFilter("rose_skin")
+        vm.save()
+        assertFalse(vm.state.value.showPaywall)
+    }
+
+    @Test
+    fun saveRecipeWithPremiumFilter_forFreeUser_opensPaywall() {
+        val vm = gatedViewModel(premium = false)
+        vm.selectFilter("rose_skin")
+        vm.saveRecipe()
+        assertTrue(vm.state.value.showPaywall)
+    }
+
+    @Test
+    fun dismissPaywall_closesIt() {
+        val vm = gatedViewModel(premium = false)
+        vm.selectFilter("rose_skin")
+        vm.save()
+        vm.dismissPaywall()
+        assertFalse(vm.state.value.showPaywall)
     }
 }
