@@ -6,7 +6,15 @@ import com.example.cameraxapp.core.render.CropParams
 import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.EditRenderer
 import com.example.cameraxapp.core.render.EditSnapshot
+import com.example.cameraxapp.core.render.RecipeCode
+import com.example.cameraxapp.data.FakeRecipeDao
+import com.example.cameraxapp.data.dao.RecipeDao
+import com.example.cameraxapp.data.repository.RecipeRepository
+import java.io.File
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -33,8 +41,13 @@ class EditorViewModelTest {
         override fun saveJpeg(bitmap: Bitmap): String? = null
     }
 
-    private fun newViewModel() =
-        EditorViewModel(NoImageIo, UnusedRenderer(), uiDispatcher = Dispatchers.Unconfined)
+    private fun newViewModel(recipes: RecipeDao = FakeRecipeDao()) =
+        EditorViewModel(
+            io = NoImageIo,
+            renderer = UnusedRenderer(),
+            recipeRepository = RecipeRepository(recipes, File(System.getProperty("java.io.tmpdir"), "editor-test")),
+            uiDispatcher = Dispatchers.Unconfined,
+        )
 
     @Test
     fun sliderDragIsOneUndoStepOnRelease() {
@@ -114,5 +127,41 @@ class EditorViewModelTest {
         vm.commitParams()
         assertFalse(vm.state.value.canUndo)
         assertNull(vm.state.value.preview)
+    }
+
+    @Test
+    fun applyingRecipeIsOneUndoStep() {
+        val vm = newViewModel()
+        vm.applyRecipe(EditParams(filterId = "kodak", exposure = 0.3f))
+        assertEquals("kodak", vm.state.value.snapshot.params.filterId)
+        assertTrue(vm.state.value.canUndo)
+
+        vm.undo()
+        assertEquals(EditParams(), vm.state.value.snapshot.params)
+        vm.redo()
+        assertEquals(0.3f, vm.state.value.snapshot.params.exposure, 0f)
+    }
+
+    @Test
+    fun badImportReportsTheErrorAndSavesNothing() {
+        val vm = newViewModel()
+        val notices = mutableListOf<String>()
+        val collector = CoroutineScope(Dispatchers.Unconfined).launch { vm.notices.collect { notices += it } }
+
+        vm.importRecipeCode("not a code")
+
+        assertEquals(listOf("Not a recipe code"), notices)
+        assertTrue(vm.recipes.value.isEmpty())
+        collector.cancel()
+    }
+
+    @Test
+    fun goodImportSavesTheRecipeWithoutApplyingIt() {
+        val vm = newViewModel()
+        vm.importRecipeCode(RecipeCode.encode(EditParams(filterId = "kodak", grain = 0.2f)))
+
+        assertEquals(1, vm.recipes.value.size)
+        assertEquals("kodak", vm.recipes.value.single().params.filterId)
+        assertEquals(EditParams(), vm.state.value.snapshot.params)
     }
 }

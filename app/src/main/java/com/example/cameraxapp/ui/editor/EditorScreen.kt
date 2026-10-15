@@ -80,6 +80,7 @@ fun EditorScreen(
     viewModel: EditorViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val recipes by viewModel.recipes.collectAsState()
     val density = LocalDensity.current.density
     val snackbar = remember { SnackbarHostState() }
     var tab by rememberSaveable { mutableStateOf(EditorTab.FILTER) }
@@ -87,6 +88,9 @@ fun EditorScreen(
     LaunchedEffect(imagePath, density) { viewModel.load(imagePath, density) }
     LaunchedEffect(viewModel) {
         viewModel.saved.collect { snackbar.showSnackbar("Image saved") }
+    }
+    LaunchedEffect(viewModel) {
+        viewModel.notices.collect { snackbar.showSnackbar(it) }
     }
     LaunchedEffect(state.error) {
         state.error?.let {
@@ -125,6 +129,11 @@ fun EditorScreen(
                         onSelect = viewModel::selectFilter,
                         onLive = viewModel::updateParams,
                         onCommit = viewModel::commitParams,
+                        recipes = recipes,
+                        canSaveRecipe = state.sourceLoaded && !state.isSaving,
+                        onSaveRecipe = viewModel::saveRecipe,
+                        onApplyRecipe = viewModel::applyRecipe,
+                        onImportRecipe = viewModel::importRecipeCode,
                     )
                     EditorTab.ADJUST -> AdjustPanel(
                         params = params,

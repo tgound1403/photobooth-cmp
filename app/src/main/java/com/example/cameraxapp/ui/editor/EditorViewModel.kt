@@ -9,6 +9,10 @@ import com.example.cameraxapp.core.render.EditSnapshot
 import com.example.cameraxapp.core.render.FilterInfo
 import com.example.cameraxapp.core.render.FrameSpec
 import com.example.cameraxapp.core.render.OverlaySpec
+import com.example.cameraxapp.core.render.Recipe
+import com.example.cameraxapp.core.render.RecipeCode
+import com.example.cameraxapp.core.render.RecipeCodeResult
+import com.example.cameraxapp.data.repository.RecipeRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,9 +22,11 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -35,11 +41,20 @@ class EditorViewModel(
     private val renderer: EditRenderer,
     /** Filter list for the filter strip, supplied by DI. */
     val filters: List<FilterInfo> = emptyList(),
+    private val recipeRepository: RecipeRepository,
     uiDispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
 ) : ViewModel() {
 
     private val scope = CoroutineScope(SupervisorJob() + uiDispatcher)
     private val history = EditHistory(EditSnapshot())
+
+    /** Saved recipes, newest first. */
+    val recipes: StateFlow<List<Recipe>> =
+        recipeRepository.observeRecipes().stateIn(scope, SharingStarted.Eagerly, emptyList())
+
+    private val _notices = MutableSharedFlow<String>(extraBufferCapacity = 4)
+    /** Short messages for the snackbar: a recipe was saved or imported, or why an import failed. */
+    val notices: SharedFlow<String> = _notices.asSharedFlow()
 
     private val _state = MutableStateFlow(EditorState())
     val state: StateFlow<EditorState> = _state.asStateFlow()
@@ -138,6 +153,32 @@ class EditorViewModel(
             val uri = withContext(Dispatchers.IO) { io.saveJpeg(full) }
             _state.update { it.copy(isSaving = false, error = if (uri == null) "Could not save image" else null) }
             if (uri != null) _saved.emit(uri)
+        }
+    }
+
+    /** Applies a recipe's edit values as one undoable step. Overlays and frame are kept. */
+    fun applyRecipe(params: EditParams) = discreteEdit { it.copy(params = params.clamped()) }
+
+    /** Saves the current edit values, crop included, as a new recipe with a rendered thumbnail. */
+    fun saveRecipe() {
+        val src = source
+        val params = history.present.params
+        val name = "Recipe ${recipes.value.size + 1}"
+        scope.launch {
+            val thumb = src?.let { renderer.render(it, EditSnapshot(params = params), null, density, THUMB_MAX_SIDE) }
+            recipeRepository.saveRecipe(name, params, thumb)
+            _notices.tryEmit("Recipe saved")
+        }
+    }
+
+    /** Imports a pasted share code into the library. Nothing is applied until the user taps it. */
+    fun importRecipeCode(code: String) {
+        when (val result = RecipeCode.decode(code)) {
+            is RecipeCodeResult.Error -> _notices.tryEmit(result.message)
+            is RecipeCodeResult.Ok -> scope.launch {
+                recipeRepository.saveRecipe("Imported ${recipes.value.size + 1}", result.params, null)
+                _notices.tryEmit("Recipe imported")
+            }
         }
     }
 

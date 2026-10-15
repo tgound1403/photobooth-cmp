@@ -28,6 +28,7 @@ val appModule = module {
             io = get(),
             renderer = com.example.cameraxapp.core.render.EditPipeline(get()),
             filters = get<com.example.cameraxapp.core.render.FilterCatalog>().filters,
+            recipeRepository = get(),
         )
     }
 }

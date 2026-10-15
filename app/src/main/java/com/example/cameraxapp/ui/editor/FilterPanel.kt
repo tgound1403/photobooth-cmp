@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -31,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.FilterCatalog
 import com.example.cameraxapp.core.render.FilterInfo
+import com.example.cameraxapp.core.render.Recipe
 import com.example.cameraxapp.ui.components.RulerSlider
 import com.example.cameraxapp.ui.theme.AppColors
 import com.example.cameraxapp.ui.theme.Radius
@@ -39,7 +45,13 @@ import com.example.cameraxapp.ui.theme.Stroke
 
 private val THUMB_SIZE = 64.dp
 
-/** Filter strip with live thumbnails, plus the intensity ruler when a filter is applied. */
+/** Two sections of the filter tab: catalog filters, and saved recipes. */
+private enum class FilterSection(val label: String) { FILTERS("Filters"), RECIPES("Recipes") }
+
+/**
+ * Filter tab. The Filters section is the filter strip with live thumbnails and the intensity
+ * ruler; the Recipes section lists saved recipes.
+ */
 @Composable
 fun FilterPanel(
     params: EditParams,
@@ -49,12 +61,64 @@ fun FilterPanel(
     onSelect: (String) -> Unit,
     onLive: (ParamsEdit) -> Unit,
     onCommit: () -> Unit,
+    recipes: List<Recipe>,
+    canSaveRecipe: Boolean,
+    onSaveRecipe: () -> Unit,
+    onApplyRecipe: (EditParams) -> Unit,
+    onImportRecipe: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var section by rememberSaveable { mutableStateOf(FilterSection.FILTERS) }
     Column(
         modifier = modifier.fillMaxWidth().padding(vertical = Spacing.sm),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
+        SectionRow(selected = section, onSelect = { section = it })
+        when (section) {
+            FilterSection.FILTERS -> FilterStripSection(params, filters, thumbnails, onRequestThumbnail, onSelect, onLive, onCommit)
+            FilterSection.RECIPES -> RecipePanel(
+                params = params,
+                recipes = recipes,
+                canSave = canSaveRecipe,
+                onSave = onSaveRecipe,
+                onApply = onApplyRecipe,
+                onImport = onImportRecipe,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionRow(selected: FilterSection, onSelect: (FilterSection) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.lg),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
+    ) {
+        FilterSection.values().forEach { section ->
+            Text(
+                text = section.label,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (section == selected) AppColors.accent else AppColors.textSecondary,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Radius.sm))
+                    .clickable { onSelect(section) }
+                    .padding(vertical = Spacing.xs),
+            )
+        }
+    }
+}
+
+@Composable
+private fun FilterStripSection(
+    params: EditParams,
+    filters: List<FilterInfo>,
+    thumbnails: Map<String, Bitmap>,
+    onRequestThumbnail: (String) -> Unit,
+    onSelect: (String) -> Unit,
+    onLive: (ParamsEdit) -> Unit,
+    onCommit: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         LazyRow(
             contentPadding = PaddingValues(horizontal = Spacing.lg),
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
