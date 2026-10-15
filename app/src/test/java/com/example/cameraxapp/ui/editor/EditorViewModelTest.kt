@@ -33,7 +33,8 @@ class EditorViewModelTest {
         override fun saveJpeg(bitmap: Bitmap): String? = null
     }
 
-    private fun newViewModel() = EditorViewModel(NoImageIo, UnusedRenderer(), Dispatchers.Unconfined)
+    private fun newViewModel() =
+        EditorViewModel(NoImageIo, UnusedRenderer(), uiDispatcher = Dispatchers.Unconfined)
 
     @Test
     fun sliderDragIsOneUndoStepOnRelease() {

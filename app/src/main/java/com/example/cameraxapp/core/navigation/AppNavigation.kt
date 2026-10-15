@@ -7,7 +7,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.cameraxapp.ui.view.CameraScreen.CameraScreen
-import com.example.cameraxapp.ui.view.EditImageScreen.EditImageScreen
 import com.example.cameraxapp.ui.view.GaleryScreen.GalleryScreen
 import com.example.cameraxapp.ui.view.NoPermissionGrantedScreen
 import com.example.cameraxapp.ui.view.PhotoBoothEditScreen
@@ -67,7 +66,7 @@ fun AppNavigation() {
             } catch (e: Exception) {
                 encodedPath
             }
-            EditImageScreen(imagePath, navController)
+            com.example.cameraxapp.ui.editor.EditorScreen(imagePath, navController)
         }
         composable(
                 route = AppRoutes.PHOTO_BOOTH_EDIT,

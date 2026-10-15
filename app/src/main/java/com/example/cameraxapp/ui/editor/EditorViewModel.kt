@@ -6,6 +6,7 @@ import com.example.cameraxapp.core.render.CropParams
 import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.EditRenderer
 import com.example.cameraxapp.core.render.EditSnapshot
+import com.example.cameraxapp.core.render.FilterInfo
 import com.example.cameraxapp.core.render.FrameSpec
 import com.example.cameraxapp.core.render.OverlaySpec
 import kotlinx.coroutines.CoroutineDispatcher
@@ -32,6 +33,8 @@ import kotlinx.coroutines.withContext
 class EditorViewModel(
     private val io: EditorImageIo,
     private val renderer: EditRenderer,
+    /** Filter list for the filter strip, supplied by DI. */
+    val filters: List<FilterInfo> = emptyList(),
     uiDispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
 ) : ViewModel() {
 
@@ -74,7 +77,7 @@ class EditorViewModel(
                 return@launch
             }
             source = bitmap
-            _state.update { it.copy(isLoading = false, sourceLoaded = true) }
+            _state.update { it.copy(isLoading = false, sourceLoaded = true, original = bitmap) }
             startRenderLoop()
             startThumbnailLoop()
             requestRender()
@@ -82,7 +85,10 @@ class EditorViewModel(
     }
 
     /** Live slider value: updates the preview, not the undo history. */
-    fun setParams(params: EditParams) = liveEdit { it.copy(params = params.clamped()) }
+    fun setParams(params: EditParams) = updateParams { params }
+
+    /** Live slider change applied to the latest params, so fast drag events are never lost. */
+    fun updateParams(transform: ParamsEdit) = liveEdit { it.copy(params = transform(it.params).clamped()) }
 
     /** Ends a slider drag: records the change since the last commit as one undo step. */
     fun commitParams() = commitEdit()
