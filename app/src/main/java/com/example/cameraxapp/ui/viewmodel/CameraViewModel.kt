@@ -22,6 +22,9 @@ import com.example.cameraxapp.core.render.FilterCatalog
 import com.example.cameraxapp.core.render.Recipe
 import com.example.cameraxapp.data.repository.RecipeRepository
 import com.example.cameraxapp.service.CameraService
+import com.example.cameraxapp.core.analytics.Analytics
+import com.example.cameraxapp.core.analytics.AnalyticsEvent
+import com.example.cameraxapp.core.analytics.NoOpAnalytics
 import com.example.cameraxapp.service.ImageProcessingService
 import java.io.File
 import java.io.IOException
@@ -39,6 +42,7 @@ import kotlinx.coroutines.withContext
 class CameraViewModel(
     application: Application,
     private val recipeRepository: RecipeRepository,
+    private val analytics: Analytics = NoOpAnalytics,
 ) : AndroidViewModel(application) {
     private val imageProcessingService = ImageProcessingService()
     val catalog = FilterCatalog(application)
@@ -151,7 +155,10 @@ class CameraViewModel(
                         val result = runCatching { withContext(Dispatchers.IO) { transform(saved) } }
                         isTakingPicture = false
                         result
-                            .onSuccess(onResult)
+                            .onSuccess {
+                                analytics.log(AnalyticsEvent.PHOTO_CAPTURED)
+                                onResult(it)
+                            }
                             .onFailure { e ->
                                 Log.e(TAG, "Saving photo failed: ${e.message}", e)
                                 onError(ImageCaptureException(ImageCapture.ERROR_FILE_IO, "Failed to save photo", e))
