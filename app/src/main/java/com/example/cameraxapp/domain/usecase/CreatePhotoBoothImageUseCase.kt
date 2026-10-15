@@ -42,12 +42,6 @@ import kotlinx.coroutines.withContext
 class CreatePhotoBoothImageUseCase(
         private val isPremium: StateFlow<Boolean> = MutableStateFlow(false),
 ) {
-    private companion object {
-        const val WATERMARK_TEXT_SIZE = 12f
-        const val WATERMARK_BOTTOM_OFFSET = 14f
-        const val WATERMARK_ALPHA = 150
-    }
-
     suspend fun execute(
             context: Context,
             imagePaths: List<String>,
@@ -191,7 +185,7 @@ class CreatePhotoBoothImageUseCase(
             canvas.drawText(displayText, totalWidth / 2f, textY.toFloat(), textPaint)
 
             if (shouldShowWatermark(isPremium.value)) {
-                drawWatermark(context, canvas, totalWidth, totalHeight, density, paddingPx, textPaint)
+                drawPhotoBoothWatermark(context, canvas, totalWidth, totalHeight, density, paddingPx, textPaint)
             }
 
             // Lưu ảnh
@@ -234,30 +228,6 @@ class CreatePhotoBoothImageUseCase(
     }
 
     /** Small corner text in the bottom margin, using the date text colour at reduced opacity. */
-    private fun drawWatermark(
-            context: Context,
-            canvas: Canvas,
-            width: Int,
-            height: Int,
-            density: Float,
-            paddingPx: Int,
-            base: Paint
-    ) {
-        val paint =
-                Paint(base).apply {
-                    textSize = WATERMARK_TEXT_SIZE * density
-                    textAlign = Paint.Align.RIGHT
-                    typeface = Typeface.DEFAULT
-                    alpha = WATERMARK_ALPHA
-                }
-        canvas.drawText(
-                context.getString(R.string.watermark_text),
-                (width - paddingPx).toFloat(),
-                height - WATERMARK_BOTTOM_OFFSET * density,
-                paint
-        )
-    }
-
     /** Renders each photo through the GPU filter pipeline (LUT). Source photos are recycled. */
     private suspend fun renderFilter(
             context: Context,
@@ -358,4 +328,37 @@ class CreatePhotoBoothImageUseCase(
                     null
                 }
             }
+}
+
+private const val WATERMARK_TEXT_SIZE = 12f
+private const val WATERMARK_BOTTOM_OFFSET = 14f
+private const val WATERMARK_ALPHA = 150
+
+/**
+ * Draws the free-tier watermark in the bottom-right corner. Shared by the photobooth strip and the
+ * GIF export so both carry the same mark. The caller decides whether to draw it, through
+ * shouldShowWatermark.
+ */
+internal fun drawPhotoBoothWatermark(
+        context: Context,
+        canvas: Canvas,
+        width: Int,
+        height: Int,
+        density: Float,
+        paddingPx: Int,
+        base: Paint
+) {
+    val paint =
+            Paint(base).apply {
+                textSize = WATERMARK_TEXT_SIZE * density
+                textAlign = Paint.Align.RIGHT
+                typeface = Typeface.DEFAULT
+                alpha = WATERMARK_ALPHA
+            }
+    canvas.drawText(
+            context.getString(R.string.watermark_text),
+            (width - paddingPx).toFloat(),
+            height - WATERMARK_BOTTOM_OFFSET * density,
+            paint
+    )
 }

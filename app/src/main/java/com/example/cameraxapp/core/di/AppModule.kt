@@ -21,7 +21,7 @@ val appModule = module {
     single { AppDatabase.getDatabase(androidApplication()) }
     single { RecipeRepository(get<AppDatabase>().recipeDao(), File(androidContext().filesDir, "recipes")) }
     single { CreatePhotoBoothImageUseCase(get<BillingRepository>().isPremium) }
-    single { com.example.cameraxapp.domain.usecase.GifExportUseCase() }
+    single { com.example.cameraxapp.domain.usecase.GifExportUseCase(get<BillingRepository>().isPremium) }
     viewModel {
         PhotoBoothViewModel(
             repository = get(),
