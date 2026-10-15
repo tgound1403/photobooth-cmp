@@ -1,0 +1,222 @@
+{
+  "version": 1,
+  "filters": [
+    {
+      "id": "original",
+      "name": "Original",
+      "group": "Classic",
+      "lut": null,
+      "premium": false
+    },
+    {
+      "id": "bnw",
+      "name": "BnW",
+      "group": "Classic",
+      "lut": "luts/bnw.png",
+      "premium": false
+    },
+    {
+      "id": "kodak",
+      "name": "Kodak",
+      "group": "Classic",
+      "lut": "luts/kodak.png",
+      "premium": false
+    },
+    {
+      "id": "fujifilm",
+      "name": "FujiFilm",
+      "group": "Classic",
+      "lut": "luts/fujifilm.png",
+      "premium": false
+    },
+    {
+      "id": "nikon",
+      "name": "Nikon",
+      "group": "Classic",
+      "lut": "luts/nikon.png",
+      "premium": false
+    },
+    {
+      "id": "pentax",
+      "name": "Pentax",
+      "group": "Classic",
+      "lut": "luts/pentax.png",
+      "premium": false
+    },
+    {
+      "id": "minolta",
+      "name": "Minolta",
+      "group": "Classic",
+      "lut": "luts/minolta.png",
+      "premium": false
+    },
+    {
+      "id": "golden_hour",
+      "name": "Golden Hour",
+      "group": "Film",
+      "lut": "luts/golden_hour.png",
+      "premium": false
+    },
+    {
+      "id": "faded_mint",
+      "name": "Faded Mint",
+      "group": "Film",
+      "lut": "luts/faded_mint.png",
+      "premium": true
+    },
+    {
+      "id": "amber_roll",
+      "name": "Amber Roll",
+      "group": "Film",
+      "lut": "luts/amber_roll.png",
+      "premium": false
+    },
+    {
+      "id": "cool_negative",
+      "name": "Cool Negative",
+      "group": "Film",
+      "lut": "luts/cool_negative.png",
+      "premium": true
+    },
+    {
+      "id": "sunday_film",
+      "name": "Sunday Film",
+      "group": "Film",
+      "lut": "luts/sunday_film.png",
+      "premium": false
+    },
+    {
+      "id": "dusk_print",
+      "name": "Dusk Print",
+      "group": "Film",
+      "lut": "luts/dusk_print.png",
+      "premium": false
+    },
+    {
+      "id": "soft_glow",
+      "name": "Soft Glow",
+      "group": "Portrait",
+      "lut": "luts/soft_glow.png",
+      "premium": false
+    },
+    {
+      "id": "rose_skin",
+      "name": "Rose Skin",
+      "group": "Portrait",
+      "lut": "luts/rose_skin.png",
+      "premium": true
+    },
+    {
+      "id": "honey_light",
+      "name": "Honey Light",
+      "group": "Portrait",
+      "lut": "luts/honey_light.png",
+      "premium": false
+    },
+    {
+      "id": "clear_tone",
+      "name": "Clear Tone",
+      "group": "Portrait",
+      "lut": "luts/clear_tone.png",
+      "premium": false
+    },
+    {
+      "id": "peach_glow",
+      "name": "Peach Glow",
+      "group": "Portrait",
+      "lut": "luts/peach_glow.png",
+      "premium": true
+    },
+    {
+      "id": "cream_matte",
+      "name": "Cream Matte",
+      "group": "Portrait",
+      "lut": "luts/cream_matte.png",
+      "premium": false
+    },
+    {
+      "id": "teal_night",
+      "name": "Teal Night",
+      "group": "Mood",
+      "lut": "luts/teal_night.png",
+      "premium": false
+    },
+    {
+      "id": "moody_blue",
+      "name": "Moody Blue",
+      "group": "Mood",
+      "lut": "luts/moody_blue.png",
+      "premium": true
+    },
+    {
+      "id": "autumn_haze",
+      "name": "Autumn Haze",
+      "group": "Mood",
+      "lut": "luts/autumn_haze.png",
+      "premium": false
+    },
+    {
+      "id": "velvet_dusk",
+      "name": "Velvet Dusk",
+      "group": "Mood",
+      "lut": "luts/velvet_dusk.png",
+      "premium": true
+    },
+    {
+      "id": "pastel_dream",
+      "name": "Pastel Dream",
+      "group": "Mood",
+      "lut": "luts/pastel_dream.png",
+      "premium": false
+    },
+    {
+      "id": "winter_fog",
+      "name": "Winter Fog",
+      "group": "Mood",
+      "lut": "luts/winter_fog.png",
+      "premium": false
+    },
+    {
+      "id": "silver_gelatin",
+      "name": "Silver Gelatin",
+      "group": "B&W",
+      "lut": "luts/silver_gelatin.png",
+      "premium": false
+    },
+    {
+      "id": "noir_contrast",
+      "name": "Noir Contrast",
+      "group": "B&W",
+      "lut": "luts/noir_contrast.png",
+      "premium": true
+    },
+    {
+      "id": "soft_mono",
+      "name": "Soft Mono",
+      "group": "B&W",
+      "lut": "luts/soft_mono.png",
+      "premium": false
+    },
+    {
+      "id": "crimson_mono",
+      "name": "Crimson Mono",
+      "group": "B&W",
+      "lut": "luts/crimson_mono.png",
+      "premium": true
+    },
+    {
+      "id": "ink_wash",
+      "name": "Ink Wash",
+      "group": "B&W",
+      "lut": "luts/ink_wash.png",
+      "premium": false
+    },
+    {
+      "id": "light_mono",
+      "name": "Light Mono",
+      "group": "B&W",
+      "lut": "luts/light_mono.png",
+      "premium": false
+    }
+  ]
+}
