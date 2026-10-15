@@ -38,6 +38,8 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,10 +51,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.NavController
 import com.example.cameraxapp.core.navigation.AppRoutes
 import com.example.cameraxapp.core.render.FilterCycle
+import com.example.cameraxapp.core.render.RecipeFilters
 import com.example.cameraxapp.ui.components.FilterStrip
 import com.example.cameraxapp.ui.components.ManualControls
 import com.example.cameraxapp.ui.components.ZoomControl
@@ -75,22 +78,32 @@ class NameFlash(val name: String)
 @Composable
 fun CameraScreen(
     navController: NavController,
-    cameraViewModel: CameraViewModel = viewModel(),
+    cameraViewModel: CameraViewModel = koinViewModel(),
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val exposureTime = remember { mutableLongStateOf(10_000_000L) }
     val isoValue = remember { mutableIntStateOf(1000) }
-    val filters = remember { cameraViewModel.catalog.filters }
-    val selectedId = cameraViewModel.editParams.value.filterId
+    val recipes by cameraViewModel.recipes.collectAsState(initial = emptyList())
+    val sources = remember(recipes) {
+        cameraViewModel.catalog.filters + recipes.map { RecipeFilters.toFilterInfo(it) }
+    }
+    // The highlighted source. A recipe id is not a catalog id, so it is tracked here.
+    var selectedId by rememberSaveable { mutableStateOf(cameraViewModel.editParams.value.filterId) }
     var flash by remember { mutableStateOf<NameFlash?>(null) }
 
     val onSelect: (String) -> Unit = { id ->
-        cameraViewModel.selectFilter(id)
-        flash = NameFlash(filters.firstOrNull { it.id == id }?.name.orEmpty())
+        val recipe = RecipeFilters.recipeFor(id, recipes)
+        if (recipe != null) {
+            cameraViewModel.setFilter(recipe.params)
+        } else {
+            cameraViewModel.selectFilter(id)
+        }
+        selectedId = id
+        flash = NameFlash(sources.firstOrNull { it.id == id }?.name.orEmpty())
     }
     val onSwipe: (Int) -> Unit = { delta ->
-        onSelect(FilterCycle.next(filters.map { it.id }, selectedId, delta))
+        onSelect(FilterCycle.next(sources.map { it.id }, selectedId, delta))
     }
 
     LaunchedEffect(lifecycleOwner) {
@@ -120,7 +133,7 @@ fun CameraScreen(
                 )
             }
             FilterStrip(
-                filters = filters,
+                filters = sources,
                 selectedId = selectedId,
                 onSelect = onSelect,
                 modifier = Modifier.padding(vertical = Spacing.sm),

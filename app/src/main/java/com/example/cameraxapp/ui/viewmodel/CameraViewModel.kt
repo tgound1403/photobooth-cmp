@@ -19,6 +19,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewModelScope
 import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.FilterCatalog
+import com.example.cameraxapp.core.render.Recipe
+import com.example.cameraxapp.data.repository.RecipeRepository
 import com.example.cameraxapp.service.CameraService
 import com.example.cameraxapp.service.ImageProcessingService
 import java.io.File
@@ -26,6 +28,7 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,9 +36,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Screen-facing state. All camera binding and capture goes through [CameraService]. */
-class CameraViewModel(application: Application) : AndroidViewModel(application) {
+class CameraViewModel(
+    application: Application,
+    private val recipeRepository: RecipeRepository,
+) : AndroidViewModel(application) {
     private val imageProcessingService = ImageProcessingService()
     val catalog = FilterCatalog(application)
+
+    /** Saved recipes, newest first, for the filter strip. */
+    val recipes: Flow<List<Recipe>> = recipeRepository.observeRecipes()
     private val cameraService = CameraService(catalog)
     private val executor = ContextCompat.getMainExecutor(application)
 

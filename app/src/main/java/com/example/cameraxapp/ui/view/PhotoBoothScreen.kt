@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.cameraxapp.core.navigation.AppRoutes
@@ -48,7 +48,7 @@ import kotlinx.coroutines.delay
 fun PhotoBoothScreen(
     navController: NavController,
     photoBoothViewModel: PhotoBoothViewModel,
-    cameraViewModel: CameraViewModel = viewModel()
+    cameraViewModel: CameraViewModel = koinViewModel()
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val capturedImages by photoBoothViewModel.capturedImages.collectAsState()
