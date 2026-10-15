@@ -8,46 +8,41 @@ import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.cameraxapp.core.navigation.AppRoutes
+import com.example.cameraxapp.ui.components.DefaultAppBar
+import com.example.cameraxapp.ui.theme.AppColors
+import com.example.cameraxapp.ui.theme.IconSize
+import com.example.cameraxapp.ui.theme.PhotogetherTheme
+import com.example.cameraxapp.ui.theme.Radius
+import com.example.cameraxapp.ui.theme.Spacing
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GalleryScreen(navController: NavController) {
     val context = LocalContext.current
-    val images = remember { mutableStateOf(listOf<String>()) }
+    var images by remember { mutableStateOf(listOf<String>()) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -66,58 +61,56 @@ fun GalleryScreen(navController: NavController) {
     }
 
     LaunchedEffect(Unit) {
-        images.value = fetchImages(context)
+        images = fetchImages(context)
     }
 
-    @Composable
-    fun ImageItem(imagePath: String, onImageClick: (String) -> Unit) {
-        Box(
-            modifier = Modifier
-                .padding(8.dp)
-                .fillMaxWidth()
-                .size(120.dp).clip(RoundedCornerShape(24.dp)).clickable { onImageClick(imagePath) }
-        ) {
-            AsyncImage(
-                model = imagePath,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+    GalleryPickerContent(
+        images = images,
+        onBack = { navController.popBackStack() },
+        onImageClick = { imagePath ->
+            navController.navigate(AppRoutes.imageDetail(Uri.encode(imagePath)))
         }
-    }
+    )
+}
 
-    Scaffold {
-        innerPadding -> Column (
-            modifier = Modifier
-                .padding(innerPadding)
-                .background(color = Color.Black)
-        ) {
-        TopAppBar (
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Black,
-                titleContentColor = Color.White,
-                navigationIconContentColor = Color.White,
-                actionIconContentColor = Color.White),
-            title = { Text("Select image") },
-            navigationIcon = {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                }
-            }
-        )
-
+/** Stateless picker grid. */
+@Composable
+fun GalleryPickerContent(
+    images: List<String>,
+    onBack: () -> Unit,
+    onImageClick: (String) -> Unit
+) {
+    Scaffold(
+        topBar = { DefaultAppBar(onBack = onBack, title = "Chọn ảnh") },
+        containerColor = AppColors.background
+    ) { innerPadding ->
         LazyVerticalGrid(
-            modifier = Modifier.background(color = Color.Black),
-            columns = GridCells.Adaptive(128.dp),
+            modifier = Modifier.padding(innerPadding).fillMaxSize(),
+            columns = GridCells.Adaptive(IconSize.hero * 2),
+            contentPadding = PaddingValues(Spacing.sm),
             content = {
-                items(images.value) { imagePath ->
-                    ImageItem(imagePath, onImageClick = {
-                        navController.navigate(AppRoutes.imageDetail(Uri.encode(imagePath)))
-                     })
+                items(images) { imagePath ->
+                    ImageItem(imagePath = imagePath, onClick = { onImageClick(imagePath) })
                 }
             }
         )
     }
+}
+
+@Composable
+private fun ImageItem(imagePath: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .padding(Spacing.xs)
+            .clip(RoundedCornerShape(Radius.sm))
+            .clickable(onClick = onClick)
+    ) {
+        AsyncImage(
+            model = imagePath,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 
@@ -139,4 +132,12 @@ fun fetchImages(context: Context): List<String> {
         }
     }
     return images
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun GalleryPickerPreview() {
+    PhotogetherTheme {
+        GalleryPickerContent(images = emptyList(), onBack = {}, onImageClick = {})
+    }
 }

@@ -1,135 +1,92 @@
 package com.example.cameraxapp.ui.view
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
+import com.example.cameraxapp.ui.components.DefaultAppBar
 import com.example.cameraxapp.ui.components.GlassBox
-import com.example.cameraxapp.ui.theme.AppTheme
-import com.example.cameraxapp.ui.theme.NeonPurple
-import com.example.cameraxapp.ui.theme.PastelPink
-import com.example.cameraxapp.ui.viewmodel.ThemeViewModel
-import org.koin.androidx.compose.koinViewModel
+import com.example.cameraxapp.ui.theme.AppColors
+import com.example.cameraxapp.ui.theme.PhotogetherTheme
+import com.example.cameraxapp.ui.theme.Radius
+import com.example.cameraxapp.ui.theme.Spacing
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    navController: NavController,
-    themeViewModel: ThemeViewModel = koinViewModel()
-) {
-    val currentTheme by themeViewModel.theme.collectAsState()
+fun SettingsScreen(navController: NavController) {
+    SettingsContent(onBack = { navController.navigateUp() })
+}
 
+/** Stateless settings body. The app uses a single dark theme, so the appearance row is informational. */
+@Composable
+fun SettingsContent(onBack: () -> Unit) {
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Cài Đặt", color = MaterialTheme.colorScheme.primary) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background
+        topBar = { DefaultAppBar(onBack = onBack, title = "Cài Đặt") },
+        containerColor = AppColors.background
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(Spacing.lg)
         ) {
             Text(
                 text = "Giao diện",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(bottom = 16.dp)
+                style = MaterialTheme.typography.titleLarge,
+                color = AppColors.textPrimary,
+                modifier = Modifier.padding(bottom = Spacing.md)
             )
 
             GlassBox(
                 modifier = Modifier.fillMaxWidth(),
-                cornerRadius = 16.dp
+                cornerRadius = Radius.lg
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    ThemeOption(
-                        theme = AppTheme.DARK_NEON,
-                        currentTheme = currentTheme,
-                        label = "Dark Neon (Premium)",
-                        colorPreview = NeonPurple,
-                        onSelect = { themeViewModel.setTheme(AppTheme.DARK_NEON) }
+                Row(
+                    modifier = Modifier.padding(Spacing.lg),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DarkMode,
+                        contentDescription = null,
+                        tint = AppColors.accent,
+                        modifier = Modifier.padding(end = Spacing.md)
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    ThemeOption(
-                        theme = AppTheme.KOREAN_PASTEL,
-                        currentTheme = currentTheme,
-                        label = "Korean Pastel (Cute)",
-                        colorPreview = PastelPink,
-                        onSelect = { themeViewModel.setTheme(AppTheme.KOREAN_PASTEL) }
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    ThemeOption(
-                        theme = AppTheme.BLACK_AND_WHITE,
-                        currentTheme = currentTheme,
-                        label = "Black & White (Minimal)",
-                        colorPreview = Color.White,
-                        onSelect = { themeViewModel.setTheme(AppTheme.BLACK_AND_WHITE) }
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Chủ đề tối",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = AppColors.textPrimary
+                        )
+                        Spacer(modifier = Modifier.height(Spacing.xs))
+                        Text(
+                            text = "Giao diện tối cố định cho toàn bộ ứng dụng",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.textSecondary
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+@Preview(showBackground = true)
 @Composable
-fun ThemeOption(
-    theme: AppTheme,
-    currentTheme: AppTheme,
-    label: String,
-    colorPreview: Color,
-    onSelect: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onSelect)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(colorPreview)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-        RadioButton(
-            selected = theme == currentTheme,
-            onClick = onSelect,
-            colors = RadioButtonDefaults.colors(
-                selectedColor = MaterialTheme.colorScheme.primary,
-                unselectedColor = MaterialTheme.colorScheme.onSurface
-            )
-        )
+private fun SettingsScreenPreview() {
+    PhotogetherTheme {
+        SettingsContent(onBack = {})
     }
 }

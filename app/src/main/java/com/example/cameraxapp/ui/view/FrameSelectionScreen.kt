@@ -2,160 +2,134 @@ package com.example.cameraxapp.ui.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import com.example.cameraxapp.core.navigation.AppRoutes
+import com.example.cameraxapp.data.model.FrameTheme
+import com.example.cameraxapp.data.model.FrameThemes
 import com.example.cameraxapp.shared.domain.model.PhotoBoothLayout
+import com.example.cameraxapp.ui.components.DefaultAppBar
 import com.example.cameraxapp.ui.components.GlassBox
-import com.example.cameraxapp.ui.theme.DeepBlack
-import com.example.cameraxapp.ui.theme.NeonCyan
-import com.example.cameraxapp.ui.theme.NeonPurple
+import com.example.cameraxapp.ui.theme.AppColors
+import com.example.cameraxapp.ui.theme.IconSize
+import com.example.cameraxapp.ui.theme.PhotogetherTheme
+import com.example.cameraxapp.ui.theme.Radius
+import com.example.cameraxapp.ui.theme.Spacing
 import com.example.cameraxapp.ui.viewmodel.PhotoBoothViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+private data class LayoutOption(
+    val layout: PhotoBoothLayout,
+    val label: String,
+    val description: String
+)
+
+private val LAYOUT_OPTIONS = listOf(
+    LayoutOption(PhotoBoothLayout.SINGLE, "1 Ảnh (Single)", "Chụp 1 ảnh duy nhất"),
+    LayoutOption(PhotoBoothLayout.STRIP_1X2, "2 Ảnh (Film Strip)", "Chụp 2 ảnh - Dọc"),
+    LayoutOption(PhotoBoothLayout.STRIP_1X3, "3 Ảnh (Film Strip)", "Chụp 3 ảnh - Dọc"),
+    LayoutOption(PhotoBoothLayout.GRID_2X2, "4 Ảnh (Grid 2x2)", "Chụp 4 ảnh - Khung vuông cổ điển"),
+    LayoutOption(PhotoBoothLayout.STRIP_1X4, "4 Ảnh (Film Strip)", "Chụp 4 ảnh - Dọc")
+)
+
 @Composable
 fun FrameSelectionScreen(navController: NavController, viewModel: PhotoBoothViewModel) {
+    val selectedTheme by viewModel.selectedTheme.collectAsState()
+
+    FrameSelectionContent(
+        selectedTheme = selectedTheme,
+        onBack = { navController.navigateUp() },
+        onLayoutSelected = { layout ->
+            viewModel.updateLayout(layout)
+            viewModel.clearCapturedImages()
+            navController.navigate(AppRoutes.PHOTO_BOOTH)
+        },
+        onThemeSelected = { viewModel.updateTheme(it) }
+    )
+}
+
+/** Stateless body: layout list plus frame theme picker. */
+@Composable
+fun FrameSelectionContent(
+    selectedTheme: FrameTheme,
+    onBack: () -> Unit,
+    onLayoutSelected: (PhotoBoothLayout) -> Unit,
+    onThemeSelected: (FrameTheme) -> Unit,
+) {
     Scaffold(
-            topBar = {
-                TopAppBar(
-                        title = { Text("Chọn Khung Ảnh", color = Color.White) },
-                        navigationIcon = {
-                            IconButton(onClick = { navController.navigateUp() }) {
-                                Icon(
-                                        Icons.Default.ArrowBack,
-                                        contentDescription = "Back",
-                                        tint = Color.White
-                                )
-                            }
-                        },
-                        colors =
-                                TopAppBarDefaults.topAppBarColors(
-                                        containerColor = Color.Transparent
-                                )
-                )
-            },
-            containerColor = DeepBlack
+        topBar = { DefaultAppBar(onBack = onBack, title = "Chọn Khung Ảnh") },
+        containerColor = AppColors.background
     ) { padding ->
         Column(
-                modifier =
-                        Modifier.fillMaxSize()
-                                .padding(padding)
-                                .background(
-                                        brush =
-                                                Brush.verticalGradient(
-                                                        colors =
-                                                                listOf(DeepBlack, Color(0xFF1a0b2e))
-                                                )
-                                )
-                                .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(Spacing.lg),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                    "Chọn kiểu khung bạn muốn chụp",
-                    color = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(bottom = 24.dp)
+                "Chọn kiểu khung bạn muốn chụp",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.textSecondary,
+                modifier = Modifier.padding(bottom = Spacing.xl)
             )
 
             LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.weight(1f)
+                verticalArrangement = Arrangement.spacedBy(Spacing.lg),
+                modifier = Modifier.weight(1f)
             ) {
-                item {
+                items(LAYOUT_OPTIONS) { option ->
                     FrameOption(
-                            label = "1 Ảnh (Single)",
-                            description = "Chụp 1 ảnh duy nhất",
-                            color = NeonCyan,
-                            onClick = {
-                                viewModel.updateLayout(PhotoBoothLayout.SINGLE)
-                                viewModel.clearCapturedImages()
-                                navController.navigate(AppRoutes.PHOTO_BOOTH)
-                            }
-                    )
-                }
-                item {
-                    FrameOption(
-                            label = "2 Ảnh (Film Strip)",
-                            description = "Chụp 2 ảnh - Dọc",
-                            color = NeonPurple,
-                            onClick = {
-                                viewModel.updateLayout(PhotoBoothLayout.STRIP_1X2)
-                                viewModel.clearCapturedImages()
-                                navController.navigate(AppRoutes.PHOTO_BOOTH)
-                            }
-                    )
-                }
-                item {
-                    FrameOption(
-                            label = "3 Ảnh (Film Strip)",
-                            description = "Chụp 3 ảnh - Dọc",
-                            color = NeonCyan,
-                            onClick = {
-                                viewModel.updateLayout(PhotoBoothLayout.STRIP_1X3)
-                                viewModel.clearCapturedImages()
-                                navController.navigate(AppRoutes.PHOTO_BOOTH)
-                            }
-                    )
-                }
-                item {
-                    FrameOption(
-                            label = "4 Ảnh (Grid 2x2)",
-                            description = "Chụp 4 ảnh - Khung vuông cổ điển",
-                            color = NeonPurple,
-                            onClick = {
-                                viewModel.updateLayout(PhotoBoothLayout.GRID_2X2)
-                                viewModel.clearCapturedImages()
-                                navController.navigate(AppRoutes.PHOTO_BOOTH)
-                            }
-                    )
-                }
-                item {
-                    FrameOption(
-                            label = "4 Ảnh (Film Strip)",
-                            description = "Chụp 4 ảnh - Dọc",
-                            color = NeonCyan,
-                            onClick = {
-                                viewModel.updateLayout(PhotoBoothLayout.STRIP_1X4)
-                                viewModel.clearCapturedImages()
-                                navController.navigate(AppRoutes.PHOTO_BOOTH)
-                            }
+                        label = option.label,
+                        description = option.description,
+                        onClick = { onLayoutSelected(option.layout) }
                     )
                 }
 
-                // Theme Selection
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(Spacing.lg))
                     Text(
-                            "Chọn giao diện khung",
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(vertical = 8.dp)
+                        "Chọn giao diện khung",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = AppColors.textPrimary,
+                        modifier = Modifier.padding(vertical = Spacing.sm)
                     )
                 }
 
-                items(com.example.cameraxapp.data.model.FrameThemes.ALL_THEMES.chunked(2)) {
-                        themeRow ->
+                items(FrameThemes.ALL_THEMES.chunked(2)) { themeRow ->
                     Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
                     ) {
                         themeRow.forEach { theme ->
                             ThemeOption(
-                                    theme = theme,
-                                    isSelected = viewModel.selectedTheme.value.id == theme.id,
-                                    onClick = { viewModel.updateTheme(theme) },
-                                    modifier = Modifier.weight(1f)
+                                theme = theme,
+                                isSelected = selectedTheme.id == theme.id,
+                                onClick = { onThemeSelected(theme) },
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
@@ -166,18 +140,23 @@ fun FrameSelectionScreen(navController: NavController, viewModel: PhotoBoothView
 }
 
 @Composable
-fun FrameOption(label: String, description: String, color: Color, onClick: () -> Unit) {
+fun FrameOption(
+    label: String,
+    description: String,
+    onClick: () -> Unit,
+    color: Color = AppColors.accent,
+) {
     GlassBox(
-            modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-            cornerRadius = 16.dp
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        cornerRadius = Radius.sm
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(Spacing.xl)) {
             Text(text = label, style = MaterialTheme.typography.titleLarge, color = color)
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(Spacing.xs))
             Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.textSecondary
             )
         }
     }
@@ -185,46 +164,51 @@ fun FrameOption(label: String, description: String, color: Color, onClick: () ->
 
 @Composable
 fun ThemeOption(
-        theme: com.example.cameraxapp.data.model.FrameTheme,
-        isSelected: Boolean,
-        onClick: () -> Unit,
-        modifier: Modifier = Modifier
+    theme: FrameTheme,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
+    // Light frame backgrounds need dark text. Frame colours come from the data model and are not theme tokens.
+    val isLightBackground = theme.backgroundColor == android.graphics.Color.WHITE ||
+        theme.backgroundColor == android.graphics.Color.parseColor("#F5E6D3")
+
     Box(
-            modifier =
-                    modifier.aspectRatio(1.5f)
-                            .background(
-                                    color = Color(theme.backgroundColor),
-                                    shape = RoundedCornerShape(12.dp)
-                            )
-                            .clickable(onClick = onClick)
-                            .padding(12.dp),
-            contentAlignment = Alignment.BottomStart
+        modifier = modifier
+            .aspectRatio(1.5f)
+            .background(color = Color(theme.backgroundColor), shape = RoundedCornerShape(Radius.sm))
+            .clickable(onClick = onClick)
+            .padding(Spacing.md),
+        contentAlignment = Alignment.BottomStart
     ) {
         if (isSelected) {
             Box(
-                    modifier =
-                            Modifier.align(Alignment.TopEnd)
-                                    .size(24.dp)
-                                    .background(
-                                            NeonCyan,
-                                            shape = androidx.compose.foundation.shape.CircleShape
-                                    ),
-                    contentAlignment = Alignment.Center
-            ) { Text("✓", color = Color.White) }
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(IconSize.md)
+                    .background(AppColors.accent, shape = CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("✓", style = MaterialTheme.typography.labelSmall, color = AppColors.onAccent)
+            }
         }
         Text(
-                text = theme.name,
-                style = MaterialTheme.typography.labelSmall,
-                color =
-                        if (theme.backgroundColor == android.graphics.Color.WHITE ||
-                                        theme.backgroundColor ==
-                                                android.graphics.Color.parseColor("#F5E6D3")
-                        ) {
-                            Color.Black
-                        } else {
-                            Color.White
-                        }
+            text = theme.name,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isLightBackground) AppColors.onAccent else AppColors.textPrimary
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FrameSelectionPreview() {
+    PhotogetherTheme {
+        FrameSelectionContent(
+            selectedTheme = FrameThemes.ALL_THEMES.first(),
+            onBack = {},
+            onLayoutSelected = {},
+            onThemeSelected = {}
         )
     }
 }
