@@ -5,6 +5,22 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
+# Attributes needed by Gson, Retrofit, Room and Kotlin reflection/annotations
+-keepattributes Signature, *Annotation*, InnerClasses, EnclosingMethod, SourceFile, LineNumberTable
+
+# Gson: keep serialized data model classes (fields are read/written by name)
+-keep class com.example.cameraxapp.data.model.** { *; }
+-keep class com.google.gson.reflect.TypeToken
+-keep class * extends com.google.gson.reflect.TypeToken
+
+# Retrofit: keep service interfaces and their annotated methods
+-keepclasseswithmembers interface * {
+    @retrofit2.http.* <methods>;
+}
+-dontwarn retrofit2.**
+-dontwarn okhttp3.**
+-dontwarn okio.**
+
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface
 # class:
