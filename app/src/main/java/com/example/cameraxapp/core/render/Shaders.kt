@@ -5,6 +5,18 @@ package com.example.cameraxapp.core.render
  * Tunable magnitudes are passed as uniforms computed in LutMath.kt, so the shader only holds maths.
  */
 
+/** Like [VERTEX_SHADER], but uv is transformed by a matrix (SurfaceTexture or SurfaceOutput transform). */
+const val VERTEX_SHADER_TEXMATRIX = """#version 300 es
+layout(location = 0) in vec2 aPos;
+layout(location = 1) in vec2 aUv;
+uniform mat4 uTexMatrix;
+out vec2 vUv;
+void main() {
+    vUv = (uTexMatrix * vec4(aUv, 0.0, 1.0)).xy;
+    gl_Position = vec4(aPos, 0.0, 1.0);
+}
+"""
+
 /** Full-screen quad. Position is in clip space; uv (0,0) is the first row of the bitmap. */
 const val VERTEX_SHADER = """#version 300 es
 layout(location = 0) in vec2 aPos;
@@ -154,3 +166,19 @@ void main() {
     fragColor = vec4(clamp(sharp, 0.0, 1.0), c.a);
 }
 """
+
+/**
+ * Camera frames arrive as an external OES texture (SurfaceTexture). This variant of the adjust
+ * shader samples that texture instead of a sampler2D. The rest of the shader is unchanged.
+ */
+val ADJUST_FRAGMENT_SHADER_OES: String = oesVariant(ADJUST_FRAGMENT_SHADER)
+
+private fun oesVariant(source: String): String {
+    val header = "#version 300 es\n"
+    val declaration = "uniform sampler2D uSrc;"
+    require(source.startsWith(header)) { "Shader must start with the GLSL ES 3.00 header" }
+    require(source.contains(declaration)) { "Shader does not declare $declaration" }
+    return header +
+        "#extension GL_OES_EGL_image_external_essl3 : require\n" +
+        source.removePrefix(header).replace(declaration, "uniform samplerExternalOES uSrc;")
+}

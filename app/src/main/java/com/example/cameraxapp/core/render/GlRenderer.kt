@@ -11,9 +11,15 @@ import android.opengl.GLES30
 import android.opengl.GLUtils
 import android.os.Handler
 import android.os.HandlerThread
+import com.example.cameraxapp.core.render.GlUtil.buildProgram
+import com.example.cameraxapp.core.render.GlUtil.checkGl
+import com.example.cameraxapp.core.render.GlUtil.createTarget
+import com.example.cameraxapp.core.render.GlUtil.newTexture
+import com.example.cameraxapp.core.render.GlUtil.setUniform1f
+import com.example.cameraxapp.core.render.GlUtil.setUniform1i
+import com.example.cameraxapp.core.render.GlUtil.setUniform2f
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.FloatBuffer
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 
@@ -169,7 +175,6 @@ class GlRenderer : AutoCloseable {
     }
 
     private fun drawAdjust(p: EditParams, srcTex: Int, lutTex: Int, target: RenderTarget, w: Int, h: Int) {
-        val (wr, wg, wb) = whiteBalanceGains(p.temperature, p.tint)
         bindTarget(target, w, h)
         GLES30.glUseProgram(adjustProgram)
 
@@ -178,20 +183,7 @@ class GlRenderer : AutoCloseable {
         GLES30.glActiveTexture(GLES30.GL_TEXTURE1)
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, if (lutTex != 0) lutTex else 0)
 
-        setUniform1i(adjustProgram, "uSrc", 0)
-        setUniform1i(adjustProgram, "uLut", 1)
-        setUniform1i(adjustProgram, "uUseLut", if (lutTex != 0) 1 else 0)
-        setUniform1f(adjustProgram, "uFilterIntensity", p.filterIntensity)
-        setUniform1f(adjustProgram, "uExposureGain", exposureGain(p.exposure))
-        setUniform3f(adjustProgram, "uWbGain", wr, wg, wb)
-        setUniform1f(adjustProgram, "uContrastFactor", contrastFactor(p.contrast))
-        setUniform1f(adjustProgram, "uSaturationFactor", saturationFactor(p.saturation))
-        setUniform1f(adjustProgram, "uToneAmount", TONE_AMPLITUDE)
-        setUniform1f(adjustProgram, "uHighlight", p.highlight)
-        setUniform1f(adjustProgram, "uShadow", p.shadow)
-        setUniform1f(adjustProgram, "uFadeAmount", fadeAmount(p.fade))
-        setUniform1f(adjustProgram, "uGrainAmplitude", grainAmplitude(p.grain))
-        setUniform1f(adjustProgram, "uVignetteStrength", vignetteStrength(p.vignette))
+        GlUtil.applyAdjustUniforms(adjustProgram, p, useLut = lutTex != 0)
 
         drawQuad()
         checkGl("adjust pass")
@@ -231,52 +223,6 @@ class GlRenderer : AutoCloseable {
         GLES30.glBindVertexArray(quadVao)
         GLES30.glDrawArrays(GLES30.GL_TRIANGLE_STRIP, 0, 4)
         GLES30.glBindVertexArray(0)
-    }
-
-    private fun createTarget(w: Int, h: Int): RenderTarget {
-        val tex = newTexture()
-        GLES30.glTexImage2D(
-            GLES30.GL_TEXTURE_2D, 0, GLES30.GL_RGBA8, w, h, 0,
-            GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, null,
-        )
-        val fbo = IntArray(1)
-        GLES30.glGenFramebuffers(1, fbo, 0)
-        GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, fbo[0])
-        GLES30.glFramebufferTexture2D(
-            GLES30.GL_FRAMEBUFFER, GLES30.GL_COLOR_ATTACHMENT0, GLES30.GL_TEXTURE_2D, tex, 0,
-        )
-        val status = GLES30.glCheckFramebufferStatus(GLES30.GL_FRAMEBUFFER)
-        check(status == GLES30.GL_FRAMEBUFFER_COMPLETE) {
-            "Framebuffer incomplete (0x${Integer.toHexString(status)}) for ${w}x$h"
-        }
-        return RenderTarget(tex, fbo[0])
-    }
-
-    private fun newTexture(): Int {
-        val ids = IntArray(1)
-        GLES30.glGenTextures(1, ids, 0)
-        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, ids[0])
-        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR)
-        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR)
-        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE)
-        GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE)
-        return ids[0]
-    }
-
-    private fun setUniform1i(program: Int, name: String, value: Int) {
-        GLES30.glUniform1i(GLES30.glGetUniformLocation(program, name), value)
-    }
-
-    private fun setUniform1f(program: Int, name: String, value: Float) {
-        GLES30.glUniform1f(GLES30.glGetUniformLocation(program, name), value)
-    }
-
-    private fun setUniform2f(program: Int, name: String, x: Float, y: Float) {
-        GLES30.glUniform2f(GLES30.glGetUniformLocation(program, name), x, y)
-    }
-
-    private fun setUniform3f(program: Int, name: String, x: Float, y: Float, z: Float) {
-        GLES30.glUniform3f(GLES30.glGetUniformLocation(program, name), x, y, z)
     }
 
     private fun ensureGl() {
@@ -343,74 +289,9 @@ class GlRenderer : AutoCloseable {
     }
 
     private fun setupQuad() {
-        val vertices = floatArrayOf(
-            // x, y, u, v
-            -1f, -1f, 0f, 0f,
-            1f, -1f, 1f, 0f,
-            -1f, 1f, 0f, 1f,
-            1f, 1f, 1f, 1f,
-        )
-        val buffer: FloatBuffer = ByteBuffer.allocateDirect(vertices.size * 4)
-            .order(ByteOrder.nativeOrder())
-            .asFloatBuffer()
-            .put(vertices)
-        buffer.position(0)
-
-        val vao = IntArray(1)
-        GLES30.glGenVertexArrays(1, vao, 0)
-        quadVao = vao[0]
-        GLES30.glBindVertexArray(quadVao)
-
-        val vbo = IntArray(1)
-        GLES30.glGenBuffers(1, vbo, 0)
-        quadVbo = vbo[0]
-        GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, quadVbo)
-        GLES30.glBufferData(GLES30.GL_ARRAY_BUFFER, vertices.size * 4, buffer, GLES30.GL_STATIC_DRAW)
-        GLES30.glEnableVertexAttribArray(0)
-        GLES30.glVertexAttribPointer(0, 2, GLES30.GL_FLOAT, false, 16, 0)
-        GLES30.glEnableVertexAttribArray(1)
-        GLES30.glVertexAttribPointer(1, 2, GLES30.GL_FLOAT, false, 16, 8)
-        GLES30.glBindVertexArray(0)
-    }
-
-    private fun buildProgram(vertexSource: String, fragmentSource: String): Int {
-        val vs = compileShader(GLES30.GL_VERTEX_SHADER, vertexSource)
-        val fs = compileShader(GLES30.GL_FRAGMENT_SHADER, fragmentSource)
-        val program = GLES30.glCreateProgram()
-        GLES30.glAttachShader(program, vs)
-        GLES30.glAttachShader(program, fs)
-        GLES30.glLinkProgram(program)
-        GLES30.glDeleteShader(vs)
-        GLES30.glDeleteShader(fs)
-        val status = IntArray(1)
-        GLES30.glGetProgramiv(program, GLES30.GL_LINK_STATUS, status, 0)
-        if (status[0] == 0) {
-            val log = GLES30.glGetProgramInfoLog(program)
-            GLES30.glDeleteProgram(program)
-            throw IllegalStateException("GL program link failed: $log")
-        }
-        return program
-    }
-
-    private fun compileShader(type: Int, source: String): Int {
-        val shader = GLES30.glCreateShader(type)
-        GLES30.glShaderSource(shader, source)
-        GLES30.glCompileShader(shader)
-        val status = IntArray(1)
-        GLES30.glGetShaderiv(shader, GLES30.GL_COMPILE_STATUS, status, 0)
-        if (status[0] == 0) {
-            val log = GLES30.glGetShaderInfoLog(shader)
-            GLES30.glDeleteShader(shader)
-            throw IllegalStateException("GL shader compile failed: $log")
-        }
-        return shader
-    }
-
-    private fun checkGl(where: String) {
-        val error = GLES30.glGetError()
-        check(error == GLES30.GL_NO_ERROR) {
-            "GL error 0x${Integer.toHexString(error)} during $where"
-        }
+        val (vao, vbo) = GlUtil.createQuad()
+        quadVao = vao
+        quadVbo = vbo
     }
 
     private fun releaseGl() {
@@ -438,12 +319,5 @@ class GlRenderer : AutoCloseable {
         quadVbo = 0
         quadVao = 0
         initialized = false
-    }
-
-    private class RenderTarget(val texture: Int, val framebuffer: Int) {
-        fun delete() {
-            GLES30.glDeleteFramebuffers(1, intArrayOf(framebuffer), 0)
-            GLES30.glDeleteTextures(1, intArrayOf(texture), 0)
-        }
     }
 }
