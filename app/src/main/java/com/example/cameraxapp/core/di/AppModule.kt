@@ -22,7 +22,17 @@ val appModule = module {
     single { RecipeRepository(get<AppDatabase>().recipeDao(), File(androidContext().filesDir, "recipes")) }
     single { CreatePhotoBoothImageUseCase(get<BillingRepository>().isPremium) }
     single { com.example.cameraxapp.domain.usecase.GifExportUseCase() }
-    viewModel { PhotoBoothViewModel(get(), get(), get(), get(), get()) }
+    viewModel {
+        PhotoBoothViewModel(
+            repository = get(),
+            application = get(),
+            createPhotoBoothImageUseCase = get(),
+            gifExportUseCase = get(),
+            recipeRepository = get(),
+            isPremium = get<BillingRepository>().isPremium,
+            analytics = get(),
+        )
+    }
     viewModel { com.example.cameraxapp.ui.viewmodel.CameraViewModel(androidApplication(), get(), get()) }
     viewModel { com.example.cameraxapp.ui.viewmodel.GalleryViewModel(get()) }
     single { com.example.cameraxapp.core.render.FilterCatalog(androidContext()) }

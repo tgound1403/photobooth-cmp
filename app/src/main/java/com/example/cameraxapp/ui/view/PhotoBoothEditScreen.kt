@@ -13,7 +13,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import org.koin.androidx.compose.get
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +31,8 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.cameraxapp.core.navigation.AppRoutes
+import com.example.cameraxapp.core.extension.findActivity
+import com.example.cameraxapp.data.billing.BillingRepository
 import com.example.cameraxapp.data.model.FrameTheme
 import com.example.cameraxapp.data.model.FrameThemes
 import com.example.cameraxapp.ui.components.GlassButton
@@ -343,5 +347,30 @@ fun PhotoBoothEditScreen(
         )
             }
         }
+    }
+    PhotoBoothPaywallOverlay(viewModel)
+}
+
+/**
+ * Paywall for a photobooth save blocked by a premium filter. Same screen as the editor uses.
+ * Closes itself once Premium turns on.
+ */
+@Composable
+fun PhotoBoothPaywallOverlay(viewModel: PhotoBoothViewModel) {
+    val showPaywall by viewModel.showPaywall.collectAsState()
+    val isPremium by viewModel.isPremium.collectAsState()
+    val billing: BillingRepository = get()
+    val prices by billing.prices.collectAsState()
+    val activity = LocalContext.current.findActivity()
+    LaunchedEffect(isPremium) { if (isPremium) viewModel.dismissPaywall() }
+    if (showPaywall) {
+        PaywallScreen(
+            before = null,
+            after = null,
+            monthlyPrice = prices[BillingRepository.MONTHLY_PRODUCT_ID],
+            yearlyPrice = prices[BillingRepository.YEARLY_PRODUCT_ID],
+            onPurchase = { productId -> activity?.let { billing.launchPurchase(it, productId) } },
+            onDismiss = viewModel::dismissPaywall,
+        )
     }
 }

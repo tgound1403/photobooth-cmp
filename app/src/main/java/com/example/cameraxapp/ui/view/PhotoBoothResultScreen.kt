@@ -150,6 +150,7 @@ fun PhotoBoothResultScreen(
                 photoBooth?.imagePaths?.let { images -> viewModel.exportGif(context, images) }
             }
     )
+    PhotoBoothPaywallOverlay(viewModel)
 }
 
 /**

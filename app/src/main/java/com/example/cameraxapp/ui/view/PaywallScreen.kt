@@ -69,12 +69,14 @@ fun PaywallScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = AppColors.textSecondary,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-        ) {
-            PreviewTile(label = stringResource(R.string.paywall_before), bitmap = before, modifier = Modifier.weight(1f))
-            PreviewTile(label = stringResource(R.string.paywall_after), bitmap = after, modifier = Modifier.weight(1f))
+        if (before != null || after != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                PreviewTile(label = stringResource(R.string.paywall_before), bitmap = before, modifier = Modifier.weight(1f))
+                PreviewTile(label = stringResource(R.string.paywall_after), bitmap = after, modifier = Modifier.weight(1f))
+            }
         }
         PlanCard(
             title = stringResource(R.string.paywall_yearly),

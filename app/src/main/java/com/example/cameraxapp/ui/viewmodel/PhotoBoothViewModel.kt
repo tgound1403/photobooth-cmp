@@ -7,11 +7,15 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cameraxapp.core.analytics.Analytics
+import com.example.cameraxapp.core.analytics.AnalyticsEvent
+import com.example.cameraxapp.core.analytics.NoOpAnalytics
 import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.FilterCatalog
 import com.example.cameraxapp.core.render.FilterInfo
 import com.example.cameraxapp.core.render.Recipe
 import com.example.cameraxapp.core.render.RecipeFilters
+import com.example.cameraxapp.data.billing.requiresPaywall
 import com.example.cameraxapp.data.repository.PhotoBoothRepository
 import com.example.cameraxapp.data.repository.RecipeRepository
 import com.example.cameraxapp.domain.usecase.CreatePhotoBoothImageUseCase
@@ -31,8 +35,27 @@ class PhotoBoothViewModel(
         private val application: Application,
         private val createPhotoBoothImageUseCase: CreatePhotoBoothImageUseCase,
         private val gifExportUseCase: com.example.cameraxapp.domain.usecase.GifExportUseCase,
-        private val recipeRepository: RecipeRepository
+        private val recipeRepository: RecipeRepository,
+        /** Premium entitlement. Saving a premium filter while this is false opens the paywall. */
+        val isPremium: StateFlow<Boolean> = MutableStateFlow(false),
+        private val analytics: Analytics = NoOpAnalytics,
 ) : AndroidViewModel(application) {
+
+    private val _showPaywall = MutableStateFlow(false)
+    /** True after a save was blocked by a premium filter. The paywall closes on purchase or dismiss. */
+    val showPaywall: StateFlow<Boolean> = _showPaywall.asStateFlow()
+
+    fun dismissPaywall() {
+        _showPaywall.value = false
+    }
+
+    /** Free users can pick and preview premium filters; the paywall is shown instead of saving. */
+    private fun blockedByPaywall(): Boolean {
+        if (!requiresPaywall(_editParams.value.filterId, filters, isPremium.value)) return false
+        _showPaywall.value = true
+        analytics.log(AnalyticsEvent.PAYWALL_SHOWN, mapOf("trigger" to "save"))
+        return true
+    }
 
     private val _gifExportState = MutableStateFlow<GifExportState>(GifExportState.Idle)
     val gifExportState: StateFlow<GifExportState> = _gifExportState
@@ -215,6 +238,7 @@ class PhotoBoothViewModel(
     }
 
     fun saveImages(context: Context, imagePaths: List<String>) {
+        if (blockedByPaywall()) return
         viewModelScope.launch {
             _saveState.value = SaveState.Saving
             try {
@@ -276,6 +300,7 @@ class PhotoBoothViewModel(
     }
 
     fun saveImageWithBg(context: Context, imagePaths: List<String>, background: String) {
+        if (blockedByPaywall()) return
         viewModelScope.launch {
             _saveState.value = SaveState.Saving
             try {
