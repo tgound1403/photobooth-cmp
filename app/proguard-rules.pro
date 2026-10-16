@@ -9,7 +9,7 @@
 -keepattributes Signature, *Annotation*, InnerClasses, EnclosingMethod, SourceFile, LineNumberTable
 
 # Gson: keep serialized data model classes (fields are read/written by name)
--keep class com.example.cameraxapp.data.model.** { *; }
+-keep class com.example.photogether.data.model.** { *; }
 -keep class com.google.gson.reflect.TypeToken
 -keep class * extends com.google.gson.reflect.TypeToken
 

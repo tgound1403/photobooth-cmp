@@ -2,7 +2,7 @@
   <artifact type="jar" name="shared">
     <output-path>$PROJECT_DIR$/shared/build/libs</output-path>
     <root id="archive" name="shared.jar">
-      <element id="module-output" name="CameraXApp.shared.androidMain" />
+      <element id="module-output" name="Photogether.shared.androidMain" />
     </root>
   </artifact>
 </component>

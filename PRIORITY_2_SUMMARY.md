@@ -4,7 +4,7 @@
 
 ### 1. **Design Tokens - Extract Common Values** ✅
 
-**File:** `app/src/main/java/com/example/cameraxapp/ui/theme/DesignTokens.kt`
+**File:** `app/src/main/java/com/example/photogether/ui/theme/DesignTokens.kt`
 
 **Thay đổi:**
 - Tạo `DesignTokens.kt` với các objects:

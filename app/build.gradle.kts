@@ -24,7 +24,7 @@ val appVersionName = "1.0"
 val debugAbi: String? = providers.gradleProperty("debugAbi").orNull?.takeIf { it.isNotBlank() }
 
 android {
-    namespace = "com.tgound.cameraxapp"
+    namespace = "com.tgound.photogether"
     compileSdk = 36
 
     buildFeatures {
@@ -34,7 +34,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.tgound.cameraxapp"
+        applicationId = "com.tgound.photogether"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
@@ -80,10 +80,10 @@ android {
 //    }
 }
 
-// Output file names: CameraXApp-v1.0-release.aab / CameraXApp-v1.0-debug.apk
+// Output file names: Photogether-v1.0-release.aab / Photogether-v1.0-debug.apk
 // instead of the default app-release.aab / app-debug.apk.
 base {
-    archivesName.set("CameraXApp-v$appVersionName")
+    archivesName.set("Photogether-v$appVersionName")
 }
 
 dependencies {

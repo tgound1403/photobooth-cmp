@@ -17,7 +17,7 @@
     </queries>
 
     <application
-        android:name="com.example.cameraxapp.App"
+        android:name="com.example.photogether.App"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -25,10 +25,10 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CameraXApp"
+        android:theme="@style/Theme.Photogether"
         tools:targetApi="31">
         <activity
-            android:name="com.example.cameraxapp.MainActivity"
+            android:name="com.example.photogether.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

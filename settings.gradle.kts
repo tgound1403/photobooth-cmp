@@ -21,6 +21,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "CameraXApp"
+rootProject.name = "Photogether"
 include(":app")
 include(":shared")

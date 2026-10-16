@@ -1,0 +1,11 @@
+package com.example.photogether.core.enum
+
+enum class EditType(name: String) {
+    FILTER("Filter"),
+    FRAME("Frame"),
+    LIGHT_LEAK("Light Leak"),
+    DISTORTION("Distortion"),
+    SCRATCH("Scratch"),
+    STICKER("Sticker"),
+    TEXT("Text")
+}
