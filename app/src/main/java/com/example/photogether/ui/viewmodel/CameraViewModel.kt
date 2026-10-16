@@ -29,6 +29,7 @@ import com.example.photogether.core.camera.withEv
 import com.example.photogether.core.camera.withKelvin
 import com.example.photogether.core.camera.zoomFor
 import com.example.photogether.core.render.EditParams
+import com.example.photogether.core.render.CameraRecipe
 import com.example.photogether.core.render.FilterCatalog
 import com.example.photogether.core.render.Recipe
 import com.example.photogether.data.repository.RecipeRepository
@@ -177,6 +178,23 @@ class CameraViewModel(
     /** Selects a catalog filter by id, keeping the other edit values. */
     fun selectFilter(filterId: String) {
         setFilter(editParams.value.copy(filterId = filterId))
+    }
+
+    /**
+     * Sets the five film-effect fields from a camera's [recipe]. Called when the user picks a camera,
+     * which resets these fields; other edit values are kept.
+     */
+    fun applyCameraRecipe(recipe: CameraRecipe) {
+        val r = recipe.clamped()
+        setFilter(
+            editParams.value.copy(
+                leak = r.leak,
+                dust = r.dust,
+                halation = r.halation,
+                grain = r.grain,
+                vignette = r.vignette,
+            ),
+        )
     }
 
     /** Sets the colour temperature in Kelvin, or null for auto white balance. Live; not saved until [commitAdjust]. */

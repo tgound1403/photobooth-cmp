@@ -166,6 +166,8 @@ fun CameraScreen(
                     val picked = CameraProfiles.byId(id)
                     cameraId = picked.id
                     currentOnSelect(picked.filterId)
+                    // Picking a camera resets the film-effect fields to the camera's recipe.
+                    cameraViewModel.applyCameraRecipe(picked.recipe)
                     entry.savedStateHandle.remove<String>(CameraProfiles.RESULT_KEY)
                 }
             }

@@ -15,6 +15,8 @@ data class CameraProfile(
     val modelTint: Int,
     /** Asset path of the glTF/GLB body model. All cameras share one model for now. */
     val modelAsset: String = DEFAULT_MODEL,
+    /** Film effects applied when this camera is chosen. */
+    val recipe: CameraRecipe = CameraRecipe(),
 ) {
     /** The filter applied when the camera is chosen. */
     val filterId: String get() = filterIds.first()
@@ -40,6 +42,7 @@ object CameraProfiles {
                 subtitle = "Kodak",
                 filterIds = listOf("kodak", "original", "nikon", "pentax", "minolta"),
                 modelTint = 0xFFC9A15B.toInt(),
+                recipe = CameraRecipe(leak = 0.15f, dust = 0.10f, halation = 0f, grain = 0.10f, vignette = 0.10f, dateStamp = DateStampStyle.ORANGE_LCD, aspect = CameraAspect.FOUR_THREE),
             ),
             CameraProfile(
                 id = "fuji_mini",
@@ -47,6 +50,7 @@ object CameraProfiles {
                 subtitle = "FujiFilm",
                 filterIds = listOf("fujifilm", "soft_glow", "rose_skin", "honey_light", "clear_tone", "peach_glow", "cream_matte"),
                 modelTint = 0xFFEFE6D2.toInt(),
+                recipe = CameraRecipe(leak = 0f, dust = 0f, halation = 0.10f, grain = 0.05f, vignette = 0f, dateStamp = DateStampStyle.NONE, aspect = CameraAspect.FOUR_THREE),
             ),
             CameraProfile(
                 id = "golden",
@@ -54,6 +58,7 @@ object CameraProfiles {
                 subtitle = "Golden Hour",
                 filterIds = listOf("golden_hour", "faded_mint", "amber_roll", "cool_negative", "sunday_film", "dusk_print"),
                 modelTint = 0xFFE0A91C.toInt(),
+                recipe = CameraRecipe(leak = 0.30f, dust = 0.05f, halation = 0.15f, grain = 0.05f, vignette = 0.15f, dateStamp = DateStampStyle.ORANGE_LCD, aspect = CameraAspect.FOUR_THREE),
             ),
             CameraProfile(
                 id = "night",
@@ -61,6 +66,7 @@ object CameraProfiles {
                 subtitle = "Teal Night",
                 filterIds = listOf("teal_night", "moody_blue", "autumn_haze", "velvet_dusk", "pastel_dream", "winter_fog"),
                 modelTint = 0xFF1F9AA3.toInt(),
+                recipe = CameraRecipe(leak = 0f, dust = 0f, halation = 0.35f, grain = 0.20f, vignette = 0.25f, dateStamp = DateStampStyle.NONE, aspect = CameraAspect.FOUR_THREE),
             ),
             CameraProfile(
                 id = "silver",
@@ -68,6 +74,7 @@ object CameraProfiles {
                 subtitle = "Silver Gelatin",
                 filterIds = listOf("silver_gelatin", "bnw", "noir_contrast", "soft_mono", "crimson_mono", "ink_wash", "light_mono"),
                 modelTint = 0xFFC9CED6.toInt(),
+                recipe = CameraRecipe(leak = 0f, dust = 0.15f, halation = 0f, grain = 0.25f, vignette = 0.20f, dateStamp = DateStampStyle.WHITE_DIGITAL, aspect = CameraAspect.ONE_ONE),
             ),
         )
 
