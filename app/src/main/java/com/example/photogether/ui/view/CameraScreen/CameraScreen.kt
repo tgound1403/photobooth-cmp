@@ -230,6 +230,12 @@ fun CameraScreen(
                     onSwipe = onSwipe,
                     onFocusPoint = cameraViewModel::focusAt,
                 )
+                ViewfinderSkinOverlay(
+                    skin = cameraProfile.recipe.skin,
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(Radius.viewfinder)),
+                )
                 ScreenFlash(
                     fx = flashFx,
                     modifier = Modifier
@@ -345,6 +351,7 @@ fun CameraScreen(
                         onError = { exception -> Log.e(TAG, "Capture failed", exception) },
                     )
                 },
+                skin = cameraProfile.recipe.skin,
                 onOpenGallery = { navController.navigate(AppRoutes.PHOTO_PICKER) },
                 onOpenPicker = { navController.navigate(AppRoutes.CAMERA_PICKER) },
                 pickerName = cameraProfile.name,

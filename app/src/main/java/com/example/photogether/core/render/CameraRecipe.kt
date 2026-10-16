@@ -20,6 +20,20 @@ enum class CameraAspect {
     val crops: Boolean get() = this != FOUR_THREE
 }
 
+/**
+ * Viewfinder skin of a camera body: a Compose overlay on the live preview. [RANGEFINDER_MONO] is the grey
+ * variant of [RANGEFINDER], kept separate so every camera has its own shutter tint.
+ * Colours are ARGB ints so this file stays free of Compose types; see ViewfinderSkin.kt for drawing.
+ */
+enum class ViewfinderSkin(val shutterTint: Long, val shutterRing: Long) {
+    NONE(0L, 0L),
+    FILM_FRAME(0xFFF2E8D5, 0L),
+    RANGEFINDER(0xFFFFFFFF, 0L),
+    RANGEFINDER_MONO(0xFFB8BCC4, 0L),
+    LCD_DIGICAM(0xFFD9DCE0, 0xFFE53935),
+    SOFT_GLASS(0xFFFFF4D6, 0L);
+}
+
 /** Flash mode the user picks on the camera screen. TORCH keeps the light on; the others fire on capture. */
 enum class FlashMode {
     OFF, AUTO, ON, TORCH;
@@ -59,6 +73,7 @@ data class CameraRecipe(
     val aspect: CameraAspect = CameraAspect.FOUR_THREE,
     val defaultFlash: FlashMode = FlashMode.OFF,
     val flashStyle: FlashStyle = FlashStyle.NONE,
+    val skin: ViewfinderSkin = ViewfinderSkin.NONE,
 ) {
     /** Same recipe with every float clamped to 0..1. */
     fun clamped(): CameraRecipe =

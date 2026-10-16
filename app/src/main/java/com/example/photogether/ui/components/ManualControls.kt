@@ -22,6 +22,12 @@ import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.graphics.isSpecified
+import com.example.photogether.core.render.ViewfinderSkin
+import com.example.photogether.ui.view.CameraScreen.shutterColor
+import com.example.photogether.ui.view.CameraScreen.shutterRingColor
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +62,7 @@ fun ManualControls(
     onExposureChange: (Long) -> Unit,
     onISOChange: (Int) -> Unit,
     onClickCapture: () -> Unit,
+    skin: ViewfinderSkin = ViewfinderSkin.NONE,
     onOpenGallery: () -> Unit = {},
     onOpenPicker: () -> Unit = {},
     pickerName: String? = null,
@@ -101,7 +108,7 @@ fun ManualControls(
             onClick = onOpenGallery,
             onBoundsChanged = onGalleryBoundsChanged,
         )
-        Shutter(onClick = onClickCapture)
+        Shutter(onClick = onClickCapture, skin = skin)
         PickerButton(name = pickerName, onClick = onOpenPicker)
     }
 }
@@ -139,14 +146,15 @@ private fun GalleryButton(lastPhoto: Uri?, onClick: () -> Unit, onBoundsChanged:
 
 /** Cream pill shutter, about 40% of the screen width and 64dp high, with six dots in a 2x3 grid. */
 @Composable
-private fun Shutter(onClick: () -> Unit) {
+private fun Shutter(onClick: () -> Unit, skin: ViewfinderSkin = ViewfinderSkin.NONE) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     Box(
         modifier = Modifier
             .width(screenWidth * 0.4f)
             .height(64.dp)
             .clip(RoundedCornerShape(percent = 50))
-            .background(InkColors.accent)
+            .background(skin.shutterColor.takeOrElse { InkColors.accent })
+            .then(if (skin.shutterRingColor.isSpecified) Modifier.border(3.dp, skin.shutterRingColor, RoundedCornerShape(percent = 50)) else Modifier)
             .clickable(onClick = onClick)
             .semantics { contentDescription = "Chụp ảnh" },
         contentAlignment = Alignment.Center,
