@@ -16,10 +16,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.photogether.core.navigation.AppNavigation
+import com.example.photogether.core.perf.JankLogger
 import com.example.photogether.ui.theme.PhotogetherTheme
 import com.example.photogether.ui.view.NoPermissionGrantedScreen
 
 class MainActivity : ComponentActivity() {
+    private var jankLogger: JankLogger? = null
+
     companion object {
         val REQUIRED_PERMISSIONS = mutableListOf(
             Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO
@@ -38,6 +41,7 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
         )
         super.onCreate(savedInstanceState)
+        jankLogger = JankLogger(window)
 
         if (allPermissionsGranted()) {
             setContent {
@@ -48,6 +52,16 @@ class MainActivity : ComponentActivity() {
         } else {
             activityResultLauncher.launch(REQUIRED_PERMISSIONS)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        jankLogger?.resume()
+    }
+
+    override fun onPause() {
+        jankLogger?.pause()
+        super.onPause()
     }
 
     val activityResultLauncher = registerForActivityResult(

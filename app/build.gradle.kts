@@ -132,6 +132,7 @@ dependencies {
     implementation(libs.coil.compose)
 
     implementation(libs.androidx.camera.compose)
+    implementation(libs.androidx.metrics.performance)
     implementation(libs.accompanist.permissions)
 
     // Room

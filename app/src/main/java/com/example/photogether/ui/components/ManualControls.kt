@@ -1,8 +1,5 @@
 package com.example.photogether.ui.components
 
-import android.content.Context
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CameraManager
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,7 +34,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,19 +63,7 @@ fun ManualControls(
     onGalleryBoundsChanged: (Rect) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
     var isoValue by remember { mutableIntStateOf(100) }
-    val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-    val cameraId = cameraManager.cameraIdList[0]
-    val characteristics = cameraManager.getCameraCharacteristics(cameraId)
-
-    val exposureRange = characteristics.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE)
-    val minExposure = exposureRange?.lower?.toFloat()
-    val maxExposure = exposureRange?.upper?.toFloat()
-
-    val sensitivityRange = characteristics.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)
-    val minISO = sensitivityRange?.lower?.toFloat()
-    val maxISO = sensitivityRange?.upper?.toFloat()
 
     Row(
         modifier = modifier

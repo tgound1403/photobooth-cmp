@@ -3,7 +3,7 @@ billing = "7.1.1"
 activityVersion = "1.9.3"
 agp = "8.9.1"
 animation = "1.7.6"
-cameraCore = "1.2.2"
+cameraCore = "1.5.0-alpha06"
 coilCompose = "2.4.0"
 converterGson = "2.9.0"
 gson = "2.10.1"
@@ -35,7 +35,6 @@ activityCompose = "1.9.3"
 runtimeLivedata = "1.7.6"
 media3CommonKtx = "1.5.1"
 koin-bom = "3.5.3"
-camerax = "1.5.0-alpha06"
 accompanist = "0.37.2"
 kotlinStdlib = "2.0.21"
 kotlinTest = "2.0.21"
@@ -43,6 +42,7 @@ runner = "1.5.2"
 core = "1.5.0"
 datastoreCore = "1.2.0"
 kotlinxSerializationJson = "1.7.3"
+metricsPerformance = "1.0.0"
 
 [libraries]
 androidx-billing-ktx = { module = "com.android.billingclient:billing-ktx", version.ref = "billing" }
@@ -93,7 +93,7 @@ androidx-runtime-android = { group = "androidx.compose.runtime", name = "runtime
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
 androidx-media3-common-ktx = { group = "androidx.media3", name = "media3-common-ktx", version.ref = "media3CommonKtx" }
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
-androidx-camera-compose = { module = "androidx.camera:camera-compose", version.ref = "camerax" }
+androidx-camera-compose = { module = "androidx.camera:camera-compose", version.ref = "cameraCore" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
 kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlinStdlib" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlinTest" }
@@ -102,6 +102,7 @@ androidx-core = { group = "androidx.test", name = "core", version.ref = "core" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 androidx-datastore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "datastoreCore" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+androidx-metrics-performance = { group = "androidx.metrics", name = "metrics-performance", version.ref = "metricsPerformance" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

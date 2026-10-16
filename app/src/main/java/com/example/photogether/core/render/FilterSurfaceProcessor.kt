@@ -20,12 +20,8 @@ import androidx.camera.core.SurfaceOutput
 import androidx.camera.core.SurfaceProcessor
 import androidx.camera.core.SurfaceRequest
 import com.example.photogether.core.render.GlUtil.buildProgram
-import com.example.photogether.core.render.GlUtil.checkGl
 import com.example.photogether.core.render.GlUtil.createQuad
-import com.example.photogether.core.render.GlUtil.setUniform1f
-import com.example.photogether.core.render.GlUtil.setUniform1i
-import com.example.photogether.core.render.GlUtil.setUniform2f
-import com.example.photogether.core.render.GlUtil.setUniformMatrix4
+import com.tgound.photogether.BuildConfig
 import java.util.concurrent.Executor
 
 /**
@@ -45,7 +41,13 @@ import java.util.concurrent.Executor
  */
 class FilterSurfaceProcessor : SurfaceProcessor {
 
-    private class Edit(val params: EditParams, val lut: Bitmap?)
+    /** Everything the frame loop needs from an edit, derived once in [setEdit], not per frame. */
+    private class Edit(params: EditParams, val lut: Bitmap?) {
+        val params: EditParams = params.clamped()
+        val values = AdjustValues(this.params)
+        val activeLut: Bitmap? =
+            lut?.takeIf { this.params.filterId != FilterCatalog.ORIGINAL_ID && this.params.filterIntensity > 0f }
+    }
 
     private val thread = HandlerThread("FilterSurfaceProcessor").apply { start() }
     private val handler = Handler(thread.looper)
@@ -75,6 +77,14 @@ class FilterSurfaceProcessor : SurfaceProcessor {
     private var input: Input? = null
     private val inputs = ArrayList<Input>()
     private val outputs = ArrayList<Output>()
+    // Reusable snapshot of [outputs] for the frame loop, rebuilt only when the outputs change.
+    private var outputSnapshot = arrayOfNulls<Output>(4)
+    private var outputCount = 0
+    private var outputsDirty = true
+    private var adjustLoc: AdjustLocations? = null
+    private var sharpenLoc: SharpenLocations? = null
+    private val frameTimer = FrameTimer()
+    private val invalidateAttachments = intArrayOf(GLES30.GL_COLOR_ATTACHMENT0)
     private val texMatrix = FloatArray(16)
     private val outMatrix = FloatArray(16)
     private val identity = FloatArray(16).also { Matrix.setIdentityM(it, 0) }
@@ -143,6 +153,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
                     "eglCreateWindowSurface failed (0x${Integer.toHexString(EGL14.eglGetError())})"
                 }
                 outputs += Output(surfaceOutput, eglSurface)
+                outputsDirty = true
             } catch (e: IllegalArgumentException) {
                 // The preview surface was destroyed before this task ran (leaving the screen). Not an error.
                 Log.w(TAG, "Output surface already gone; skipping it")
@@ -159,37 +170,62 @@ class FilterSurfaceProcessor : SurfaceProcessor {
     private fun onFrameAvailable(inp: Input) {
         if (inp.released || inp !== input) return
         val target = inp.intermediate ?: return
+        val adjust = adjustLoc ?: return
         val snapshot = edit
-        val p = snapshot.params.clamped()
-        val activeLut =
-            snapshot.lut?.takeIf { p.filterId != FilterCatalog.ORIGINAL_ID && p.filterIntensity > 0f }
+        val p = snapshot.params
         try {
             makeCurrent(pbuffer)
+            frameTimer.begin()
             inp.surfaceTexture.updateTexImage()
             inp.surfaceTexture.getTransformMatrix(texMatrix)
             val timestamp = inp.surfaceTexture.timestamp
-            val lutTex = activeLut?.let { lutTextureFor(it) } ?: 0
+            val activeLut = snapshot.activeLut
+            val lutTex = if (activeLut != null) lutTextureFor(activeLut) else 0
 
             // Pass 1: camera frame -> intermediate, in upright texture coordinates.
             GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, target.framebuffer)
+            // Every pixel is rewritten below, so the old contents need not be loaded.
+            GLES30.glInvalidateFramebuffer(GLES30.GL_FRAMEBUFFER, 1, invalidateAttachments, 0)
             GLES30.glViewport(0, 0, inp.width, inp.height)
             GLES30.glUseProgram(adjustProgram)
             GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
             GLES30.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, inp.texture)
             GLES30.glActiveTexture(GLES30.GL_TEXTURE1)
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, lutTex)
-            setUniformMatrix4(adjustProgram, "uTexMatrix", texMatrix)
-            GlUtil.applyAdjustUniforms(adjustProgram, p, useLut = lutTex != 0)
+            GLES30.glUniformMatrix4fv(adjust.texMatrix, 1, false, texMatrix, 0)
+            snapshot.values.apply(adjust, useLut = lutTex != 0)
             drawQuad()
-            checkGl("adjust pass")
+            debugCheckGl("adjust pass")
 
             // Pass 2: intermediate -> each output surface.
-            for (out in outputs.toList()) {
+            if (outputsDirty) rebuildOutputSnapshot()
+            val count = outputCount
+            val outs = outputSnapshot
+            for (i in 0 until count) {
+                val out = outs[i] ?: continue
                 presentTo(out, target.texture, inp.width, inp.height, p.sharpness, timestamp)
             }
+
+            // The intermediate is not needed after the present passes.
+            GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, target.framebuffer)
+            GLES30.glInvalidateFramebuffer(GLES30.GL_FRAMEBUFFER, 1, invalidateAttachments, 0)
+            GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0)
+            frameTimer.end()
         } catch (t: Throwable) {
             Log.e(TAG, "Frame render failed", t)
         }
+    }
+
+    private fun rebuildOutputSnapshot() {
+        if (outputSnapshot.size < outputs.size) outputSnapshot = arrayOfNulls(outputs.size)
+        java.util.Arrays.fill(outputSnapshot, null)
+        for (i in outputs.indices) outputSnapshot[i] = outputs[i]
+        outputCount = outputs.size
+        outputsDirty = false
+    }
+
+    private fun debugCheckGl(where: String) {
+        if (BuildConfig.DEBUG) GlUtil.checkGl(where)
     }
 
     private fun presentTo(
@@ -200,6 +236,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         sharpness: Float,
         timestampNs: Long,
     ) {
+        val sharpen = sharpenLoc ?: return
         try {
             makeCurrent(out.eglSurface)
             val size = out.surfaceOutput.size
@@ -209,12 +246,11 @@ class FilterSurfaceProcessor : SurfaceProcessor {
             GLES30.glUseProgram(sharpenProgram)
             GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, srcTexture)
-            setUniform1i(sharpenProgram, "uSrc", 0)
-            setUniform2f(sharpenProgram, "uTexel", 1f / srcWidth, 1f / srcHeight)
-            setUniform1f(sharpenProgram, "uSharpness", sharpness)
-            setUniformMatrix4(sharpenProgram, "uTexMatrix", outMatrix)
+            GLES30.glUniform2f(sharpen.texel, 1f / srcWidth, 1f / srcHeight)
+            GLES30.glUniform1f(sharpen.sharpness, sharpness)
+            GLES30.glUniformMatrix4fv(sharpen.texMatrix, 1, false, outMatrix, 0)
             drawQuad()
-            checkGl("present pass")
+            debugCheckGl("present pass")
             EGLExt.eglPresentationTimeANDROID(display, out.eglSurface, timestampNs)
             if (!EGL14.eglSwapBuffers(display, out.eglSurface)) {
                 Log.w(TAG, "eglSwapBuffers failed (0x${Integer.toHexString(EGL14.eglGetError())}); closing output")
@@ -230,6 +266,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         val index = outputs.indexOfFirst { it.surfaceOutput === surfaceOutput }
         if (index >= 0) {
             val out = outputs.removeAt(index)
+            outputsDirty = true
             if (display != EGL14.EGL_NO_DISPLAY && out.eglSurface != EGL14.EGL_NO_SURFACE) {
                 EGL14.eglDestroySurface(display, out.eglSurface)
             }
@@ -261,7 +298,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         val argb = if (bitmap.config == Bitmap.Config.ARGB_8888) bitmap else bitmap.copy(Bitmap.Config.ARGB_8888, false)
         GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, argb, 0)
         if (argb !== bitmap) argb.recycle()
-        checkGl("upload LUT texture")
+        GlUtil.checkGl("upload LUT texture")
         lutTexture = tex
         uploadedLut = bitmap
         return tex
@@ -325,10 +362,20 @@ class FilterSurfaceProcessor : SurfaceProcessor {
 
             adjustProgram = buildProgram(VERTEX_SHADER_TEXMATRIX, ADJUST_FRAGMENT_SHADER_OES)
             sharpenProgram = buildProgram(VERTEX_SHADER_TEXMATRIX, SHARPEN_FRAGMENT_SHADER)
+            // Locations and constant sampler bindings are set once; the frame loop never queries them.
+            val adjust = AdjustLocations(adjustProgram)
+            adjustLoc = adjust
+            GLES30.glUseProgram(adjustProgram)
+            GLES30.glUniform1i(adjust.src, 0)
+            GLES30.glUniform1i(adjust.lut, 1)
+            val sharpen = SharpenLocations(sharpenProgram)
+            sharpenLoc = sharpen
+            GLES30.glUseProgram(sharpenProgram)
+            GLES30.glUniform1i(sharpen.src, 0)
             val (vao, vbo) = createQuad()
             quadVao = vao
             quadVbo = vbo
-            checkGl("initialisation")
+            GlUtil.checkGl("initialisation")
             initialized = true
         } catch (t: Throwable) {
             releaseAll()
@@ -342,6 +389,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         input = null
         if (initialized) {
             makeCurrent(pbuffer)
+            frameTimer.release()
             if (lutTexture != 0) GLES30.glDeleteTextures(1, intArrayOf(lutTexture), 0)
             if (adjustProgram != 0) GLES30.glDeleteProgram(adjustProgram)
             if (sharpenProgram != 0) GLES30.glDeleteProgram(sharpenProgram)
@@ -364,6 +412,10 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         quadVbo = 0
         lutTexture = 0
         uploadedLut = null
+        adjustLoc = null
+        sharpenLoc = null
+        outputCount = 0
+        outputsDirty = true
         initialized = false
     }
 

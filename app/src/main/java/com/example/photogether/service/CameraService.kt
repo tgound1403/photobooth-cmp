@@ -51,6 +51,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /** Use cases and camera of one bind. */
@@ -68,6 +70,9 @@ data class BoundCamera(val preview: Preview, val imageCapture: ImageCapture, val
 class CameraService(private val catalog: FilterCatalog) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /** Serializes the capture fallback: its render output bitmap is shared (reuseOutput). */
+    private val fallbackMutex = Mutex()
     private val processor = FilterSurfaceProcessor()
     private var renderer: GlRenderer? = null
 
@@ -355,26 +360,39 @@ class CameraService(private val catalog: FilterCatalog) {
         )
     }
 
-    /** Re-renders the JPEG at [file] with the current edit, keeping its EXIF orientation. */
-    private suspend fun applyEditToFile(file: File) {
+    /**
+     * Re-renders the JPEG at [file] with the current edit, keeping its EXIF orientation.
+     * Decode, GPU render, encode and EXIF restore all run off the main thread.
+     */
+    private suspend fun applyEditToFile(file: File) = fallbackMutex.withLock { withContext(Dispatchers.IO) {
         val params = edit
-        if (params.isIdentity) return
-        val source = BitmapFactory.decodeFile(file.absolutePath)
+        if (params.isIdentity) return@withContext
+
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.absolutePath, bounds)
+        val opts = BitmapFactory.Options().apply {
+            inSampleSize = fallbackSampleSize(bounds.outWidth, bounds.outHeight, MAX_FALLBACK_SIZE)
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+        val source = BitmapFactory.decodeFile(file.absolutePath, opts)
             ?: error("Cannot decode captured photo ${file.name}")
         val orientation = ExifInterface(file.absolutePath)
             .getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
 
-        val gl = renderer ?: GlRenderer().also { renderer = it }
-        val rendered = gl.render(source, params, lut, maxSize = MAX_FALLBACK_SIZE)
-        source.recycle()
+        // Owned by the renderer (reuseOutput): encode it before the next render, never recycle it.
+        val rendered = try {
+            val gl = renderer ?: GlRenderer().also { renderer = it }
+            gl.render(source, params, lut, maxSize = MAX_FALLBACK_SIZE, reuseOutput = true)
+        } finally {
+            source.recycle()
+        }
         file.outputStream().use { rendered.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, it) }
-        rendered.recycle()
 
         ExifInterface(file.absolutePath).apply {
             setAttribute(ExifInterface.TAG_ORIENTATION, orientation.toString())
             saveAttributes()
         }
-    }
+    } }
 
     /** Stops the filter pipeline and frees GL resources. Call when the owner is destroyed. */
     fun shutdown() {
@@ -409,6 +427,19 @@ class CameraService(private val catalog: FilterCatalog) {
         const val TAG = "CameraService"
         const val JPEG_QUALITY = 95
         const val MAX_FALLBACK_SIZE = 4096
+
         const val FOCUS_AUTO_CANCEL_SECONDS = 3L
     }
+}
+
+/**
+ * Largest power-of-two inSampleSize that keeps the decoded longest side >= [target]
+ * (1 when the image is already within it or the bounds are unknown).
+ */
+internal fun fallbackSampleSize(width: Int, height: Int, target: Int): Int {
+    val longest = maxOf(width, height)
+    if (longest <= 0 || target <= 0) return 1
+    var sample = 1
+    while (longest / (sample * 2) >= target) sample *= 2
+    return sample
 }

@@ -53,16 +53,27 @@ class GlRenderer : AutoCloseable {
     private var lutTexture = 0
     private var lutSource: Bitmap? = null
 
+    // Reused readback resources. Only touched on the GL thread; released in releaseGl().
+    private var readBuffer: ByteBuffer? = null
+    private var reusedOutput: Bitmap? = null
+
     /**
      * Renders [src] with [params]. [lut] is the 512x512 filter LUT (null for no filter).
      * If [maxSize] is set, the longest side of the output is scaled down to it (never upscaled).
      * When the params are identity and [maxSize] is null, returns a copy of [src] without using GL.
+     *
+     * Downscaling to [maxSize] happens on the GPU (the first pass renders straight into a target of
+     * the output size). With [reuseOutput] the returned bitmap is owned by this renderer and is
+     * reused by the next [render] call with the same output size: the caller must not recycle it
+     * and must be done with it (or copy it) before rendering again or calling [close]. The default
+     * returns a fresh bitmap that the caller owns.
      */
     suspend fun render(
         src: Bitmap,
         params: EditParams,
         lut: Bitmap?,
         maxSize: Int? = null,
+        reuseOutput: Boolean = false,
     ): Bitmap {
         require(!src.isRecycled) { "Source bitmap is recycled" }
         require(maxSize == null || maxSize > 0) { "maxSize must be positive, was $maxSize" }
@@ -77,7 +88,7 @@ class GlRenderer : AutoCloseable {
                 "LUT must be ${LUT_SIZE}x$LUT_SIZE, was ${activeLut.width}x${activeLut.height}"
             }
         }
-        return runOnGlThread { renderOnGlThread(src, p, activeLut, maxSize) }
+        return runOnGlThread { renderOnGlThread(src, p, activeLut, maxSize, reuseOutput) }
     }
 
     override fun close() {
@@ -107,18 +118,28 @@ class GlRenderer : AutoCloseable {
 
     // ---- GL thread ---------------------------------------------------------------------------
 
-    private fun renderOnGlThread(src: Bitmap, p: EditParams, lut: Bitmap?, maxSize: Int?): Bitmap {
+    private fun renderOnGlThread(
+        src: Bitmap,
+        p: EditParams,
+        lut: Bitmap?,
+        maxSize: Int?,
+        reuseOutput: Boolean,
+    ): Bitmap {
         ensureGl()
 
         val limit = minOf(maxSize ?: Int.MAX_VALUE, maxTextureSize)
         val (outW, outH) = scaledSize(src.width, src.height, limit)
-        val input = prepareInput(src, outW, outH)
+        val input = prepareInput(src)
         try {
-            val srcTex = uploadBitmap(input)
+            val srcTex = uploadBitmap(input, downscale = outW < input.width || outH < input.height)
             val lutTex = lut?.let { lutTextureFor(it) } ?: 0
-            val first = createTarget(outW, outH)
-            val second = if (p.sharpness > 0f) createTarget(outW, outH) else null
+            var first: RenderTarget? = null
+            var second: RenderTarget? = null
             try {
+                // The adjust pass samples the full-size source and writes at output size: the GPU
+                // does the downscale (mipmapped linear filtering) instead of the CPU.
+                first = createTarget(outW, outH)
+                if (p.sharpness > 0f) second = createTarget(outW, outH)
                 drawAdjust(p, srcTex, lutTex, first, outW, outH)
                 val final =
                     if (second != null) {
@@ -127,10 +148,10 @@ class GlRenderer : AutoCloseable {
                     } else {
                         first
                     }
-                return readBack(final, outW, outH)
+                return readBack(final, outW, outH, reuseOutput)
             } finally {
                 second?.delete()
-                first.delete()
+                first?.delete()
                 GLES30.glDeleteTextures(1, intArrayOf(srcTex), 0)
             }
         } finally {
@@ -138,20 +159,35 @@ class GlRenderer : AutoCloseable {
         }
     }
 
-    /** Scales [src] to [w]x[h] with filtering (CPU, once) and makes it ARGB_8888 for upload. */
-    private fun prepareInput(src: Bitmap, w: Int, h: Int): Bitmap {
-        val sized =
-            if (w == src.width && h == src.height) src
-            else Bitmap.createScaledBitmap(src, w, h, true)
-        if (sized.config == Bitmap.Config.ARGB_8888) return sized
-        val converted = sized.copy(Bitmap.Config.ARGB_8888, false)
-        if (sized !== src) sized.recycle()
-        return converted
+    /**
+     * Returns [src] if it can be uploaded as is, otherwise an ARGB_8888 copy (non-ARGB or hardware
+     * bitmaps) that fits the GL texture size limit. The copy is owned by the caller to recycle.
+     */
+    private fun prepareInput(src: Bitmap): Bitmap {
+        var cur = src
+        if (cur.config != Bitmap.Config.ARGB_8888) {
+            cur = cur.copy(Bitmap.Config.ARGB_8888, false)
+                ?: error("Cannot convert source bitmap to ARGB_8888")
+        }
+        if (cur.width > maxTextureSize || cur.height > maxTextureSize) {
+            // Rare: source larger than the GPU texture limit. Fit it on the CPU once.
+            val (w, h) = scaledSize(cur.width, cur.height, maxTextureSize)
+            val fitted = Bitmap.createScaledBitmap(cur, w, h, true)
+            if (cur !== src && fitted !== cur) cur.recycle()
+            cur = fitted
+        }
+        return cur
     }
 
-    private fun uploadBitmap(bitmap: Bitmap): Int {
+    private fun uploadBitmap(bitmap: Bitmap, downscale: Boolean): Int {
         val tex = newTexture()
         GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, bitmap, 0)
+        if (downscale) {
+            GLES30.glGenerateMipmap(GLES30.GL_TEXTURE_2D)
+            GLES30.glTexParameteri(
+                GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR_MIPMAP_LINEAR,
+            )
+        }
         checkGl("upload source texture")
         return tex
     }
@@ -201,14 +237,31 @@ class GlRenderer : AutoCloseable {
         checkGl("sharpen pass")
     }
 
-    private fun readBack(target: RenderTarget, w: Int, h: Int): Bitmap {
+    private fun readBack(target: RenderTarget, w: Int, h: Int, reuseOutput: Boolean): Bitmap {
+        val needed = w * h * 4
+        var buffer = readBuffer
+        if (buffer == null || buffer.capacity() != needed) {
+            buffer = ByteBuffer.allocateDirect(needed).order(ByteOrder.nativeOrder())
+            readBuffer = buffer
+        }
+        buffer.clear()
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, target.framebuffer)
-        val buffer = ByteBuffer.allocateDirect(w * h * 4).order(ByteOrder.nativeOrder())
         GLES30.glPixelStorei(GLES30.GL_PACK_ALIGNMENT, 1)
         GLES30.glReadPixels(0, 0, w, h, GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, buffer)
-        checkGl("read pixels")
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0)
-        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        checkGl("read pixels")
+        val out =
+            if (reuseOutput) {
+                val old = reusedOutput
+                if (old != null && !old.isRecycled && old.width == w && old.height == h) {
+                    old
+                } else {
+                    old?.recycle()
+                    Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also { reusedOutput = it }
+                }
+            } else {
+                Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            }
         buffer.rewind()
         out.copyPixelsFromBuffer(buffer)
         return out
@@ -295,6 +348,9 @@ class GlRenderer : AutoCloseable {
     }
 
     private fun releaseGl() {
+        readBuffer = null
+        reusedOutput?.recycle()
+        reusedOutput = null
         if (display != EGL14.EGL_NO_DISPLAY && eglContext != EGL14.EGL_NO_CONTEXT) {
             EGL14.eglMakeCurrent(display, eglSurface, eglSurface, eglContext)
             if (lutTexture != 0) GLES30.glDeleteTextures(1, intArrayOf(lutTexture), 0)
