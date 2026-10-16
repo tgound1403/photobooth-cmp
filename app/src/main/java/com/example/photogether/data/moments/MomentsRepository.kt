@@ -13,6 +13,7 @@ import android.provider.MediaStore
 import androidx.annotation.RequiresApi
 import com.example.photogether.core.moments.Moment
 import com.example.photogether.core.moments.MomentQuery
+import com.example.photogether.core.moments.displaySize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -45,6 +46,7 @@ class MomentsRepository(private val contentResolver: ContentResolver) {
         MediaStore.Images.Media.DATE_ADDED,
         MediaStore.Images.Media.WIDTH,
         MediaStore.Images.Media.HEIGHT,
+        MediaStore.Images.Media.ORIENTATION,
     )
 
     /** Emits the current list at once, then again whenever the images table changes. */
@@ -70,13 +72,19 @@ class MomentsRepository(private val contentResolver: ContentResolver) {
                 val dateCol = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
                 val widthCol = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.WIDTH)
                 val heightCol = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.HEIGHT)
+                val orientationCol = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.ORIENTATION)
                 val out = ArrayList<Moment>(cursor.count)
                 while (cursor.moveToNext()) {
+                    val (w, h) = displaySize(
+                        width = cursor.getInt(widthCol),
+                        height = cursor.getInt(heightCol),
+                        orientation = cursor.getInt(orientationCol),
+                    )
                     out += Moment(
                         uri = ContentUris.withAppendedId(imagesUri, cursor.getLong(idCol)).toString(),
                         takenAt = cursor.getLong(dateCol) * 1000L,
-                        width = cursor.getInt(widthCol),
-                        height = cursor.getInt(heightCol),
+                        width = w,
+                        height = h,
                     )
                 }
                 out
