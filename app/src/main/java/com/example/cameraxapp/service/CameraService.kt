@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
+import android.os.Build
 import android.hardware.camera2.CaptureRequest
 import android.media.ExifInterface
 import android.util.Log
@@ -28,6 +30,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.example.cameraxapp.core.camera.Camera2Overrides
 import com.example.cameraxapp.core.camera.Camera2Setting
+import com.example.cameraxapp.core.camera.Lens
+import com.example.cameraxapp.core.camera.equivalentFocalMm
 import com.example.cameraxapp.core.camera.CameraCapabilities
 import com.example.cameraxapp.core.camera.EvRange
 import com.example.cameraxapp.core.camera.ManualExposure
@@ -92,10 +96,18 @@ class CameraService(private val catalog: FilterCatalog) {
      * Must run on the main thread. Replaces any previous binding. Re-applies the stored Camera2
      * overrides to the new camera.
      */
-    suspend fun bind(context: Context, lifecycleOwner: LifecycleOwner, lensFacing: Int): BoundCamera {
+    suspend fun bind(
+        context: Context,
+        lifecycleOwner: LifecycleOwner,
+        lensFacing: Int,
+        physicalId: String? = null,
+    ): BoundCamera {
         val app = context.applicationContext
         val provider = app.getCameraProvider()
-        val selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+        lenses = findBackLenses(app)
+        val builder = CameraSelector.Builder().requireLensFacing(lensFacing)
+        if (physicalId != null) builder.setPhysicalCameraId(physicalId)
+        val selector = builder.build()
         val executor = ContextCompat.getMainExecutor(app)
 
         provider.unbindAll()
@@ -115,6 +127,48 @@ class CameraService(private val catalog: FilterCatalog) {
         }
         applyOverrides(bound.camera)
         return bound
+    }
+
+    /** Back lenses found by the last [bind], with their 35mm-equivalent focal lengths. */
+    @Volatile
+    var lenses: List<Lens> = emptyList()
+        private set
+
+    /**
+     * Lists the back lenses. On a multi-camera phone each physical lens is listed, so the picker can
+     * pick the one that matches a focal length. Otherwise the single back camera is listed.
+     */
+    fun findBackLenses(context: Context): List<Lens> {
+        val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        val found = mutableListOf<Lens>()
+        for (id in manager.cameraIdList) {
+            val chars = try {
+                manager.getCameraCharacteristics(id)
+            } catch (e: Exception) {
+                continue
+            }
+            if (chars.get(CameraCharacteristics.LENS_FACING) != CameraCharacteristics.LENS_FACING_BACK) continue
+            val physical = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) chars.physicalCameraIds else emptySet()
+            if (physical.size > 1) {
+                for (pid in physical) {
+                    val pchars = try {
+                        manager.getCameraCharacteristics(pid)
+                    } catch (e: Exception) {
+                        continue
+                    }
+                    lensOf(pid, pchars)?.let { found.add(it) }
+                }
+            } else {
+                lensOf(id, chars)?.let { found.add(it) }
+            }
+        }
+        return found.distinctBy { it.cameraId }
+    }
+
+    private fun lensOf(id: String, chars: CameraCharacteristics): Lens? {
+        val focal = chars.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.firstOrNull() ?: return null
+        val size = chars.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE) ?: return null
+        return Lens(id, equivalentFocalMm(focal, size.width, size.height))
     }
 
     /**

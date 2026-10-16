@@ -1,7 +1,7 @@
 package com.example.cameraxapp.ui.view.CameraScreen
 
+import android.net.Uri
 import android.util.Log
-import android.widget.Toast
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.MeteringPoint
@@ -49,8 +49,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -74,6 +77,8 @@ import com.example.cameraxapp.ui.components.GridOverlay
 import com.example.cameraxapp.ui.components.ManualControls
 import com.example.cameraxapp.ui.components.ZoomControl
 import com.example.cameraxapp.ui.components.ZoomPill
+import com.example.cameraxapp.ui.camera.PhotoFlight
+import com.example.cameraxapp.ui.camera.PhotoFlightOverlay
 import com.example.cameraxapp.ui.components.kelvinLabel
 import com.example.cameraxapp.ui.theme.BinsooType
 import com.example.cameraxapp.ui.theme.InkColors
@@ -98,19 +103,34 @@ fun CameraScreen(
     navController: NavController,
     cameraViewModel: CameraViewModel = koinViewModel(),
 ) {
-    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val exposureTime = remember { mutableLongStateOf(10_000_000L) }
     val isoValue = remember { mutableIntStateOf(1000) }
     val recipes by cameraViewModel.recipes.collectAsState(initial = emptyList())
-    val sources = remember(recipes) {
+    val allSources = remember(recipes) {
         cameraViewModel.catalog.filters + recipes.map { RecipeFilters.toFilterInfo(it) }
     }
     // The highlighted source. A recipe id is not a catalog id, so it is tracked here.
     var selectedId by rememberSaveable { mutableStateOf(cameraViewModel.editParams.value.filterId) }
+    // The chosen camera. The strip lists only its filters, and recipes built on one of them.
+    var cameraId by rememberSaveable {
+        mutableStateOf(CameraProfiles.forFilter(selectedId)?.id ?: CameraProfiles.ALL.first().id)
+    }
+    val cameraProfile = CameraProfiles.byId(cameraId)
+    val sources = remember(allSources, recipes, cameraProfile) {
+        val own = cameraProfile.filterIds.mapNotNull { id -> allSources.firstOrNull { it.id == id } }
+        own + recipes.filter { it.params.filterId in cameraProfile.filterIds }.map { RecipeFilters.toFilterInfo(it) }
+    }
     var flash by remember { mutableStateOf<NameFlash?>(null) }
     val adjust by cameraViewModel.adjust.collectAsStateWithLifecycle()
     val camera = cameraViewModel.camera.value
+    // The gallery box shows the last photo taken this session. A new photo flies from the viewfinder
+    // into the box; both are measured in window px so the flight lands exactly on the box.
+    // rememberSaveable: the screen leaves composition when the picker opens, and a plain remember would reset the box.
+    var lastPhoto by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var flight by remember { mutableStateOf<PhotoFlight?>(null) }
+    var viewfinderBounds by remember { mutableStateOf<Rect?>(null) }
+    var galleryBounds by remember { mutableStateOf<Rect?>(null) }
 
     val onSelect: (String) -> Unit = { id ->
         val recipe = RecipeFilters.recipeFor(id, recipes)
@@ -120,7 +140,7 @@ fun CameraScreen(
             cameraViewModel.selectFilter(id)
         }
         selectedId = id
-        flash = NameFlash(sources.firstOrNull { it.id == id }?.name.orEmpty())
+        flash = NameFlash(allSources.firstOrNull { it.id == id }?.name.orEmpty())
     }
     val onSwipe: (Int) -> Unit = { delta ->
         onSelect(FilterCycle.next(sources.map { it.id }, selectedId, delta))
@@ -131,140 +151,178 @@ fun CameraScreen(
         cameraViewModel.initCamera(lifecycleOwner, CameraSelector.LENS_FACING_BACK)
     }
 
-    // The camera picker returns its chosen filter id on this screen's back-stack entry. Entries are
-    // observed, so a result is handled again after the picker pops back.
+    // The picker opens on the camera in use.
+    LaunchedEffect(navController, cameraId) {
+        navController.currentBackStackEntry?.savedStateHandle?.set(CameraProfiles.CURRENT_KEY, cameraId)
+    }
+
+    // The camera picker returns its chosen camera id on this screen's back-stack entry. Entries are
+    // observed, so a result is handled again after the picker pops back. Choosing a camera applies its
+    // first filter, unless the current filter already belongs to it.
     LaunchedEffect(navController) {
         navController.currentBackStackEntryFlow.collectLatest { entry ->
             entry.savedStateHandle.getStateFlow<String?>(CameraProfiles.RESULT_KEY, null).collect { id ->
                 if (id != null) {
-                    currentOnSelect(id)
+                    val picked = CameraProfiles.byId(id)
+                    cameraId = picked.id
+                    currentOnSelect(picked.filterId)
                     entry.savedStateHandle.remove<String>(CameraProfiles.RESULT_KEY)
                 }
             }
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(InkColors.background)
-            .statusBarsPadding()
-            .navigationBarsPadding(),
-    ) {
-        CameraTopBar(
-            onBack = { navController.popBackStack() },
-            onOpenSettings = { navController.navigate(AppRoutes.SETTINGS) },
-        )
-
-        // The viewfinder takes the space the rest of the screen leaves. Its bottom overlays sit inside it.
-        Box(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.lg),
+                .fillMaxSize()
+                .background(InkColors.background)
+                .statusBarsPadding()
+                .navigationBarsPadding(),
         ) {
-            CameraPreviewViewfinder(
-                navController = navController,
-                modifier = Modifier.fillMaxSize(),
-                previewUseCase = cameraViewModel.preview.value,
-                camera = camera,
-                flash = flash,
-                onSwipe = onSwipe,
-                onFocusPoint = cameraViewModel::focusAt,
+            CameraTopBar(
+                onBack = { navController.popBackStack() },
+                onOpenSettings = { navController.navigate(AppRoutes.SETTINGS) },
             )
-            // Overlays the bottom edge of the viewfinder. Kept outside the viewfinder's swipe box so
-            // slider drags do not also cycle filters.
-            Column(
+
+            // The viewfinder takes the space the rest of the screen leaves. Its bottom overlays sit inside it.
+            Box(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = Spacing.md),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.lg),
             ) {
-                camera?.let { bound ->
-                    ZoomControl(cameraControl = bound.cameraControl, cameraInfo = bound.cameraInfo)
+                CameraPreviewViewfinder(
+                    navController = navController,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .onGloballyPositioned { viewfinderBounds = it.boundsInRoot() },
+                    previewUseCase = cameraViewModel.preview.value,
+                    camera = camera,
+                    flash = flash,
+                    onSwipe = onSwipe,
+                    onFocusPoint = cameraViewModel::focusAt,
+                )
+                // Overlays the bottom edge of the viewfinder. Kept outside the viewfinder's swipe box so
+                // slider drags do not also cycle filters.
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = Spacing.md),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    camera?.let { bound ->
+                        ZoomControl(cameraControl = bound.cameraControl, cameraInfo = bound.cameraInfo)
+                    }
+                    CameraQuickBar(
+                        state = adjust,
+                        onToolClick = cameraViewModel::toggleTool,
+                        zoomPill = {
+                            camera?.let {
+                                ZoomPill(
+                                    cameraInfo = it.cameraInfo,
+                                    lensMm = cameraViewModel.lensMm.floatValue,
+                                    onTap = cameraViewModel::setFocal,
+                                )
+                            }
+                        },
+                    )
                 }
-                CameraQuickBar(
+            }
+
+            // Readout: the Kelvin value in mono, plus the EV reset button while the EV panel is open.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.lg, vertical = Spacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm, Alignment.CenterHorizontally),
+            ) {
+                Text(
+                    text = kelvinLabel(adjust.kelvin).uppercase(),
+                    style = BinsooType.label,
+                    color = InkColors.textPrimary,
+                )
+                if (adjust.openTool == CameraTool.EXPOSURE) {
+                    EvResetButton(
+                        onClick = {
+                            cameraViewModel.resetEv()
+                            cameraViewModel.commitAdjust()
+                        },
+                    )
+                }
+            }
+
+            // Ruler (only while a tool is open) beside the round tool buttons.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.lg),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                CameraAdjustPanel(
                     state = adjust,
+                    onKelvinChange = { cameraViewModel.setKelvin(it) },
+                    onKelvinAuto = cameraViewModel::setKelvinAuto,
+                    onEvChange = cameraViewModel::setEv,
+                    onCommit = cameraViewModel::commitAdjust,
+                    modifier = Modifier.weight(1f),
+                )
+                CameraToolButtons(
+                    state = adjust,
+                    onAuto = cameraViewModel::setKelvinAuto,
                     onToolClick = cameraViewModel::toggleTool,
-                    zoomPill = { camera?.let { ZoomPill(cameraInfo = it.cameraInfo) } },
                 )
             }
-        }
 
-        // Readout: the Kelvin value in mono, plus the EV reset button while the EV panel is open.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.lg, vertical = Spacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm, Alignment.CenterHorizontally),
-        ) {
-            Text(
-                text = kelvinLabel(adjust.kelvin).uppercase(),
-                style = BinsooType.label,
-                color = InkColors.textPrimary,
+            FilterStrip(
+                filters = sources,
+                selectedId = selectedId,
+                onSelect = onSelect,
+                modifier = Modifier.padding(vertical = Spacing.sm),
+                dark = true,
             )
-            if (adjust.openTool == CameraTool.EXPOSURE) {
-                EvResetButton(
-                    onClick = {
-                        cameraViewModel.resetEv()
-                        cameraViewModel.commitAdjust()
-                    },
-                )
+
+            ManualControls(
+                onExposureChange = {
+                    exposureTime.longValue = it
+                    cameraViewModel.setManualExposure(it, isoValue.intValue)
+                },
+                onISOChange = {
+                    isoValue.intValue = it
+                    cameraViewModel.setManualExposure(exposureTime.longValue, it)
+                },
+                onClickCapture = {
+                    cameraViewModel.takePhotoToGallery(
+                        onSaved = { uri ->
+                            // A flight still in the air lands now, so its photo is not lost.
+                            flight?.let { lastPhoto = it.uri }
+                            val from = viewfinderBounds
+                            val to = galleryBounds
+                            if (from != null && to != null) {
+                                flight = PhotoFlight(uri, from, to)
+                            } else {
+                                lastPhoto = uri
+                            }
+                        },
+                        onError = { exception -> Log.e(TAG, "Capture failed", exception) },
+                    )
+                },
+                onOpenGallery = { navController.navigate(AppRoutes.PHOTO_PICKER) },
+                onOpenPicker = { navController.navigate(AppRoutes.CAMERA_PICKER) },
+                pickerName = cameraProfile.name,
+                lastPhoto = lastPhoto,
+                onGalleryBoundsChanged = { galleryBounds = it },
+                modifier = Modifier.padding(bottom = Spacing.md),
+            )
+        }
+        flight?.let { current ->
+            PhotoFlightOverlay(flight = current) {
+                lastPhoto = current.uri
+                flight = null
             }
         }
-
-        // Ruler (only while a tool is open) beside the round tool buttons.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.lg),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-        ) {
-            CameraAdjustPanel(
-                state = adjust,
-                onKelvinChange = { cameraViewModel.setKelvin(it) },
-                onKelvinAuto = cameraViewModel::setKelvinAuto,
-                onEvChange = cameraViewModel::setEv,
-                onCommit = cameraViewModel::commitAdjust,
-                modifier = Modifier.weight(1f),
-            )
-            CameraToolButtons(
-                state = adjust,
-                onAuto = cameraViewModel::setKelvinAuto,
-                onToolClick = cameraViewModel::toggleTool,
-            )
-        }
-
-        FilterStrip(
-            filters = sources,
-            selectedId = selectedId,
-            onSelect = onSelect,
-            modifier = Modifier.padding(vertical = Spacing.sm),
-            dark = true,
-        )
-
-        ManualControls(
-            onExposureChange = {
-                exposureTime.longValue = it
-                cameraViewModel.setManualExposure(it, isoValue.intValue)
-            },
-            onISOChange = {
-                isoValue.intValue = it
-                cameraViewModel.setManualExposure(exposureTime.longValue, it)
-            },
-            onClickCapture = {
-                cameraViewModel.takePhotoToGallery(
-                    onSaved = { Toast.makeText(context, "Photo taken", Toast.LENGTH_SHORT).show() },
-                    onError = { exception -> Log.e(TAG, "Capture failed", exception) },
-                )
-            },
-            onOpenGallery = { navController.navigate(AppRoutes.GALLERY) },
-            onOpenPicker = { navController.navigate(AppRoutes.CAMERA_PICKER) },
-            pickerName = CameraProfiles.forFilter(selectedId)?.name,
-            modifier = Modifier.padding(bottom = Spacing.md),
-        )
     }
 }
 

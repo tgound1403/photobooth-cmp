@@ -1,22 +1,36 @@
 package com.example.cameraxapp.core.render
 
 /**
- * A camera "body" shown on the picker screen. Selecting one applies the filter [filterId].
+ * A camera "body" shown on the picker screen. While a camera is selected, the viewfinder offers only
+ * its own [filterIds]; choosing the camera applies the first one ([filterId]).
  * [name] and [subtitle] are temporary labels, pending the final naming decision.
  */
 data class CameraProfile(
     val id: String,
     val name: String,
     val subtitle: String,
-    val filterId: String,
-    val bodyColor: Int,
-    val topColor: Int,
-)
+    /** Catalog ids this camera can use, in the order the viewfinder strip lists them. Never empty. */
+    val filterIds: List<String>,
+    /** ARGB colour the 3D body is painted with. */
+    val modelTint: Int,
+    /** Asset path of the glTF/GLB body model. All cameras share one model for now. */
+    val modelAsset: String = DEFAULT_MODEL,
+) {
+    /** The filter applied when the camera is chosen. */
+    val filterId: String get() = filterIds.first()
+
+    companion object {
+        const val DEFAULT_MODEL = "models/nikon_s3.glb"
+    }
+}
 
 object CameraProfiles {
 
-    /** Key used in savedStateHandle to return the chosen filterId to the camera screen. */
-    const val RESULT_KEY = "picked_filter_id"
+    /** Key used in savedStateHandle to return the chosen camera id to the camera screen. */
+    const val RESULT_KEY = "picked_camera_id"
+
+    /** Key the camera screen sets on its own entry so the picker can open on the camera in use. */
+    const val CURRENT_KEY = "current_camera_id"
 
     val ALL: List<CameraProfile> =
         listOf(
@@ -24,48 +38,43 @@ object CameraProfiles {
                 id = "classic35",
                 name = "Classic 35",
                 subtitle = "Kodak",
-                filterId = "kodak",
-                bodyColor = 0xFF2A2A2A.toInt(),
-                topColor = 0xFF111111.toInt(),
+                filterIds = listOf("kodak", "original", "nikon", "pentax", "minolta"),
+                modelTint = 0xFFC9A15B.toInt(),
             ),
             CameraProfile(
                 id = "fuji_mini",
                 name = "Fuji Mini",
                 subtitle = "FujiFilm",
-                filterId = "fujifilm",
-                bodyColor = 0xFFE9E4D8.toInt(),
-                topColor = 0xFFB9B3A6.toInt(),
+                filterIds = listOf("fujifilm", "soft_glow", "rose_skin", "honey_light", "clear_tone", "peach_glow", "cream_matte"),
+                modelTint = 0xFFEFE6D2.toInt(),
             ),
             CameraProfile(
                 id = "golden",
                 name = "Golden",
                 subtitle = "Golden Hour",
-                filterId = "golden_hour",
-                bodyColor = 0xFFB8862F.toInt(),
-                topColor = 0xFF7A5A1E.toInt(),
+                filterIds = listOf("golden_hour", "faded_mint", "amber_roll", "cool_negative", "sunday_film", "dusk_print"),
+                modelTint = 0xFFE0A91C.toInt(),
             ),
             CameraProfile(
                 id = "night",
                 name = "Night Teal",
                 subtitle = "Teal Night",
-                filterId = "teal_night",
-                bodyColor = 0xFF1E5A5F.toInt(),
-                topColor = 0xFF0F3437.toInt(),
+                filterIds = listOf("teal_night", "moody_blue", "autumn_haze", "velvet_dusk", "pastel_dream", "winter_fog"),
+                modelTint = 0xFF1F9AA3.toInt(),
             ),
             CameraProfile(
                 id = "silver",
                 name = "Silver",
                 subtitle = "Silver Gelatin",
-                filterId = "silver_gelatin",
-                bodyColor = 0xFFBFC3C8.toInt(),
-                topColor = 0xFF8C9096.toInt(),
+                filterIds = listOf("silver_gelatin", "bnw", "noir_contrast", "soft_mono", "crimson_mono", "ink_wash", "light_mono"),
+                modelTint = 0xFFC9CED6.toInt(),
             ),
         )
 
     /** Returns the profile with [id], or the first profile when the id is null or unknown. */
     fun byId(id: String?): CameraProfile = ALL.firstOrNull { it.id == id } ?: ALL.first()
 
-    /** Returns the profile that uses [filterId], or null when no profile uses it. */
+    /** Returns the profile that offers [filterId], or null when no profile does. */
     fun forFilter(filterId: String?): CameraProfile? =
-        if (filterId == null) null else ALL.firstOrNull { it.filterId == filterId }
+        if (filterId == null) null else ALL.firstOrNull { filterId in it.filterIds }
 }

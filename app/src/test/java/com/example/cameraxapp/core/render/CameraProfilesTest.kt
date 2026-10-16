@@ -16,7 +16,7 @@ class CameraProfilesTest {
     fun everyProfileFilterExistsInCatalog() {
         val ids = catalog.map { it.id }.toSet()
         CameraProfiles.ALL.forEach { profile ->
-            assertTrue("missing filter ${profile.filterId}", profile.filterId in ids)
+            profile.filterIds.forEach { assertTrue("missing filter $it", it in ids) }
         }
     }
 
@@ -29,10 +29,12 @@ class CameraProfilesTest {
     }
 
     @Test
-    fun profileIdsAreUniqueAndFilterIdsAreUnique() {
+    fun profileIdsAreUniqueAndEveryFilterBelongsToOneCamera() {
         val all = CameraProfiles.ALL
         assertEquals(all.size, all.map { it.id }.toSet().size)
-        assertEquals(all.size, all.map { it.filterId }.toSet().size)
+        val filters = all.flatMap { it.filterIds }
+        assertEquals(filters.size, filters.toSet().size)
+        assertEquals(catalog.map { it.id }.toSet(), filters.toSet())
     }
 
     @Test
@@ -55,13 +57,23 @@ class CameraProfilesTest {
     }
 
     @Test
+    fun everyProfileHasABundledModelAndADistinctTint() {
+        CameraProfiles.ALL.forEach { profile ->
+            val asset = File("src/main/assets/${profile.modelAsset}")
+            assertTrue("missing ${asset.path}", asset.exists())
+        }
+        val tints = CameraProfiles.ALL.map { it.modelTint }
+        assertEquals(tints.size, tints.toSet().size)
+    }
+
+    @Test
     fun forFilterMapsKodakToClassic35() {
         assertEquals("classic35", CameraProfiles.forFilter("kodak")?.id)
     }
 
     @Test
-    fun forFilterReturnsNullWhenNoProfileUsesFilter() {
-        assertNull(CameraProfiles.forFilter("bnw"))
+    fun forFilterReturnsNullForUnknownFilter() {
+        assertNull(CameraProfiles.forFilter("no_such_filter"))
         assertNull(CameraProfiles.forFilter(null))
     }
 }

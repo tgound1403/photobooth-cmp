@@ -3,6 +3,7 @@ package com.example.cameraxapp.ui.components
 import android.content.Context
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -30,23 +32,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.cameraxapp.ui.theme.BinsooType
 import com.example.cameraxapp.ui.theme.InkColors
 import com.example.cameraxapp.ui.theme.Radius
 import com.example.cameraxapp.ui.theme.Spacing
 
 /**
- * Bottom row of the camera screen: the gallery button (left), the shutter pill (centre) and the
+ * Bottom row of the camera screen: the gallery box (left), the shutter pill (centre) and the
  * camera selector (right, shows the profile name and opens the picker).
  *
- * The left slot is a gallery button, not a last-photo thumbnail. The app holds no last-photo data
- * on this screen, so the thumbnail is not faked.
+ * The left slot shows [lastPhoto] once one has been taken in this session. [onGalleryBoundsChanged]
+ * reports its position in the window, so a freshly taken photo can fly into it.
  */
 @Composable
 fun ManualControls(
@@ -56,6 +63,8 @@ fun ManualControls(
     onOpenGallery: () -> Unit = {},
     onOpenPicker: () -> Unit = {},
     pickerName: String? = null,
+    lastPhoto: Uri? = null,
+    onGalleryBoundsChanged: (Rect) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -103,30 +112,44 @@ fun ManualControls(
 //            )
 //        }
 
-        GalleryButton(onClick = onOpenGallery)
+        GalleryButton(
+            lastPhoto = lastPhoto,
+            onClick = onOpenGallery,
+            onBoundsChanged = onGalleryBoundsChanged,
+        )
         Shutter(onClick = onClickCapture)
         PickerButton(name = pickerName, onClick = onOpenPicker)
     }
 }
 
-/** Gallery button in the thumbnail slot (36x56 rounded rectangle). */
+/** Gallery box in the thumbnail slot (36x56 rounded rectangle). Shows the last photo once taken. */
 @Composable
-private fun GalleryButton(onClick: () -> Unit) {
+private fun GalleryButton(lastPhoto: Uri?, onClick: () -> Unit, onBoundsChanged: (Rect) -> Unit) {
     Box(
         modifier = Modifier
             .size(width = 36.dp, height = 56.dp)
+            .onGloballyPositioned { onBoundsChanged(it.boundsInRoot()) }
             .clip(RoundedCornerShape(Radius.md))
             .background(InkColors.surfaceElevated.copy(alpha = 0.7f))
             .clickable(onClick = onClick)
             .semantics { contentDescription = "Mở thư viện" },
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            imageVector = Icons.Default.Photo,
-            contentDescription = null,
-            tint = InkColors.textPrimary,
-            modifier = Modifier.size(20.dp),
-        )
+        if (lastPhoto != null) {
+            AsyncImage(
+                model = lastPhoto,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Photo,
+                contentDescription = null,
+                tint = InkColors.textPrimary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }
 

@@ -13,6 +13,7 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.MeteringPoint
 import androidx.camera.core.Preview
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
@@ -21,10 +22,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.cameraxapp.core.camera.CameraAdjustState
 import com.example.cameraxapp.core.camera.CameraTool
 import com.example.cameraxapp.core.camera.EvMode
+import com.example.cameraxapp.core.camera.pickLens
 import com.example.cameraxapp.core.camera.withCameraAdjust
 import com.example.cameraxapp.core.camera.withCapabilities
 import com.example.cameraxapp.core.camera.withEv
 import com.example.cameraxapp.core.camera.withKelvin
+import com.example.cameraxapp.core.camera.zoomFor
 import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.FilterCatalog
 import com.example.cameraxapp.core.render.Recipe
@@ -112,15 +115,31 @@ class CameraViewModel(
         _countdown.value = value
     }
 
+    /** 35mm-equivalent focal length of the lens in use. The zoom pill multiplies it by the zoom ratio. */
+    val lensMm = mutableFloatStateOf(35f)
+
+    /** Camera2 id of the lens in use. Null when the device has a single back camera. */
+    private var lensId: String? = null
+    private var owner: LifecycleOwner? = null
+    private var owningFacing = CameraSelector.LENS_FACING_FRONT
+
     /** Binds the camera once for [lifecycleOwner]. Preview and camera state are exposed for the view. */
     fun initCamera(
         lifecycleOwner: LifecycleOwner,
         lensFacing: Int = CameraSelector.LENS_FACING_FRONT,
     ) = viewModelScope.launch(Dispatchers.Main) {
+        owner = lifecycleOwner
+        owningFacing = lensFacing
+        if (lensFacing == CameraSelector.LENS_FACING_BACK && lensId == null) {
+            // On a multi-camera phone, start on the physical lens for 35mm rather than the logical camera.
+            val all = cameraService.findBackLenses(getApplication())
+            if (all.size > 1) lensId = pickLens(35f, all)?.cameraId
+        }
         try {
-            val bound = cameraService.bind(getApplication(), lifecycleOwner, lensFacing)
+            val bound = cameraService.bind(getApplication(), lifecycleOwner, lensFacing, lensId)
             preview.value = bound.preview
             camera.value = bound.camera
+            lensMm.floatValue = cameraService.lenses.firstOrNull { it.cameraId == lensId }?.equivMm ?: lensMm.floatValue
             restoreJob.join()
             _adjust.update { it.withCapabilities(cameraService.capabilities(bound.camera)) }
             applyHardware(bound.camera)
@@ -130,6 +149,23 @@ class CameraViewModel(
             preview.value = null
             camera.value = null
         }
+    }
+
+    /**
+     * Shows the camera at [targetMm] (35mm-equivalent). Switches to the physical lens that suits it
+     * when that lens differs from the one in use, then sets the digital zoom on top of it.
+     */
+    fun setFocal(targetMm: Int) = viewModelScope.launch(Dispatchers.Main) {
+        val lens = pickLens(targetMm.toFloat(), cameraService.lenses) ?: return@launch
+        if (lens.cameraId != lensId && cameraService.lenses.size > 1) {
+            lensId = lens.cameraId
+            owner?.let { initCamera(it, owningFacing) }
+            return@launch
+        }
+        val cam = camera.value ?: return@launch
+        val state = cam.cameraInfo.zoomState.value ?: return@launch
+        val ratio = zoomFor(targetMm.toFloat(), lens).coerceIn(state.minZoomRatio, state.maxZoomRatio)
+        cam.cameraControl.setZoomRatio(ratio)
     }
 
     /** Sets the live and captured filter. Does not rebind the camera. */

@@ -17,6 +17,8 @@ val localProperties = Properties().apply {
 
 fun secret(name: String): String = localProperties.getProperty(name, "")
 
+val appVersionName = "1.0"
+
 // Optional, for size-limited debug uploads only: ./gradlew assembleDebug -PdebugAbi=arm64-v8a
 // Unset (the default) leaves the ABI config unchanged.
 val debugAbi: String? = providers.gradleProperty("debugAbi").orNull?.takeIf { it.isNotBlank() }
@@ -36,7 +38,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -54,6 +56,11 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            if (debugAbi != null) {
+                ndk {
+                    abiFilters += debugAbi
+                }
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -71,6 +78,12 @@ android {
 //    room {
 //        schemaDirectory("$projectDir/schemas")
 //    }
+}
+
+// Output file names: CameraXApp-v1.0-release.aab / CameraXApp-v1.0-debug.apk
+// instead of the default app-release.aab / app-debug.apk.
+base {
+    archivesName.set("CameraXApp-v$appVersionName")
 }
 
 dependencies {
@@ -156,4 +169,8 @@ dependencies {
 
     // Lottie
     implementation("com.airbnb.android:lottie-compose:6.4.0")
+
+    // 3D camera body on the picker screen (glTF/GLB, Filament). 4.x needs AGP 9.1 / compileSdk 37,
+    // and 2.2+ is built with Kotlin 2.2 metadata, so 2.1.1 (Kotlin 1.9 stdlib, Filament 1.51) is used.
+    implementation("io.github.sceneview:sceneview:2.1.1")
 }

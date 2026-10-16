@@ -1,12 +1,10 @@
 package com.example.cameraxapp.ui.camera
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,8 +14,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,13 +23,28 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,32 +57,35 @@ import com.example.cameraxapp.ui.theme.IconSize
 import com.example.cameraxapp.ui.theme.InkColors
 import com.example.cameraxapp.ui.theme.Radius
 import com.example.cameraxapp.ui.theme.Stroke
-import kotlin.math.absoluteValue
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
- * Camera picker: a carousel of camera bodies on the ink (black) palette. Each body maps to a filter
- * in the catalog. The page at [currentFilterId] is shown first; the selected body is drawn larger.
- * The body art is [CameraBodyArt]. Thumbnails under the carousel jump the pager to that body.
+ * Camera picker on the ink (black) palette. Each camera owns a set of filters from the catalog and is shown
+ * as the same 3D body ([CameraModelBody]) painted in the camera's colour. The camera at
+ * [currentCameraId] is shown first; tapping a thumbnail changes the camera, and dragging the 3D view turns it.
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CameraPickerScreen(
     profiles: List<CameraProfile> = CameraProfiles.ALL,
-    currentFilterId: String? = null,
+    currentCameraId: String? = null,
     moments: List<Moment> = emptyList(),
     onConfirm: (CameraProfile) -> Unit,
     onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val initialPage = profiles.indexOfFirst { it.filterId == currentFilterId }.coerceAtLeast(0)
-    val pagerState = rememberPagerState(initialPage = initialPage) { profiles.size }
-    val selected = profiles.getOrNull(pagerState.currentPage)
+    val initialPage = profiles.indexOfFirst { it.id == currentCameraId }.coerceAtLeast(0)
+    var selectedIndex by rememberSaveable { mutableIntStateOf(initialPage) }
+    val selected = profiles.getOrNull(selectedIndex)
+    val spin = remember { PickerSpin() }
+    var flingJob by remember { mutableStateOf<Job?>(null) }
 
     Column(
         modifier =
             Modifier
                 .fillMaxSize()
+                // Offscreen so the 3D body's hole (BlendMode.Clear) is cut out of the background too.
+                .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
                 .background(InkColors.background)
                 .statusBarsPadding()
                 .navigationBarsPadding(),
@@ -98,34 +112,43 @@ fun CameraPickerScreen(
             modifier = Modifier.fillMaxWidth().weight(1f),
             contentAlignment = Alignment.Center,
         ) {
-            FloatingPolaroids(moments = moments, modifier = Modifier.matchParentSize())
-
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 100.dp),
-            ) { page ->
-                val profile = profiles[page]
-                // 0 when this page is centred, 1 when it is a full page away.
-                val distance =
-                    (pagerState.currentPage - page).toFloat() + pagerState.currentPageOffsetFraction
-                val fraction = distance.absoluteValue.coerceIn(0f, 1f)
-                val scale = 1f - 0.45f * fraction
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                                alpha = 1f - 0.4f * fraction
-                            }
-                            .clickable { scope.launch { pagerState.animateScrollToPage(page) } },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CameraBodyArt(profile = profile, modifier = Modifier.fillMaxWidth())
-                }
+            // One 3D body for every camera. Swiping only changes its colour, so a single engine is
+            // alive at a time.
+            if (selected != null) {
+                CameraModelBody(
+                    modelAsset = selected.modelAsset,
+                    tint = selected.modelTint,
+                    spin = spin,
+                    moments = moments,
+                    modifier = Modifier.matchParentSize(),
+                )
             }
+
+            // Transparent layer on top: dragging turns the body and the photo orbits (fling keeps
+            // them turning). Cameras are chosen with the thumbnails below.
+            Box(
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .pointerInput(spin) {
+                            val tracker = VelocityTracker()
+                            detectDragGestures(
+                                onDragStart = {
+                                    flingJob?.cancel()
+                                    tracker.resetTracking()
+                                },
+                                onDragEnd = {
+                                    val v = tracker.calculateVelocity()
+                                    flingJob = scope.launch { spin.fling(v.x, v.y) }
+                                },
+                                onDragCancel = { flingJob = null },
+                            ) { change, drag ->
+                                tracker.addPosition(change.uptimeMillis, change.position)
+                                spin.drag(drag.x, drag.y)
+                                change.consume()
+                            }
+                        },
+            )
         }
 
         // Model name and tagline. CameraProfile has no separate tagline field, so the subtitle
@@ -152,8 +175,8 @@ fun CameraPickerScreen(
 
         CameraThumbnailRow(
             profiles = profiles,
-            currentPage = pagerState.currentPage,
-            onSelect = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
+            currentPage = selectedIndex,
+            onSelect = { index -> selectedIndex = index },
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -199,7 +222,8 @@ private fun CameraThumbnailRow(
                         Modifier
                             .size(64.dp)
                             .clip(shape)
-                            .background(Color(profile.bodyColor))
+                            .background(Color(0xFF16161A))
+                            .drawBehind { drawCameraIcon(Color(profile.modelTint)) }
                             .then(
                                 if (isSelected) {
                                     Modifier.border(Stroke.border, InkColors.textPrimary, shape)
@@ -207,17 +231,7 @@ private fun CameraThumbnailRow(
                                     Modifier
                                 },
                             ),
-                ) {
-                    // Top band in the profile's top colour, a flat stand-in for the body art.
-                    Box(
-                        modifier =
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .fillMaxWidth()
-                                .height(16.dp)
-                                .background(Color(profile.topColor)),
-                    )
-                }
+                )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = profile.name.uppercase(),
@@ -257,4 +271,22 @@ private fun ConfirmButton(
             modifier = Modifier.size(IconSize.md),
         )
     }
+}
+
+/** Small front view of the camera body in [body] colour: top bumps, chrome strip, lens. */
+private fun DrawScope.drawCameraIcon(body: Color) {
+    val w = size.width
+    val h = size.height
+    val left = w * 0.12f
+    val bodyW = w * 0.76f
+    val top = h * 0.32f
+    val bodyH = h * 0.46f
+    drawRoundRect(body, Offset(w * 0.22f, h * 0.22f), Size(w * 0.18f, h * 0.14f), CornerRadius(w * 0.03f))
+    drawRoundRect(Color(0xFFD9DCE0), Offset(w * 0.58f, h * 0.24f), Size(w * 0.2f, h * 0.12f), CornerRadius(w * 0.03f))
+    drawRoundRect(body, Offset(left, top), Size(bodyW, bodyH), CornerRadius(w * 0.08f))
+    drawRect(Color(0xFFD9DCE0), Offset(left, top + bodyH * 0.12f), Size(bodyW, bodyH * 0.1f))
+    val c = Offset(w * 0.5f, top + bodyH * 0.58f)
+    drawCircle(Color(0xFF24242A), w * 0.19f, c)
+    drawCircle(Color(0xFF0B0B0E), w * 0.14f, c)
+    drawCircle(Color(0x55FFFFFF), w * 0.04f, Offset(c.x - w * 0.05f, c.y - w * 0.05f))
 }

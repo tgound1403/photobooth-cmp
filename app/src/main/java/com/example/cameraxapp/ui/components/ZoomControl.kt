@@ -15,12 +15,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.example.cameraxapp.core.camera.FOCAL_STOPS_MM
 import com.example.cameraxapp.ui.theme.InkColors
-import java.util.Locale
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalZeroShutterLag::class)
@@ -46,29 +46,43 @@ fun ZoomControl(cameraControl: CameraControl, cameraInfo: CameraInfo) {
     )
 }
 
-/** Dark pill that shows the current zoom, such as "2x" or "1.5x". */
+/**
+ * Dark pill that shows the simulated 35mm-equivalent focal length, such as "35mm" or "75mm". [lensMm]
+ * is the focal length of the lens in use and the shown value is lensMm times the zoom ratio. Tapping
+ * calls [onTap] with the next focal stop in [FOCAL_STOPS_MM] that is above the current one, wrapping
+ * back to the first stop.
+ */
+@OptIn(ExperimentalZeroShutterLag::class)
 @Composable
-fun ZoomPill(cameraInfo: CameraInfo, modifier: Modifier = Modifier) {
+fun ZoomPill(
+    cameraInfo: CameraInfo,
+    lensMm: Float,
+    onTap: (targetMm: Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val zoomState = cameraInfo.zoomState.observeAsState()
     val zoom = zoomState.value?.zoomRatio ?: 1f
+    val maxZoom = zoomState.value?.maxZoomRatio ?: 1f
+    val currentMm = (lensMm * zoom).roundToInt()
+    // Stops the lens can reach by digital zoom alone. Telephoto lenses are reached by switching lens.
+    val reachableMm = lensMm * maxZoom
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(percent = 50))
             .background(InkColors.surfaceElevated.copy(alpha = 0.7f))
+            .clickable {
+                val next = FOCAL_STOPS_MM.firstOrNull { mm ->
+                    mm > currentMm + 1 && mm <= reachableMm + 0.5f
+                } ?: FOCAL_STOPS_MM.first()
+                onTap(next)
+            }
             .padding(horizontal = 12.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = zoomLabel(zoom),
+            text = "${currentMm}mm",
             style = MaterialTheme.typography.labelMedium,
             color = InkColors.textPrimary,
         )
     }
 }
-
-private fun zoomLabel(ratio: Float): String =
-    if (abs(ratio - ratio.roundToInt()) < 0.05f) {
-        "${ratio.roundToInt()}x"
-    } else {
-        String.format(Locale.US, "%.1fx", ratio)
-    }

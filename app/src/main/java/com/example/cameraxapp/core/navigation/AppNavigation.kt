@@ -45,6 +45,10 @@ fun AppNavigation() {
                     koinViewModel<com.example.cameraxapp.ui.viewmodel.GalleryViewModel>()
             com.example.cameraxapp.ui.view.GalleryScreen(navController, galleryViewModel)
         }
+        // Device photos (camera captures and imports) for editing. GALLERY is the PhotoBooth history.
+        composable(AppRoutes.PHOTO_PICKER) {
+            GalleryScreen(navController)
+        }
         composable(AppRoutes.NO_PERMISSION_GRANTED) {
             NoPermissionGrantedScreen()
         }
@@ -79,12 +83,15 @@ fun AppNavigation() {
             InkTheme {
                 val momentsViewModel = koinViewModel<MomentsViewModel>()
                 val moments by momentsViewModel.moments.collectAsState()
+                val currentCameraId =
+                    navController.previousBackStackEntry?.savedStateHandle?.get<String>(CameraProfiles.CURRENT_KEY)
                 CameraPickerScreen(
+                    currentCameraId = currentCameraId,
                     moments = moments,
                     onConfirm = { profile ->
                         // CameraScreen reads this on its own back-stack entry when the picker pops.
                         navController.previousBackStackEntry?.savedStateHandle
-                            ?.set(CameraProfiles.RESULT_KEY, profile.filterId)
+                            ?.set(CameraProfiles.RESULT_KEY, profile.id)
                         navController.popBackStack()
                     },
                     onBack = { navController.popBackStack() },
@@ -145,6 +152,7 @@ object AppRoutes {
     const val SETTINGS = "settings"
     const val MAIN = "main"
     const val GALLERY = "gallery"
+    const val PHOTO_PICKER = "photo_picker"
     const val NO_PERMISSION_GRANTED = "noPermissionGranted"
     const val PHOTO_BOOTH = "photoBooth"
     const val PHOTO_BOOTH_SELECTION = "photoBoothSelection"

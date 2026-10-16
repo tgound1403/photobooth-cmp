@@ -93,7 +93,7 @@ fun HomeScreen(
     HomeContent(
         recentImages = recentImages,
         onPhotoBoothClick = { navController.navigate(AppRoutes.FRAME_SELECTION) },
-        onEditClick = { navController.navigate(AppRoutes.GALLERY) },
+        onEditClick = { navController.navigate(AppRoutes.PHOTO_PICKER) },
         onPickImageClick = { imagePickerLauncher.launch("image/*") },
         onSettingsClick = { navController.navigate(AppRoutes.SETTINGS) },
         onRecentClick = { path ->

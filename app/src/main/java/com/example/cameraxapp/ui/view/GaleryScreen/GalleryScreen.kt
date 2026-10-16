@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import android.widget.Toast
+import java.io.File
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -24,6 +25,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -43,25 +46,34 @@ import com.example.cameraxapp.ui.theme.Spacing
 fun GalleryScreen(navController: NavController) {
     val context = LocalContext.current
     var images by remember { mutableStateOf(listOf<String>()) }
+    val readPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        Manifest.permission.READ_MEDIA_IMAGES
+    } else {
+        Manifest.permission.READ_EXTERNAL_STORAGE
+    }
+    // Tracked so the list loads only after the read permission is actually granted. Querying
+    // MediaStore before the grant returns nothing, and the list was never reloaded afterwards.
+    var granted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, readPermission) == PackageManager.PERMISSION_GRANTED
+        )
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
+        granted = isGranted
         if (!isGranted) {
             Toast.makeText(context, "Permission denied", Toast.LENGTH_SHORT).show()
         }
     }
 
     LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
-        } else {
-            permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-        }
+        if (!granted) permissionLauncher.launch(readPermission)
     }
 
-    LaunchedEffect(Unit) {
-        images = fetchImages(context)
+    LaunchedEffect(granted) {
+        if (granted) images = fetchImages(context)
     }
 
     GalleryPickerContent(
@@ -106,7 +118,8 @@ private fun ImageItem(imagePath: String, onClick: () -> Unit) {
             .clickable(onClick = onClick)
     ) {
         AsyncImage(
-            model = imagePath,
+            // A File, not the raw string: Coil reads a bare string as a URL, not a file path.
+            model = File(imagePath),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()

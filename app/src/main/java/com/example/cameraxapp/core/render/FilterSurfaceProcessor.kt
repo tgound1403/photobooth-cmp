@@ -69,8 +69,11 @@ class FilterSurfaceProcessor : SurfaceProcessor {
     private var quadVbo = 0
     private var lutTexture = 0
     private var uploadedLut: Bitmap? = null
+    // CameraX can ask for a new input surface while the previous request is still being torn down
+    // (the preview pipeline is rebuilt when the surface provider is set). Every request therefore
+    // owns its Input, and only its own release callback may free it. [input] is the newest one.
     private var input: Input? = null
-    private var intermediate: RenderTarget? = null
+    private val inputs = ArrayList<Input>()
     private val outputs = ArrayList<Output>()
     private val texMatrix = FloatArray(16)
     private val outMatrix = FloatArray(16)
@@ -100,6 +103,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
                 request.willNotProvideSurface()
                 return@post
             }
+            var created: Input? = null
             try {
                 ensureEgl()
                 makeCurrent(pbuffer)
@@ -108,13 +112,16 @@ class FilterSurfaceProcessor : SurfaceProcessor {
                 val surfaceTexture = SurfaceTexture(texture)
                 surfaceTexture.setDefaultBufferSize(size.width, size.height)
                 val surface = Surface(surfaceTexture)
-                surfaceTexture.setOnFrameAvailableListener({ onFrameAvailable() }, handler)
-                input = Input(texture, surfaceTexture, surface, size.width, size.height)
-                intermediate = GlUtil.createTarget(size.width, size.height)
-                request.provideSurface(surface, glExecutor) { releaseInput() }
+                val inp = Input(texture, surfaceTexture, surface, size.width, size.height)
+                created = inp
+                inp.intermediate = GlUtil.createTarget(size.width, size.height)
+                surfaceTexture.setOnFrameAvailableListener({ onFrameAvailable(inp) }, handler)
+                inputs += inp
+                input = inp
+                request.provideSurface(surface, glExecutor) { releaseInput(inp) }
             } catch (t: Throwable) {
                 Log.e(TAG, "Camera input setup failed; frames will not be filtered", t)
-                releaseInput()
+                created?.let { releaseInput(it) }
                 request.willNotProvideSurface()
             }
         }
@@ -136,6 +143,10 @@ class FilterSurfaceProcessor : SurfaceProcessor {
                     "eglCreateWindowSurface failed (0x${Integer.toHexString(EGL14.eglGetError())})"
                 }
                 outputs += Output(surfaceOutput, eglSurface)
+            } catch (e: IllegalArgumentException) {
+                // The preview surface was destroyed before this task ran (leaving the screen). Not an error.
+                Log.w(TAG, "Output surface already gone; skipping it")
+                closeOutput(surfaceOutput)
             } catch (t: Throwable) {
                 Log.e(TAG, "Output surface setup failed", t)
                 closeOutput(surfaceOutput)
@@ -145,9 +156,9 @@ class FilterSurfaceProcessor : SurfaceProcessor {
 
     // ---- handler thread -----------------------------------------------------------------------
 
-    private fun onFrameAvailable() {
-        val inp = input ?: return
-        val target = intermediate ?: return
+    private fun onFrameAvailable(inp: Input) {
+        if (inp.released || inp !== input) return
+        val target = inp.intermediate ?: return
         val snapshot = edit
         val p = snapshot.params.clamped()
         val activeLut =
@@ -226,12 +237,14 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         surfaceOutput.close()
     }
 
-    private fun releaseInput() {
-        val inp = input ?: return
-        input = null
+    private fun releaseInput(inp: Input) {
+        if (inp.released) return
+        inp.released = true
+        inputs.remove(inp)
+        if (input === inp) input = inputs.lastOrNull()
         if (initialized) makeCurrent(pbuffer)
-        intermediate?.delete()
-        intermediate = null
+        inp.intermediate?.delete()
+        inp.intermediate = null
         inp.surface.release()
         inp.surfaceTexture.release()
         if (initialized) GLES30.glDeleteTextures(1, intArrayOf(inp.texture), 0)
@@ -325,7 +338,8 @@ class FilterSurfaceProcessor : SurfaceProcessor {
 
     private fun releaseAll() {
         outputs.toList().forEach { closeOutput(it.surfaceOutput) }
-        releaseInput()
+        inputs.toList().forEach { releaseInput(it) }
+        input = null
         if (initialized) {
             makeCurrent(pbuffer)
             if (lutTexture != 0) GLES30.glDeleteTextures(1, intArrayOf(lutTexture), 0)
@@ -359,7 +373,10 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         val surface: Surface,
         val width: Int,
         val height: Int,
-    )
+    ) {
+        var intermediate: RenderTarget? = null
+        var released = false
+    }
 
     private class Output(val surfaceOutput: SurfaceOutput, val eglSurface: EGLSurface)
 
