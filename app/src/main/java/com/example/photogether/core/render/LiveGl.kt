@@ -10,8 +10,11 @@ import kotlin.math.pow
 internal class AdjustLocations(program: Int) {
     val texMatrix = GLES30.glGetUniformLocation(program, "uTexMatrix")
     val src = GLES30.glGetUniformLocation(program, "uSrc")
-    val lut = GLES30.glGetUniformLocation(program, "uLut")
-    val useLut = GLES30.glGetUniformLocation(program, "uUseLut")
+    val lutA = GLES30.glGetUniformLocation(program, "uLutA")
+    val lutB = GLES30.glGetUniformLocation(program, "uLutB")
+    val useLutA = GLES30.glGetUniformLocation(program, "uUseLutA")
+    val useLutB = GLES30.glGetUniformLocation(program, "uUseLutB")
+    val lutMix = GLES30.glGetUniformLocation(program, "uLutMix")
     val preGain = GLES30.glGetUniformLocation(program, "uPreGain")
     val filterIntensity = GLES30.glGetUniformLocation(program, "uFilterIntensity")
     val exposureGain = GLES30.glGetUniformLocation(program, "uExposureGain")
@@ -68,8 +71,7 @@ internal class AdjustValues(p: EditParams) {
     }
 
     /** Allocation-free. The program must be in use. */
-    fun apply(l: AdjustLocations, useLut: Boolean) {
-        GLES30.glUniform1i(l.useLut, if (useLut) 1 else 0)
+    fun apply(l: AdjustLocations) {
         GLES30.glUniform3f(l.preGain, preR, preG, preB)
         GLES30.glUniform1f(l.filterIntensity, filterIntensity)
         GLES30.glUniform1f(l.exposureGain, exposureGain)

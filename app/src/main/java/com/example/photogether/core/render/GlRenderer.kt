@@ -214,6 +214,8 @@ class GlRenderer : AutoCloseable {
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, srcTex)
         GLES30.glActiveTexture(GLES30.GL_TEXTURE1)
         GLES30.glBindTexture(GLES30.GL_TEXTURE_3D, lutTex)
+        GLES30.glActiveTexture(GLES30.GL_TEXTURE2)
+        GLES30.glBindTexture(GLES30.GL_TEXTURE_3D, lutTex)
 
         GlUtil.applyAdjustUniforms(adjustProgram, p, useLut = lutTex != 0)
 

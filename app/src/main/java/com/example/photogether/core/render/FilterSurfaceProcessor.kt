@@ -68,8 +68,12 @@ class FilterSurfaceProcessor : SurfaceProcessor {
     private var sharpenProgram = 0
     private var quadVao = 0
     private var quadVbo = 0
-    private var lutTexture = 0
-    private var uploadedLut: Bitmap? = null
+    // Live LUT crossfade. lutTo is the current filter (0 = none), lutFrom the previous one (0 = none
+    // or finished). Both textures are owned here; ownership moves from lutTo to lutFrom on a switch.
+    private var lutTo = 0
+    private var lutFrom = 0
+    private var currentLut: Bitmap? = null
+    private val crossfade = LutCrossfade(LUT_CROSSFADE_MS * 1_000_000L)
     // CameraX can ask for a new input surface while the previous request is still being torn down
     // (the preview pipeline is rebuilt when the surface provider is set). Every request therefore
     // owns its Input, and only its own release callback may free it. [input] is the newest one.
@@ -179,7 +183,10 @@ class FilterSurfaceProcessor : SurfaceProcessor {
             inp.surfaceTexture.getTransformMatrix(texMatrix)
             val timestamp = inp.surfaceTexture.timestamp
             val activeLut = snapshot.activeLut
-            val lutTex = if (activeLut != null) lutTextureFor(activeLut) else 0
+            val now = System.nanoTime()
+            updateLutTextures(activeLut, now)
+            val mix = crossfade.mixAt(now)
+            if (mix >= 1f) dropLutFrom()
 
             // Pass 1: camera frame -> intermediate, in upright texture coordinates.
             GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, target.framebuffer)
@@ -190,9 +197,14 @@ class FilterSurfaceProcessor : SurfaceProcessor {
             GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
             GLES30.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, inp.texture)
             GLES30.glActiveTexture(GLES30.GL_TEXTURE1)
-            GLES30.glBindTexture(GLES30.GL_TEXTURE_3D, lutTex)
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_3D, lutFrom)
+            GLES30.glActiveTexture(GLES30.GL_TEXTURE2)
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_3D, lutTo)
             GLES30.glUniformMatrix4fv(adjust.texMatrix, 1, false, texMatrix, 0)
-            snapshot.values.apply(adjust, useLut = lutTex != 0)
+            GLES30.glUniform1i(adjust.useLutA, if (lutFrom != 0) 1 else 0)
+            GLES30.glUniform1i(adjust.useLutB, if (lutTo != 0) 1 else 0)
+            GLES30.glUniform1f(adjust.lutMix, mix)
+            snapshot.values.apply(adjust)
             drawQuad()
             debugCheckGl("adjust pass")
 
@@ -286,17 +298,23 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         if (initialized) GLES30.glDeleteTextures(1, intArrayOf(inp.texture), 0)
     }
 
-    private fun lutTextureFor(bitmap: Bitmap): Int {
-        if (bitmap === uploadedLut && lutTexture != 0) return lutTexture
-        if (lutTexture != 0) {
-            GLES30.glDeleteTextures(1, intArrayOf(lutTexture), 0)
-            lutTexture = 0
-        }
-        uploadedLut = null
-        val tex = GlUtil.uploadLut3D(bitmap)
-        lutTexture = tex
-        uploadedLut = bitmap
-        return tex
+    /**
+     * Starts a crossfade when the active LUT changed: the previous target becomes the source and the
+     * new LUT is uploaded as the target. A switch during a fade restarts from the previous target.
+     */
+    private fun updateLutTextures(activeLut: Bitmap?, nowNs: Long) {
+        if (activeLut === currentLut) return
+        dropLutFrom()
+        lutFrom = lutTo
+        lutTo = if (activeLut != null) GlUtil.uploadLut3D(activeLut) else 0
+        currentLut = activeLut
+        crossfade.start(nowNs)
+    }
+
+    private fun dropLutFrom() {
+        if (lutFrom == 0) return
+        GLES30.glDeleteTextures(1, intArrayOf(lutFrom), 0)
+        lutFrom = 0
     }
 
     private fun drawQuad() {
@@ -362,7 +380,8 @@ class FilterSurfaceProcessor : SurfaceProcessor {
             adjustLoc = adjust
             GLES30.glUseProgram(adjustProgram)
             GLES30.glUniform1i(adjust.src, 0)
-            GLES30.glUniform1i(adjust.lut, 1)
+            GLES30.glUniform1i(adjust.lutA, 1)
+            GLES30.glUniform1i(adjust.lutB, 2)
             val sharpen = SharpenLocations(sharpenProgram)
             sharpenLoc = sharpen
             GLES30.glUseProgram(sharpenProgram)
@@ -385,7 +404,8 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         if (initialized) {
             makeCurrent(pbuffer)
             frameTimer.release()
-            if (lutTexture != 0) GLES30.glDeleteTextures(1, intArrayOf(lutTexture), 0)
+            if (lutTo != 0) GLES30.glDeleteTextures(1, intArrayOf(lutTo), 0)
+            if (lutFrom != 0) GLES30.glDeleteTextures(1, intArrayOf(lutFrom), 0)
             if (adjustProgram != 0) GLES30.glDeleteProgram(adjustProgram)
             if (sharpenProgram != 0) GLES30.glDeleteProgram(sharpenProgram)
             if (quadVbo != 0) GLES30.glDeleteBuffers(1, intArrayOf(quadVbo), 0)
@@ -405,8 +425,9 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         sharpenProgram = 0
         quadVao = 0
         quadVbo = 0
-        lutTexture = 0
-        uploadedLut = null
+        lutTo = 0
+        lutFrom = 0
+        currentLut = null
         adjustLoc = null
         sharpenLoc = null
         outputCount = 0
@@ -429,5 +450,6 @@ class FilterSurfaceProcessor : SurfaceProcessor {
 
     private companion object {
         const val TAG = "FilterSurfaceProcessor"
+        const val LUT_CROSSFADE_MS = 180L
     }
 }

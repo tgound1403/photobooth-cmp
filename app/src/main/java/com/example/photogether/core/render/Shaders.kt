@@ -47,8 +47,11 @@ in vec2 vUv;
 out vec4 fragColor;
 
 uniform sampler2D uSrc;
-uniform highp sampler3D uLut;
-uniform bool uUseLut;
+uniform highp sampler3D uLutA;
+uniform highp sampler3D uLutB;
+uniform bool uUseLutA;
+uniform bool uUseLutB;
+uniform float uLutMix;
 uniform vec3 uPreGain;
 uniform float uFilterIntensity;
 uniform float uExposureGain;
@@ -64,8 +67,12 @@ uniform float uVignetteStrength;
 
 const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
 
+// Crossfade between two LUTs. A side whose flag is false is the identity (no filter).
 vec3 applyLut(vec3 c) {
-    return texture(uLut, c * (63.0 / 64.0) + 0.5 / 64.0).rgb;
+    vec3 p = c * (63.0 / 64.0) + 0.5 / 64.0;
+    vec3 a = uUseLutA ? clamp(texture(uLutA, p).rgb, 0.0, 1.0) : c;
+    vec3 b = uUseLutB ? clamp(texture(uLutB, p).rgb, 0.0, 1.0) : c;
+    return mix(a, b, uLutMix);
 }
 
 // Deterministic per-pixel hash in [0, 1]. Same pixel coordinate always gives the same value.
@@ -87,8 +94,8 @@ void main() {
     c = clamp(c * uPreGain, 0.0, 1.0);
 
     // 1. Filter: blend the original with the LUT result by intensity.
-    if (uUseLut) {
-        c = mix(c, clamp(applyLut(c), 0.0, 1.0), uFilterIntensity);
+    if (uUseLutA || uUseLutB) {
+        c = mix(c, applyLut(c), uFilterIntensity);
     }
 
     // 2. Exposure: linear gain on the (sRGB-encoded) values.

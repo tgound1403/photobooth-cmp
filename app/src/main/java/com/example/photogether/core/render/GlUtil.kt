@@ -148,15 +148,19 @@ internal object GlUtil {
 
     /**
      * Sets the uniforms of the adjust pass (see ADJUST_FRAGMENT_SHADER) from [p].
-     * Texture units: uSrc = 0, uLut = 1. [useLut] false disables the LUT lookup.
+     * Texture units: uSrc = 0, uLutA = 1, uLutB = 2 (the same texture on both, uLutMix = 1).
+     * [useLut] false disables the LUT lookup.
      */
     fun applyAdjustUniforms(program: Int, p: EditParams, useLut: Boolean) {
         val (wr, wg, wb) = whiteBalanceGains(p.temperature, p.tint)
         val (kr, kg, kb) = kelvinGains(p.kelvin)
         val evGain = 2f.pow(p.softwareEv / 2.2f)
         setUniform1i(program, "uSrc", 0)
-        setUniform1i(program, "uLut", 1)
-        setUniform1i(program, "uUseLut", if (useLut) 1 else 0)
+        setUniform1i(program, "uLutA", 1)
+        setUniform1i(program, "uLutB", 2)
+        setUniform1i(program, "uUseLutA", if (useLut) 1 else 0)
+        setUniform1i(program, "uUseLutB", if (useLut) 1 else 0)
+        setUniform1f(program, "uLutMix", 1f)
         setUniform3f(program, "uPreGain", kr * evGain, kg * evGain, kb * evGain)
         setUniform1f(program, "uFilterIntensity", p.filterIntensity)
         setUniform1f(program, "uExposureGain", exposureGain(p.exposure))
