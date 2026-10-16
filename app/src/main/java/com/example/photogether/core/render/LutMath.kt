@@ -99,3 +99,13 @@ fun scaledSize(width: Int, height: Int, maxSize: Int?): Pair<Int, Int> {
     val h = (height * scale).roundToInt().coerceAtLeast(1)
     return w to h
 }
+
+/** Position of a LUT node in the 512x512 tiled PNG. */
+data class LutTexel(val x: Int, val y: Int)
+
+/** Tile layout to 3D: blue level b picks the tile (col = b % 8, row = b / 8), (r, g) the texel in it. */
+fun lutTileToVoxel(r: Int, g: Int, b: Int): LutTexel =
+    LutTexel(
+        x = (b % LUT_TILES_PER_ROW) * LUT_TILE_SIZE + r,
+        y = (b / LUT_TILES_PER_ROW) * LUT_TILE_SIZE + g,
+    )

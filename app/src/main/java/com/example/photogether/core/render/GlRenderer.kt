@@ -200,11 +200,7 @@ class GlRenderer : AutoCloseable {
             lutTexture = 0
         }
         lutSource = null
-        val tex = newTexture()
-        val argb = if (lut.config == Bitmap.Config.ARGB_8888) lut else lut.copy(Bitmap.Config.ARGB_8888, false)
-        GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, argb, 0)
-        if (argb !== lut) argb.recycle()
-        checkGl("upload LUT texture")
+        val tex = GlUtil.uploadLut3D(lut)
         lutTexture = tex
         lutSource = lut
         return tex
@@ -217,7 +213,7 @@ class GlRenderer : AutoCloseable {
         GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, srcTex)
         GLES30.glActiveTexture(GLES30.GL_TEXTURE1)
-        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, if (lutTex != 0) lutTex else 0)
+        GLES30.glBindTexture(GLES30.GL_TEXTURE_3D, lutTex)
 
         GlUtil.applyAdjustUniforms(adjustProgram, p, useLut = lutTex != 0)
 

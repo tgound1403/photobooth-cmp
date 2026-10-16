@@ -10,7 +10,6 @@ import android.opengl.EGLExt
 import android.opengl.EGLSurface
 import android.opengl.GLES11Ext
 import android.opengl.GLES30
-import android.opengl.GLUtils
 import android.opengl.Matrix
 import android.os.Handler
 import android.os.HandlerThread
@@ -191,7 +190,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
             GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
             GLES30.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, inp.texture)
             GLES30.glActiveTexture(GLES30.GL_TEXTURE1)
-            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, lutTex)
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_3D, lutTex)
             GLES30.glUniformMatrix4fv(adjust.texMatrix, 1, false, texMatrix, 0)
             snapshot.values.apply(adjust, useLut = lutTex != 0)
             drawQuad()
@@ -294,11 +293,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
             lutTexture = 0
         }
         uploadedLut = null
-        val tex = GlUtil.newTexture()
-        val argb = if (bitmap.config == Bitmap.Config.ARGB_8888) bitmap else bitmap.copy(Bitmap.Config.ARGB_8888, false)
-        GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, argb, 0)
-        if (argb !== bitmap) argb.recycle()
-        GlUtil.checkGl("upload LUT texture")
+        val tex = GlUtil.uploadLut3D(bitmap)
         lutTexture = tex
         uploadedLut = bitmap
         return tex

@@ -1,5 +1,6 @@
 package com.example.photogether.core.render
 
+import android.graphics.Bitmap
 import android.opengl.GLES11Ext
 import android.opengl.GLES30
 import java.nio.ByteBuffer
@@ -58,6 +59,38 @@ internal object GlUtil {
         GLES30.glTexParameteri(target, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR)
         GLES30.glTexParameteri(target, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE)
         GLES30.glTexParameteri(target, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE)
+        return ids[0]
+    }
+
+    /**
+     * Uploads a 512x512 tiled LUT bitmap as a 64x64x64 RGBA8 GL_TEXTURE_3D (x = r, y = g, z = b)
+     * with linear filtering and edge clamping. Returns the texture id, left bound to TEXTURE_3D.
+     */
+    fun uploadLut3D(bitmap: Bitmap): Int {
+        val n = LUT_LEVELS
+        val pixels = IntArray(LUT_SIZE * LUT_SIZE)
+        bitmap.getPixels(pixels, 0, LUT_SIZE, 0, 0, LUT_SIZE, LUT_SIZE)
+        val data = ByteBuffer.allocateDirect(n * n * n * 4).order(ByteOrder.nativeOrder())
+        for (b in 0 until n) for (g in 0 until n) for (r in 0 until n) {
+            val t = lutTileToVoxel(r, g, b)
+            val argb = pixels[t.y * LUT_SIZE + t.x]
+            data.put((argb shr 16).toByte()).put((argb shr 8).toByte()).put(argb.toByte()).put(0xFF.toByte())
+        }
+        data.flip()
+        val ids = IntArray(1)
+        GLES30.glGenTextures(1, ids, 0)
+        GLES30.glBindTexture(GLES30.GL_TEXTURE_3D, ids[0])
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_3D, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR)
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_3D, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR)
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_3D, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE)
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_3D, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE)
+        GLES30.glTexParameteri(GLES30.GL_TEXTURE_3D, GLES30.GL_TEXTURE_WRAP_R, GLES30.GL_CLAMP_TO_EDGE)
+        GLES30.glPixelStorei(GLES30.GL_UNPACK_ALIGNMENT, 1)
+        GLES30.glTexImage3D(
+            GLES30.GL_TEXTURE_3D, 0, GLES30.GL_RGBA8, n, n, n, 0,
+            GLES30.GL_RGBA, GLES30.GL_UNSIGNED_BYTE, data,
+        )
+        checkGl("upload LUT 3D texture")
         return ids[0]
     }
 

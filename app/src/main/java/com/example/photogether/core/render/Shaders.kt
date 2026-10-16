@@ -35,14 +35,9 @@ void main() {
  * The pre-gain runs before the LUT so the filter sees the corrected colour. uWbGain stays after the
  * LUT so recipes saved before Kelvin keep their look. Both gains are 1 when unused.
  *
- * LUT lookup (512x512, 8x8 tiles of 64x64, slice index b = blue level):
- *   level = c * 63                          (fractional, 0..63)
- *   slice k0 = floor(level.b), k1 = min(k0 + 1, 63), t = fract(level.b)
- *   for slice k: tile col = k % 8, row = k / 8
- *   texel = (col * 64 + level.r + 0.5, row * 64 + level.g + 0.5)
- *   uv = texel / 512
- * Both slices are sampled with LINEAR filtering (bilinear in r and g) and mixed by t.
- * For an exact grid input (c = n / 63) this returns the texel centre value exactly.
+ * LUT lookup: a 64x64x64 GL_TEXTURE_3D (built from the 512x512 tiled PNG, see GlUtil.uploadLut3D),
+ * sampled with hardware trilinear filtering. Grid node n sits at texel centre (n + 0.5) / 64, so
+ * the input is mapped with c * 63/64 + 0.5/64; an exact grid input (c = n / 63) returns node n.
  */
 const val ADJUST_FRAGMENT_SHADER = """#version 300 es
 precision highp float;
@@ -52,7 +47,7 @@ in vec2 vUv;
 out vec4 fragColor;
 
 uniform sampler2D uSrc;
-uniform sampler2D uLut;
+uniform highp sampler3D uLut;
 uniform bool uUseLut;
 uniform vec3 uPreGain;
 uniform float uFilterIntensity;
@@ -69,19 +64,8 @@ uniform float uVignetteStrength;
 
 const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
 
-vec3 lutSlice(float slice, vec3 level) {
-    float col = mod(slice, 8.0);
-    float row = floor(slice / 8.0);
-    vec2 texel = vec2(col * 64.0 + level.r + 0.5, row * 64.0 + level.g + 0.5);
-    return texture(uLut, texel / 512.0).rgb;
-}
-
 vec3 applyLut(vec3 c) {
-    vec3 level = c * 63.0;
-    float k0 = floor(level.b);
-    float k1 = min(k0 + 1.0, 63.0);
-    float t = level.b - k0;
-    return mix(lutSlice(k0, level), lutSlice(k1, level), t);
+    return texture(uLut, c * (63.0 / 64.0) + 0.5 / 64.0).rgb;
 }
 
 // Deterministic per-pixel hash in [0, 1]. Same pixel coordinate always gives the same value.
