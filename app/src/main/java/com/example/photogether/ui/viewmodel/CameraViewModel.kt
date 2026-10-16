@@ -1,6 +1,7 @@
 package com.example.photogether.ui.viewmodel
 
 import android.app.Application
+import android.media.AudioManager
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
@@ -21,6 +22,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewModelScope
 import com.example.photogether.core.camera.CameraAdjustState
 import com.example.photogether.core.camera.CameraTool
+import com.example.photogether.core.camera.ShutterSoundPlayer
+import com.example.photogether.core.camera.ShutterSoundPrefs
 import com.example.photogether.core.camera.EvMode
 import com.example.photogether.core.camera.pickLens
 import com.example.photogether.core.camera.withCameraAdjust
@@ -33,6 +36,7 @@ import com.example.photogether.core.render.CameraRecipe
 import com.example.photogether.core.render.FlashMode
 import com.example.photogether.core.render.FilterCatalog
 import com.example.photogether.core.render.Recipe
+import com.example.photogether.core.render.ShutterSound
 import com.example.photogether.data.repository.RecipeRepository
 import com.example.photogether.data.settings.CameraSettings
 import com.example.photogether.data.settings.CameraSettingsRepository
@@ -81,6 +85,17 @@ class CameraViewModel(
 
     /** Current flash mode. A new camera body resets it to its default. */
     val flashMode: StateFlow<FlashMode> = _flashMode.asStateFlow()
+
+    private val _shutterSoundEnabled = MutableStateFlow(ShutterSoundPrefs.read(application))
+
+    /** Whether the shutter sound plays on capture (still subject to the ringer mode). Remembered across launches. */
+    val shutterSoundEnabled: StateFlow<Boolean> = _shutterSoundEnabled.asStateFlow()
+
+    private val shutterSoundPlayer = ShutterSoundPlayer(application)
+    private val audioManager = application.getSystemService(AudioManager::class.java)
+
+    /** Shutter sound of the camera body in use. The screen sets it when the camera changes. */
+    private var cameraShutterSound = ShutterSound.MECH
 
     /** True when the bound camera has a flash unit. */
     val hasFlash = mutableStateOf(false)
@@ -195,6 +210,17 @@ class CameraViewModel(
     fun setFlashMode(mode: FlashMode) {
         _flashMode.value = mode
         cameraService.setFlashMode(camera.value, mode)
+    }
+
+    /** Turns the shutter sound on or off and remembers the choice. */
+    fun setShutterSoundEnabled(enabled: Boolean) {
+        _shutterSoundEnabled.value = enabled
+        ShutterSoundPrefs.write(getApplication(), enabled)
+    }
+
+    /** Sets the shutter sound that following captures play (the active camera body's). */
+    fun setCameraShutterSound(sound: ShutterSound) {
+        cameraShutterSound = sound
     }
 
     /** Sets the aspect that following captures are centre-cropped to (the active camera body's). */
@@ -336,6 +362,7 @@ class CameraViewModel(
                 file = photoFile,
                 executor = executor,
                 onSaved = { saved ->
+                    playShutterSound()
                     viewModelScope.launch(Dispatchers.Main) {
                         val result = runCatching { withContext(Dispatchers.IO) { transform(saved) } }
                         isTakingPicture = false
@@ -359,6 +386,13 @@ class CameraViewModel(
         }
     }
 
+    /** Plays the camera's shutter sound once the capture has succeeded. Silent and vibrate modes are skipped. */
+    private fun playShutterSound() {
+        // Without an audio service we treat the phone as silent rather than guess.
+        val ringer = audioManager?.ringerMode ?: AudioManager.RINGER_MODE_SILENT
+        shutterSoundPlayer.play(cameraShutterSound, _shutterSoundEnabled.value, ringer)
+    }
+
     private fun copyToGallery(file: File): Uri {
         val app: Context = getApplication()
         val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(System.currentTimeMillis())
@@ -379,6 +413,7 @@ class CameraViewModel(
 
     override fun onCleared() {
         cameraService.shutdown()
+        shutterSoundPlayer.release()
         super.onCleared()
     }
 

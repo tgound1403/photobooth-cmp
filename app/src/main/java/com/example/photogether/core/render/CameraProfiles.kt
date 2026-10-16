@@ -42,7 +42,7 @@ object CameraProfiles {
                 subtitle = "Kodak",
                 filterIds = listOf("kodak", "original", "nikon", "pentax", "minolta"),
                 modelTint = 0xFFC9A15B.toInt(),
-                recipe = CameraRecipe(leak = 0.15f, dust = 0.10f, halation = 0f, grain = 0.10f, vignette = 0.10f, dateStamp = DateStampStyle.ORANGE_LCD, aspect = CameraAspect.FOUR_THREE, defaultFlash = FlashMode.AUTO, flashStyle = FlashStyle.HARSH, skin = ViewfinderSkin.FILM_FRAME),
+                recipe = CameraRecipe(leak = 0.15f, dust = 0.10f, halation = 0f, grain = 0.10f, vignette = 0.10f, dateStamp = DateStampStyle.ORANGE_LCD, aspect = CameraAspect.FOUR_THREE, defaultFlash = FlashMode.AUTO, flashStyle = FlashStyle.HARSH, skin = ViewfinderSkin.FILM_FRAME, shutterSound = ShutterSound.DISPOSABLE),
             ),
             CameraProfile(
                 id = "fuji_mini",
@@ -50,7 +50,7 @@ object CameraProfiles {
                 subtitle = "FujiFilm",
                 filterIds = listOf("fujifilm", "soft_glow", "rose_skin", "honey_light", "clear_tone", "peach_glow", "cream_matte"),
                 modelTint = 0xFFEFE6D2.toInt(),
-                recipe = CameraRecipe(leak = 0f, dust = 0f, halation = 0.10f, grain = 0.05f, vignette = 0f, dateStamp = DateStampStyle.NONE, aspect = CameraAspect.FOUR_THREE, defaultFlash = FlashMode.AUTO, flashStyle = FlashStyle.WARM, skin = ViewfinderSkin.RANGEFINDER),
+                recipe = CameraRecipe(leak = 0f, dust = 0f, halation = 0.10f, grain = 0.05f, vignette = 0f, dateStamp = DateStampStyle.NONE, aspect = CameraAspect.FOUR_THREE, defaultFlash = FlashMode.AUTO, flashStyle = FlashStyle.WARM, skin = ViewfinderSkin.RANGEFINDER, shutterSound = ShutterSound.SOFT),
             ),
             CameraProfile(
                 id = "golden",
@@ -58,7 +58,7 @@ object CameraProfiles {
                 subtitle = "Golden Hour",
                 filterIds = listOf("golden_hour", "faded_mint", "amber_roll", "cool_negative", "sunday_film", "dusk_print"),
                 modelTint = 0xFFE0A91C.toInt(),
-                recipe = CameraRecipe(leak = 0.30f, dust = 0.05f, halation = 0.15f, grain = 0.05f, vignette = 0.15f, dateStamp = DateStampStyle.ORANGE_LCD, aspect = CameraAspect.FOUR_THREE, defaultFlash = FlashMode.OFF, flashStyle = FlashStyle.WARM, skin = ViewfinderSkin.SOFT_GLASS),
+                recipe = CameraRecipe(leak = 0.30f, dust = 0.05f, halation = 0.15f, grain = 0.05f, vignette = 0.15f, dateStamp = DateStampStyle.ORANGE_LCD, aspect = CameraAspect.FOUR_THREE, defaultFlash = FlashMode.OFF, flashStyle = FlashStyle.WARM, skin = ViewfinderSkin.SOFT_GLASS, shutterSound = ShutterSound.SOFT),
             ),
             CameraProfile(
                 id = "night",
@@ -66,7 +66,7 @@ object CameraProfiles {
                 subtitle = "Teal Night",
                 filterIds = listOf("teal_night", "moody_blue", "autumn_haze", "velvet_dusk", "pastel_dream", "winter_fog"),
                 modelTint = 0xFF1F9AA3.toInt(),
-                recipe = CameraRecipe(leak = 0f, dust = 0f, halation = 0.35f, grain = 0.20f, vignette = 0.25f, dateStamp = DateStampStyle.NONE, aspect = CameraAspect.FOUR_THREE, defaultFlash = FlashMode.ON, flashStyle = FlashStyle.HARSH, skin = ViewfinderSkin.LCD_DIGICAM),
+                recipe = CameraRecipe(leak = 0f, dust = 0f, halation = 0.35f, grain = 0.20f, vignette = 0.25f, dateStamp = DateStampStyle.NONE, aspect = CameraAspect.FOUR_THREE, defaultFlash = FlashMode.ON, flashStyle = FlashStyle.HARSH, skin = ViewfinderSkin.LCD_DIGICAM, shutterSound = ShutterSound.MECH),
             ),
             CameraProfile(
                 id = "silver",
@@ -74,7 +74,7 @@ object CameraProfiles {
                 subtitle = "Silver Gelatin",
                 filterIds = listOf("silver_gelatin", "bnw", "noir_contrast", "soft_mono", "crimson_mono", "ink_wash", "light_mono"),
                 modelTint = 0xFFC9CED6.toInt(),
-                recipe = CameraRecipe(leak = 0f, dust = 0.15f, halation = 0f, grain = 0.25f, vignette = 0.20f, dateStamp = DateStampStyle.WHITE_DIGITAL, aspect = CameraAspect.ONE_ONE, defaultFlash = FlashMode.OFF, flashStyle = FlashStyle.NONE, skin = ViewfinderSkin.RANGEFINDER_MONO),
+                recipe = CameraRecipe(leak = 0f, dust = 0.15f, halation = 0f, grain = 0.25f, vignette = 0.20f, dateStamp = DateStampStyle.WHITE_DIGITAL, aspect = CameraAspect.ONE_ONE, defaultFlash = FlashMode.OFF, flashStyle = FlashStyle.NONE, skin = ViewfinderSkin.RANGEFINDER_MONO, shutterSound = ShutterSound.MECH),
             ),
         )
 

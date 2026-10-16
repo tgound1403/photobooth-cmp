@@ -45,6 +45,13 @@ enum class FlashMode {
 /** Look of the screen flash shown at capture. NONE shows nothing. */
 enum class FlashStyle { NONE, HARSH, WARM }
 
+/** Shutter sound a camera body plays on capture. [asset] is the path under assets/. */
+enum class ShutterSound(val asset: String) {
+    MECH("sounds/shutter_mech.wav"),
+    SOFT("sounds/shutter_soft.wav"),
+    DISPOSABLE("sounds/shutter_disposable.wav"),
+}
+
 /** What to tell CameraX for a [FlashMode]: the ImageCapture flash constant and whether the torch is on. */
 data class FlashPlan(val captureMode: Int, val torch: Boolean)
 
@@ -74,6 +81,7 @@ data class CameraRecipe(
     val defaultFlash: FlashMode = FlashMode.OFF,
     val flashStyle: FlashStyle = FlashStyle.NONE,
     val skin: ViewfinderSkin = ViewfinderSkin.NONE,
+    val shutterSound: ShutterSound = ShutterSound.MECH,
 ) {
     /** Same recipe with every float clamped to 0..1. */
     fun clamped(): CameraRecipe =

@@ -29,6 +29,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.FlashAuto
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
@@ -138,6 +140,7 @@ fun CameraScreen(
     val adjust by cameraViewModel.adjust.collectAsStateWithLifecycle()
     val camera = cameraViewModel.camera.value
     val flashMode by cameraViewModel.flashMode.collectAsStateWithLifecycle()
+    val shutterSoundOn by cameraViewModel.shutterSoundEnabled.collectAsStateWithLifecycle()
     var flashFx by remember { mutableStateOf<FlashFx?>(null) }
     // The gallery box shows the last photo taken this session. A new photo flies from the viewfinder
     // into the box; both are measured in window px so the flight lands exactly on the box.
@@ -171,6 +174,7 @@ fun CameraScreen(
     LaunchedEffect(cameraProfile) {
         cameraViewModel.setCameraAspect(cameraProfile.recipe.aspect)
         cameraViewModel.setFlashMode(cameraProfile.recipe.defaultFlash)
+        cameraViewModel.setCameraShutterSound(cameraProfile.recipe.shutterSound)
     }
 
     // The picker opens on the camera in use.
@@ -209,6 +213,8 @@ fun CameraScreen(
                 onOpenSettings = { navController.navigate(AppRoutes.SETTINGS) },
                 flashMode = if (cameraViewModel.hasFlash.value) flashMode else null,
                 onFlashClick = { cameraViewModel.setFlashMode(flashMode.next()) },
+                shutterSoundOn = shutterSoundOn,
+                onShutterSoundClick = { cameraViewModel.setShutterSoundEnabled(!shutterSoundOn) },
             )
 
             // The viewfinder takes the space the rest of the screen leaves. Its bottom overlays sit inside it.
@@ -369,13 +375,15 @@ fun CameraScreen(
     }
 }
 
-/** Back arrow on the left, settings (hamburger) on the right. */
+/** Back arrow on the left, flash and shutter-sound toggles in the middle, settings (hamburger) on the right. */
 @Composable
 private fun CameraTopBar(
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
     flashMode: FlashMode?,
     onFlashClick: () -> Unit,
+    shutterSoundOn: Boolean,
+    onShutterSoundClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -391,12 +399,21 @@ private fun CameraTopBar(
                 tint = InkColors.textPrimary,
             )
         }
-        // Hidden when the device has no flash (flashMode is null).
-        if (flashMode != null) {
-            IconButton(onClick = onFlashClick) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Flash is hidden when the device has no flash (flashMode is null).
+            if (flashMode != null) {
+                IconButton(onClick = onFlashClick) {
+                    Icon(
+                        imageVector = flashIcon(flashMode),
+                        contentDescription = "Flash $flashMode",
+                        tint = InkColors.textPrimary,
+                    )
+                }
+            }
+            IconButton(onClick = onShutterSoundClick) {
                 Icon(
-                    imageVector = flashIcon(flashMode),
-                    contentDescription = "Flash $flashMode",
+                    imageVector = if (shutterSoundOn) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                    contentDescription = if (shutterSoundOn) "Âm chụp: bật" else "Âm chụp: tắt",
                     tint = InkColors.textPrimary,
                 )
             }
