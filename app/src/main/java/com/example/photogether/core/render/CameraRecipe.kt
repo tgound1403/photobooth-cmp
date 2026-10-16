@@ -20,6 +20,31 @@ enum class CameraAspect {
     val crops: Boolean get() = this != FOUR_THREE
 }
 
+/** Flash mode the user picks on the camera screen. TORCH keeps the light on; the others fire on capture. */
+enum class FlashMode {
+    OFF, AUTO, ON, TORCH;
+
+    /** The next mode in the button cycle OFF, AUTO, ON, TORCH. */
+    fun next(): FlashMode = entries[(ordinal + 1) % entries.size]
+}
+
+/** Look of the screen flash shown at capture. NONE shows nothing. */
+enum class FlashStyle { NONE, HARSH, WARM }
+
+/** What to tell CameraX for a [FlashMode]: the ImageCapture flash constant and whether the torch is on. */
+data class FlashPlan(val captureMode: Int, val torch: Boolean)
+
+/**
+ * Maps a [FlashMode] to CameraX values. [off], [auto], [on] are the ImageCapture.FLASH_MODE_* constants,
+ * passed in so this stays free of Android types. TORCH sets the torch and keeps capture flash off.
+ */
+fun flashPlan(mode: FlashMode, off: Int, auto: Int, on: Int): FlashPlan = when (mode) {
+    FlashMode.OFF -> FlashPlan(off, false)
+    FlashMode.AUTO -> FlashPlan(auto, false)
+    FlashMode.ON -> FlashPlan(on, false)
+    FlashMode.TORCH -> FlashPlan(off, true)
+}
+
 /**
  * Film effects a camera body applies when it is chosen. The float fields mirror the same-named
  * [EditParams] fields and are applied on selection. [dateStamp] is copied into EditParams and drawn by the GPU; [aspect] masks the preview and crops the capture.
@@ -32,6 +57,8 @@ data class CameraRecipe(
     val vignette: Float = 0f,    // 0..1, same meaning as EditParams.vignette
     val dateStamp: DateStampStyle = DateStampStyle.NONE,
     val aspect: CameraAspect = CameraAspect.FOUR_THREE,
+    val defaultFlash: FlashMode = FlashMode.OFF,
+    val flashStyle: FlashStyle = FlashStyle.NONE,
 ) {
     /** Same recipe with every float clamped to 0..1. */
     fun clamped(): CameraRecipe =

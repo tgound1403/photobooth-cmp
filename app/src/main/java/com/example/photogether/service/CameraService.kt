@@ -41,6 +41,8 @@ import com.example.photogether.core.render.CameraAspect
 import com.example.photogether.core.render.CropMath
 import com.example.photogether.core.render.EditParams
 import com.example.photogether.core.render.FilterCatalog
+import com.example.photogether.core.render.FlashMode
+import com.example.photogether.core.render.flashPlan
 import com.example.photogether.core.render.FilterSurfaceProcessor
 import com.example.photogether.core.render.FxMath
 import com.example.photogether.core.render.GlRenderer
@@ -215,6 +217,25 @@ class CameraService(private val catalog: FilterCatalog) {
                 // Superseded by a newer request.
             }
         }, Executor { it.run() })
+    }
+
+    /** True when the opened camera has a flash unit. */
+    fun hasFlash(camera: Camera): Boolean = camera.cameraInfo.hasFlashUnit()
+
+    /** Sets the capture flash mode and the torch for [mode]. The torch goes off for every other mode. */
+    fun setFlashMode(camera: Camera?, mode: FlashMode) {
+        val plan = flashPlan(
+            mode, ImageCapture.FLASH_MODE_OFF, ImageCapture.FLASH_MODE_AUTO, ImageCapture.FLASH_MODE_ON,
+        )
+        Log.i(TAG, "Flash mode set: $mode (capture=${plan.captureMode}, torch=${plan.torch})")
+        imageCapture?.flashMode = plan.captureMode
+        if (camera != null && camera.cameraInfo.hasFlashUnit()) {
+            try {
+                camera.cameraControl.enableTorch(plan.torch)
+            } catch (e: Exception) {
+                Log.w(TAG, "Torch change failed: ${e.message}", e)
+            }
+        }
     }
 
     /** Locks or unlocks auto white balance through Camera2 request options. Applied live. */

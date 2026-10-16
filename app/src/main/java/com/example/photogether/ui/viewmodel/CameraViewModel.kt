@@ -30,6 +30,7 @@ import com.example.photogether.core.camera.withKelvin
 import com.example.photogether.core.camera.zoomFor
 import com.example.photogether.core.render.EditParams
 import com.example.photogether.core.render.CameraRecipe
+import com.example.photogether.core.render.FlashMode
 import com.example.photogether.core.render.FilterCatalog
 import com.example.photogether.core.render.Recipe
 import com.example.photogether.data.repository.RecipeRepository
@@ -75,6 +76,14 @@ class CameraViewModel(
 
     private val _countdown = MutableStateFlow(3)
     val countdown: StateFlow<Int> = _countdown.asStateFlow()
+
+    private val _flashMode = MutableStateFlow(FlashMode.OFF)
+
+    /** Current flash mode. A new camera body resets it to its default. */
+    val flashMode: StateFlow<FlashMode> = _flashMode.asStateFlow()
+
+    /** True when the bound camera has a flash unit. */
+    val hasFlash = mutableStateOf(false)
 
     val preview = mutableStateOf<Preview?>(null)
     val camera = mutableStateOf<Camera?>(null)
@@ -140,6 +149,8 @@ class CameraViewModel(
             val bound = cameraService.bind(getApplication(), lifecycleOwner, lensFacing, lensId)
             preview.value = bound.preview
             camera.value = bound.camera
+            hasFlash.value = cameraService.hasFlash(bound.camera)
+            cameraService.setFlashMode(bound.camera, _flashMode.value)
             lensMm.floatValue = cameraService.lenses.firstOrNull { it.cameraId == lensId }?.equivMm ?: lensMm.floatValue
             restoreJob.join()
             _adjust.update { it.withCapabilities(cameraService.capabilities(bound.camera)) }
@@ -178,6 +189,12 @@ class CameraViewModel(
     /** Selects a catalog filter by id, keeping the other edit values. */
     fun selectFilter(filterId: String) {
         setFilter(editParams.value.copy(filterId = filterId))
+    }
+
+    /** Sets the flash mode: capture flash for OFF, AUTO and ON, torch for TORCH. */
+    fun setFlashMode(mode: FlashMode) {
+        _flashMode.value = mode
+        cameraService.setFlashMode(camera.value, mode)
     }
 
     /** Sets the aspect that following captures are centre-cropped to (the active camera body's). */

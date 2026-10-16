@@ -29,7 +29,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.FlashAuto
+import androidx.compose.material.icons.filled.FlashOff
+import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.Highlight
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.photogether.core.render.FlashMode
+import com.example.photogether.core.render.FlashStyle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -96,6 +104,9 @@ import androidx.compose.ui.tooling.preview.Preview as ComposePreview
 private const val TAG = "CameraScreen"
 private const val FILTER_NAME_HOLD_MS = 900L
 
+/** One screen flash at capture. A new instance per shot, so every shot replays it. */
+class FlashFx(val style: FlashStyle)
+
 /** One filter-name flash. A new instance per selection, so the same name flashes again. */
 class NameFlash(val name: String)
 
@@ -126,6 +137,8 @@ fun CameraScreen(
     var flash by remember { mutableStateOf<NameFlash?>(null) }
     val adjust by cameraViewModel.adjust.collectAsStateWithLifecycle()
     val camera = cameraViewModel.camera.value
+    val flashMode by cameraViewModel.flashMode.collectAsStateWithLifecycle()
+    var flashFx by remember { mutableStateOf<FlashFx?>(null) }
     // The gallery box shows the last photo taken this session. A new photo flies from the viewfinder
     // into the box; both are measured in window px so the flight lands exactly on the box.
     // rememberSaveable: the screen leaves composition when the picker opens, and a plain remember would reset the box.
@@ -154,7 +167,11 @@ fun CameraScreen(
     }
 
     // Captures crop to the active camera's aspect.
-    LaunchedEffect(cameraProfile) { cameraViewModel.setCameraAspect(cameraProfile.recipe.aspect) }
+    // The same effect sets the camera's default flash, for the first camera and every change after.
+    LaunchedEffect(cameraProfile) {
+        cameraViewModel.setCameraAspect(cameraProfile.recipe.aspect)
+        cameraViewModel.setFlashMode(cameraProfile.recipe.defaultFlash)
+    }
 
     // The picker opens on the camera in use.
     LaunchedEffect(navController, cameraId) {
@@ -190,6 +207,8 @@ fun CameraScreen(
             CameraTopBar(
                 onBack = { navController.popBackStack() },
                 onOpenSettings = { navController.navigate(AppRoutes.SETTINGS) },
+                flashMode = if (cameraViewModel.hasFlash.value) flashMode else null,
+                onFlashClick = { cameraViewModel.setFlashMode(flashMode.next()) },
             )
 
             // The viewfinder takes the space the rest of the screen leaves. Its bottom overlays sit inside it.
@@ -210,6 +229,12 @@ fun CameraScreen(
                     aspect = cameraProfile.recipe.aspect,
                     onSwipe = onSwipe,
                     onFocusPoint = cameraViewModel::focusAt,
+                )
+                ScreenFlash(
+                    fx = flashFx,
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(Radius.viewfinder)),
                 )
                 // Overlays the bottom edge of the viewfinder. Kept outside the viewfinder's swipe box so
                 // slider drags do not also cycle filters.
@@ -302,6 +327,9 @@ fun CameraScreen(
                     cameraViewModel.setManualExposure(exposureTime.longValue, it)
                 },
                 onClickCapture = {
+                    if (flashMode == FlashMode.ON && cameraViewModel.hasFlash.value) {
+                        flashFx = FlashFx(cameraProfile.recipe.flashStyle)
+                    }
                     cameraViewModel.takePhotoToGallery(
                         onSaved = { uri ->
                             // A flight still in the air lands now, so its photo is not lost.
@@ -336,7 +364,12 @@ fun CameraScreen(
 
 /** Back arrow on the left, settings (hamburger) on the right. */
 @Composable
-private fun CameraTopBar(onBack: () -> Unit, onOpenSettings: () -> Unit) {
+private fun CameraTopBar(
+    onBack: () -> Unit,
+    onOpenSettings: () -> Unit,
+    flashMode: FlashMode?,
+    onFlashClick: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -350,6 +383,16 @@ private fun CameraTopBar(onBack: () -> Unit, onOpenSettings: () -> Unit) {
                 contentDescription = "Quay lại",
                 tint = InkColors.textPrimary,
             )
+        }
+        // Hidden when the device has no flash (flashMode is null).
+        if (flashMode != null) {
+            IconButton(onClick = onFlashClick) {
+                Icon(
+                    imageVector = flashIcon(flashMode),
+                    contentDescription = "Flash $flashMode",
+                    tint = InkColors.textPrimary,
+                )
+            }
         }
         IconButton(onClick = onOpenSettings) {
             Icon(
@@ -534,5 +577,32 @@ private fun AspectMask(ratio: Float) {
         band(0, r.bottom, w, h)
         band(0, r.top, r.left, r.bottom)
         band(r.right, r.top, w, r.bottom)
+    }
+}
+
+private fun flashIcon(mode: FlashMode): ImageVector = when (mode) {
+    FlashMode.OFF -> Icons.Default.FlashOff
+    FlashMode.AUTO -> Icons.Default.FlashAuto
+    FlashMode.ON -> Icons.Default.FlashOn
+    FlashMode.TORCH -> Icons.Default.Highlight
+}
+
+/** Short colour flash over the preview when a shot fires with flash. HARSH is white and quick, WARM is amber and slower. */
+@Composable
+private fun ScreenFlash(fx: FlashFx?, modifier: Modifier = Modifier) {
+    val alpha = remember { Animatable(0f) }
+    LaunchedEffect(fx) {
+        val style = fx?.style ?: return@LaunchedEffect
+        val (peak, ms) = when (style) {
+            FlashStyle.HARSH -> 0.85f to 120
+            FlashStyle.WARM -> 0.5f to 250
+            FlashStyle.NONE -> return@LaunchedEffect
+        }
+        alpha.snapTo(peak)
+        alpha.animateTo(0f, tween(ms))
+    }
+    val color = if (fx?.style == FlashStyle.WARM) Color(0xFFFFB347) else Color.White
+    if (alpha.value > 0f) {
+        Box(modifier.background(color.copy(alpha = alpha.value)))
     }
 }
