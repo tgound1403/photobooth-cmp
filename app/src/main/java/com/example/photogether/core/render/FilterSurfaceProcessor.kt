@@ -87,6 +87,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
     private var grainFrame = 0
     private var adjustLoc: AdjustLocations? = null
     private var sharpenLoc: SharpenLocations? = null
+    private val bloomPass = BloomPass()
     private val frameTimer = FrameTimer()
     private val invalidateAttachments = intArrayOf(GLES30.GL_COLOR_ATTACHMENT0)
     private val texMatrix = FloatArray(16)
@@ -129,6 +130,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
                 val inp = Input(texture, surfaceTexture, surface, size.width, size.height)
                 created = inp
                 inp.intermediate = GlUtil.createTarget(size.width, size.height)
+                inp.bloom = BloomTargets(size.width, size.height)
                 surfaceTexture.setOnFrameAvailableListener({ onFrameAvailable(inp) }, handler)
                 inputs += inp
                 input = inp
@@ -212,14 +214,26 @@ class FilterSurfaceProcessor : SurfaceProcessor {
             drawQuad()
             debugCheckGl("adjust pass")
 
-            // Pass 2: intermediate -> each output surface.
+            // Pass B (only when halation > 0): 1/4-size threshold + blur of the adjusted frame.
+            val bloomTargets = inp.bloom
+            val useBloom = bloomTargets != null && BloomMath.bloomScale(p.halation) > 0f
+            if (useBloom && bloomTargets != null) {
+                bloomPass.run(target.texture, inp.width, inp.height, p.halation, bloomTargets, quadVao)
+                debugCheckGl("bloom pass")
+            }
+
+            // Pass 2: intermediate (+ bloom) -> each output surface.
             if (outputsDirty) rebuildOutputSnapshot()
             val count = outputCount
             val outs = outputSnapshot
             for (i in 0 until count) {
                 val out = outs[i] ?: continue
-                presentTo(out, target.texture, inp.width, inp.height, p.sharpness, timestamp)
+                presentTo(
+                    out, target.texture, inp.width, inp.height, p.sharpness, timestamp,
+                    if (useBloom) bloomTargets?.result ?: 0 else 0,
+                )
             }
+            if (useBloom && bloomTargets != null) bloomPass.invalidateResult(bloomTargets)
 
             // The intermediate is not needed after the present passes.
             GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, target.framebuffer)
@@ -250,6 +264,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         srcHeight: Int,
         sharpness: Float,
         timestampNs: Long,
+        bloomTexture: Int,
     ) {
         val sharpen = sharpenLoc ?: return
         try {
@@ -263,6 +278,14 @@ class FilterSurfaceProcessor : SurfaceProcessor {
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, srcTexture)
             GLES30.glUniform2f(sharpen.texel, 1f / srcWidth, 1f / srcHeight)
             GLES30.glUniform1f(sharpen.sharpness, sharpness)
+            if (bloomTexture != 0) {
+                GLES30.glActiveTexture(GLES30.GL_TEXTURE1)
+                GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, bloomTexture)
+                GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
+                GLES30.glUniform1i(sharpen.useBloom, 1)
+            } else {
+                GLES30.glUniform1i(sharpen.useBloom, 0)
+            }
             GLES30.glUniformMatrix4fv(sharpen.texMatrix, 1, false, outMatrix, 0)
             drawQuad()
             debugCheckGl("present pass")
@@ -297,6 +320,8 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         if (initialized) makeCurrent(pbuffer)
         inp.intermediate?.delete()
         inp.intermediate = null
+        inp.bloom?.delete()
+        inp.bloom = null
         inp.surface.release()
         inp.surfaceTexture.release()
         if (initialized) GLES30.glDeleteTextures(1, intArrayOf(inp.texture), 0)
@@ -390,6 +415,9 @@ class FilterSurfaceProcessor : SurfaceProcessor {
             sharpenLoc = sharpen
             GLES30.glUseProgram(sharpenProgram)
             GLES30.glUniform1i(sharpen.src, 0)
+            GLES30.glUniform1i(sharpen.bloom, 1)
+            GLES30.glUniform1i(sharpen.useBloom, 0)
+            bloomPass.init()
             val (vao, vbo) = createQuad()
             quadVao = vao
             quadVbo = vbo
@@ -408,6 +436,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         if (initialized) {
             makeCurrent(pbuffer)
             frameTimer.release()
+            bloomPass.release()
             if (lutTo != 0) GLES30.glDeleteTextures(1, intArrayOf(lutTo), 0)
             if (lutFrom != 0) GLES30.glDeleteTextures(1, intArrayOf(lutFrom), 0)
             if (adjustProgram != 0) GLES30.glDeleteProgram(adjustProgram)
@@ -447,6 +476,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         val height: Int,
     ) {
         var intermediate: RenderTarget? = null
+        var bloom: BloomTargets? = null
         var released = false
     }
 

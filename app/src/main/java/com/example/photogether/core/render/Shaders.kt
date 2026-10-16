@@ -139,7 +139,8 @@ void main() {
 """
 
 /**
- * Pass 2 (only when sharpness > 0): unsharp mask with a 3x3 binomial blur.
+ * Present pass: unsharp mask with a 3x3 binomial blur (sharpness 0 = plain copy), then the optional
+ * halation screen composite of uBloom.
  *   out = c + sharpness * (c - blur3x3(c)),  blur weights [1 2 1; 2 4 2; 1 2 1] / 16
  */
 const val SHARPEN_FRAGMENT_SHADER = """#version 300 es
@@ -151,6 +152,8 @@ out vec4 fragColor;
 uniform sampler2D uSrc;
 uniform vec2 uTexel;
 uniform float uSharpness;
+uniform sampler2D uBloom;
+uniform bool uUseBloom;
 
 void main() {
     vec2 t = uTexel;
@@ -165,7 +168,12 @@ void main() {
         + texture(uSrc, vUv + t * vec2(-1.0, 1.0)).rgb
         + 2.0 * texture(uSrc, vUv + t * vec2(0.0, 1.0)).rgb
         + texture(uSrc, vUv + t * vec2(1.0, 1.0)).rgb) / 16.0;
-    vec3 sharp = c.rgb + uSharpness * (c.rgb - blur);
+    vec3 sharp = clamp(c.rgb + uSharpness * (c.rgb - blur), 0.0, 1.0);
+    if (uUseBloom) {
+        // Halation composite (screen): 1 - (1 - c) * (1 - bloom). The bloom is already tinted and scaled.
+        vec3 bloom = clamp(texture(uBloom, vUv).rgb, 0.0, 1.0);
+        sharp = 1.0 - (1.0 - sharp) * (1.0 - bloom);
+    }
     fragColor = vec4(clamp(sharp, 0.0, 1.0), c.a);
 }
 """
@@ -185,3 +193,59 @@ private fun oesVariant(source: String): String {
         "#extension GL_OES_EGL_image_external_essl3 : require\n" +
         source.removePrefix(header).replace(declaration, "uniform samplerExternalOES uSrc;")
 }
+
+/**
+ * Bloom pass B1: downsample the adjusted frame to 1/4 size and keep only highlights.
+ * Four bilinear taps one source texel off-centre (a 4x4 footprint) avoid shimmer from a single tap.
+ * Weight = smoothstep(KNEE_START, KNEE_END, luma), the same curve as BloomMath.thresholdWeight.
+ */
+val BLOOM_THRESHOLD_FRAGMENT_SHADER: String = """#version 300 es
+precision highp float;
+
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform sampler2D uSrc;
+uniform vec2 uTexel; // 1 / source size
+
+const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
+
+void main() {
+    vec3 c = 0.25 * (
+        texture(uSrc, vUv + uTexel * vec2(-1.0, -1.0)).rgb
+        + texture(uSrc, vUv + uTexel * vec2(1.0, -1.0)).rgb
+        + texture(uSrc, vUv + uTexel * vec2(-1.0, 1.0)).rgb
+        + texture(uSrc, vUv + uTexel * vec2(1.0, 1.0)).rgb);
+    float l = dot(c, LUMA);
+    float w = smoothstep(${BloomMath.KNEE_START.glsl()}, ${BloomMath.KNEE_END.glsl()}, l);
+    fragColor = vec4(c * w, 1.0);
+}
+"""
+
+/**
+ * Bloom pass B2/B3: one direction of the 9-tap separable Gaussian (weights from BloomMath).
+ * uDir is the per-tap step in uv (1/w, 0) or (0, 1/h). uGain is (1,1,1) for the horizontal pass and
+ * tint * bloomScale(halation) for the vertical pass, so the bloom texture is ready to composite.
+ */
+val BLOOM_BLUR_FRAGMENT_SHADER: String = """#version 300 es
+precision highp float;
+
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform sampler2D uSrc;
+uniform vec2 uDir;
+uniform vec3 uGain;
+
+const float WEIGHTS[${BloomMath.TAPS}] = float[${BloomMath.TAPS}](${BloomMath.gaussianWeights().joinToString(", ") { it.glsl() }});
+
+void main() {
+    vec3 sum = vec3(0.0);
+    for (int i = 0; i < ${BloomMath.TAPS}; i++) {
+        sum += WEIGHTS[i] * texture(uSrc, vUv + uDir * float(i - ${BloomMath.TAPS / 2})).rgb;
+    }
+    fragColor = vec4(clamp(sum * uGain, 0.0, 1.0), 1.0);
+}
+"""
+
+private fun Float.glsl(): String = "%.8f".format(java.util.Locale.US, this)

@@ -52,6 +52,8 @@ class GlRenderer : AutoCloseable {
     private var maxTextureSize = 0
     private var lutTexture = 0
     private var lutSource: Bitmap? = null
+    private val bloomPass = BloomPass()
+    private var bloomTargets: BloomTargets? = null
 
     // Reused readback resources. Only touched on the GL thread; released in releaseGl().
     private var readBuffer: ByteBuffer? = null
@@ -141,9 +143,19 @@ class GlRenderer : AutoCloseable {
                 first = createTarget(outW, outH)
                 if (p.sharpness > 0f) second = createTarget(outW, outH)
                 drawAdjust(p, srcTex, lutTex, first, outW, outH)
+                val useBloom = BloomMath.bloomScale(p.halation) > 0f
+                var bloomTex = 0
+                if (useBloom) {
+                    val targets = bloomTargetsFor(outW, outH)
+                    bloomPass.run(first.texture, outW, outH, p.halation, targets, quadVao)
+                    checkGl("bloom pass")
+                    bloomTex = targets.result
+                }
+                // The present/composite pass is needed for sharpening or for the bloom composite.
+                if (second == null && useBloom) second = createTarget(outW, outH)
                 val final =
                     if (second != null) {
-                        drawSharpen(first.texture, second, p.sharpness, outW, outH)
+                        drawSharpen(first.texture, second, p.sharpness, outW, outH, bloomTex)
                         second
                     } else {
                         first
@@ -223,7 +235,16 @@ class GlRenderer : AutoCloseable {
         checkGl("adjust pass")
     }
 
-    private fun drawSharpen(srcTex: Int, target: RenderTarget, sharpness: Float, w: Int, h: Int) {
+    /** Small bloom FBOs, allocated once per output size and reused by later renders. */
+    private fun bloomTargetsFor(w: Int, h: Int): BloomTargets {
+        val cur = bloomTargets
+        if (cur != null && cur.width == BloomMath.bloomSize(w) && cur.height == BloomMath.bloomSize(h)) return cur
+        cur?.delete()
+        bloomTargets = null
+        return BloomTargets(w, h).also { bloomTargets = it }
+    }
+
+    private fun drawSharpen(srcTex: Int, target: RenderTarget, sharpness: Float, w: Int, h: Int, bloomTex: Int) {
         bindTarget(target, w, h)
         GLES30.glUseProgram(sharpenProgram)
         GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
@@ -231,6 +252,13 @@ class GlRenderer : AutoCloseable {
         setUniform1i(sharpenProgram, "uSrc", 0)
         setUniform2f(sharpenProgram, "uTexel", 1f / w, 1f / h)
         setUniform1f(sharpenProgram, "uSharpness", sharpness)
+        setUniform1i(sharpenProgram, "uBloom", 1)
+        setUniform1i(sharpenProgram, "uUseBloom", if (bloomTex != 0) 1 else 0)
+        if (bloomTex != 0) {
+            GLES30.glActiveTexture(GLES30.GL_TEXTURE1)
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, bloomTex)
+            GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
+        }
         drawQuad()
         checkGl("sharpen pass")
     }
@@ -285,6 +313,7 @@ class GlRenderer : AutoCloseable {
             ) { "GLES 3.0 context unavailable" }
             adjustProgram = buildProgram(VERTEX_SHADER, ADJUST_FRAGMENT_SHADER)
             sharpenProgram = buildProgram(VERTEX_SHADER, SHARPEN_FRAGMENT_SHADER)
+            bloomPass.init()
             setupQuad()
             val max = IntArray(1)
             GLES30.glGetIntegerv(GLES30.GL_MAX_TEXTURE_SIZE, max, 0)
@@ -352,6 +381,8 @@ class GlRenderer : AutoCloseable {
         if (display != EGL14.EGL_NO_DISPLAY && eglContext != EGL14.EGL_NO_CONTEXT) {
             EGL14.eglMakeCurrent(display, eglSurface, eglSurface, eglContext)
             if (lutTexture != 0) GLES30.glDeleteTextures(1, intArrayOf(lutTexture), 0)
+            bloomTargets?.delete()
+            bloomPass.release()
             if (adjustProgram != 0) GLES30.glDeleteProgram(adjustProgram)
             if (sharpenProgram != 0) GLES30.glDeleteProgram(sharpenProgram)
             if (quadVbo != 0) GLES30.glDeleteBuffers(1, intArrayOf(quadVbo), 0)
@@ -368,6 +399,7 @@ class GlRenderer : AutoCloseable {
         eglSurface = EGL14.EGL_NO_SURFACE
         lutTexture = 0
         lutSource = null
+        bloomTargets = null
         adjustProgram = 0
         sharpenProgram = 0
         quadVbo = 0

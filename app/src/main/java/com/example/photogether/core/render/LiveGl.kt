@@ -37,6 +37,8 @@ internal class SharpenLocations(program: Int) {
     val src = GLES30.glGetUniformLocation(program, "uSrc")
     val texel = GLES30.glGetUniformLocation(program, "uTexel")
     val sharpness = GLES30.glGetUniformLocation(program, "uSharpness")
+    val bloom = GLES30.glGetUniformLocation(program, "uBloom")
+    val useBloom = GLES30.glGetUniformLocation(program, "uUseBloom")
 }
 
 /**

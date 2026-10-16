@@ -58,6 +58,7 @@ data class EditParams(
     val crop: CropParams = CropParams(),
     val kelvin: Int? = null,         // 2000..10000 K colour temperature; null = auto (no Kelvin white balance)
     val softwareEv: Float = 0f,      // -2..2 stops, applied in the shader; used when hardware EV is unavailable
+    val halation: Float = 0f,        // 0..1, warm-red glow around highlights (bloom pass); 0 = pass skipped
 ) {
     /** Returns a copy with every field clamped to its documented range. */
     fun clamped(): EditParams =
@@ -78,6 +79,7 @@ data class EditParams(
             crop = crop.normalized(),
             kelvin = kelvin?.coerceIn(KELVIN_MIN, KELVIN_MAX),
             softwareEv = softwareEv.coerceIn(-2f, 2f),
+            halation = halation.coerceIn(0f, 1f),
         )
 
     /** True when rendering these params would leave the photo unchanged. */
@@ -96,6 +98,7 @@ data class EditParams(
                 fade == 0f &&
                 sharpness == 0f &&
                 grain == 0f &&
+                halation == 0f &&
                 vignette == 0f &&
                 chromatic == 0f &&
                 crop.isIdentity
