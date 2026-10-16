@@ -25,7 +25,7 @@ object FrameRenderer {
 
     fun apply(src: Bitmap, frame: FrameSpec, background: Bitmap?, density: Float): Bitmap {
         frame.polaroid?.let { mode ->
-            return polaroid(src, mode, frame.caption ?: today())
+            return polaroid(src, mode, frame)
         }
         val theme = frame.themeId?.let { id -> FrameThemes.ALL_THEMES.firstOrNull { it.id == id } }
         if (theme == null && background == null) {
@@ -36,9 +36,13 @@ object FrameRenderer {
 
     private fun today(): String = SimpleDateFormat(DATE_PATTERN, Locale.getDefault()).format(Date())
 
-    /** Polaroid frame: white border, photo placed by [PolaroidGeometry], date in the bottom strip. */
-    private fun polaroid(src: Bitmap, mode: PolaroidMode, dateText: String): Bitmap {
-        val layout = PolaroidGeometry.compute(src.width, src.height, mode)
+    /**
+     * Polaroid frame: border colour and style from [frame], photo placed by [PolaroidGeometry],
+     * caption (or the date when the caption is blank) in the strip given by the style.
+     */
+    private fun polaroid(src: Bitmap, mode: PolaroidMode, frame: FrameSpec): Bitmap {
+        val style = PolaroidStyles.byId(frame.polaroidStyleId)
+        val layout = PolaroidGeometry.compute(src.width, src.height, mode, style, frame.placement)
         val result =
             Bitmap.createBitmap(
                 layout.frameWidth.roundToInt(),
@@ -46,7 +50,7 @@ object FrameRenderer {
                 Bitmap.Config.ARGB_8888,
             )
         val canvas = Canvas(result)
-        canvas.drawColor(Color.WHITE)
+        canvas.drawColor(frame.borderColor)
 
         val sr = layout.sourceRect
         val srcRect = Rect(sr.left.roundToInt(), sr.top.roundToInt(), sr.right.roundToInt(), sr.bottom.roundToInt())
@@ -58,19 +62,23 @@ object FrameRenderer {
             Paint().apply { isFilterBitmap = true },
         )
 
-        val strip = layout.frameHeight - layout.photoArea.bottom
+        val text = frame.caption?.takeIf { it.isNotBlank() } ?: today()
+        val box = layout.captionBox
         val textPaint =
             Paint().apply {
-                color = Color.BLACK
-                textSize = strip * 0.35f
-                typeface = Typeface.create("sans-serif-bold", Typeface.NORMAL)
+                color = FrameColors.textColorOn(frame.borderColor)
+                textSize = box.height * style.captionSizeRatio
+                typeface = Typeface.create(style.fontFamily, if (style.bold) Typeface.BOLD else Typeface.NORMAL)
                 textAlign = Paint.Align.CENTER
                 isAntiAlias = true
             }
+        val maxWidth = box.width * 0.9f
+        val measured = textPaint.measureText(text)
+        if (measured > maxWidth) textPaint.textSize *= maxWidth / measured
         canvas.drawText(
-            dateText,
+            text,
             layout.frameWidth / 2f,
-            layout.photoArea.bottom + strip * 0.6f,
+            box.top + box.height * 0.6f,
             textPaint,
         )
         addPolaroidTexture(canvas, layout.frameWidth, layout.frameHeight)

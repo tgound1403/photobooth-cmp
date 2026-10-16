@@ -25,4 +25,10 @@ data class EditorState(
     /** True when a save or recipe save needs Premium and the paywall is open. */
     val showPaywall: Boolean = false,
     val error: String? = null,
+    /** Content uri of the last saved JPEG. Shown in the share sheet. */
+    val lastSavedUri: String? = null,
+    /** True after a save until the share sheet is dismissed. */
+    val showShareSheet: Boolean = false,
+    /** Ids of favorited filters, from the favorites store. */
+    val favorites: Set<String> = emptySet(),
 )

@@ -1,11 +1,19 @@
 package com.example.cameraxapp.core.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.cameraxapp.core.render.CameraProfiles
+import com.example.cameraxapp.ui.camera.CameraPickerScreen
+import com.example.cameraxapp.ui.moments.MomentViewerScreen
+import com.example.cameraxapp.ui.moments.MomentsScreen
+import com.example.cameraxapp.ui.moments.MomentsViewModel
 import com.example.cameraxapp.ui.view.CameraScreen.CameraScreen
 import com.example.cameraxapp.ui.view.GaleryScreen.GalleryScreen
 import com.example.cameraxapp.ui.view.NoPermissionGrantedScreen
@@ -13,6 +21,7 @@ import com.example.cameraxapp.ui.view.PhotoBoothEditScreen
 import com.example.cameraxapp.ui.view.PhotoBoothResultScreen
 import com.example.cameraxapp.ui.view.PhotoBoothScreen
 import com.example.cameraxapp.ui.view.PhotoBoothSelectionScreen
+import com.example.cameraxapp.ui.theme.InkTheme
 import com.example.cameraxapp.ui.viewmodel.PhotoBoothViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -29,15 +38,58 @@ fun AppNavigation() {
             com.example.cameraxapp.ui.view.SettingsScreen(navController) 
         }
         composable(AppRoutes.MAIN) { 
-            CameraScreen(navController) 
+            InkTheme { CameraScreen(navController) } 
         }
         composable(AppRoutes.GALLERY) {
             val galleryViewModel =
                     koinViewModel<com.example.cameraxapp.ui.viewmodel.GalleryViewModel>()
             com.example.cameraxapp.ui.view.GalleryScreen(navController, galleryViewModel)
         }
-        composable(AppRoutes.NO_PERMISSION_GRANTED) { 
-            NoPermissionGrantedScreen() 
+        composable(AppRoutes.NO_PERMISSION_GRANTED) {
+            NoPermissionGrantedScreen()
+        }
+        composable(AppRoutes.MOMENTS) {
+            val momentsViewModel = koinViewModel<MomentsViewModel>()
+            MomentsScreen(
+                viewModel = momentsViewModel,
+                onBack = { navController.popBackStack() },
+                onOpen = { navController.navigate(AppRoutes.momentViewer(it)) },
+            )
+        }
+        composable(
+                route = AppRoutes.MOMENT_VIEWER,
+                arguments = listOf(navArgument("index") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val startIndex = backStackEntry.arguments?.getInt("index") ?: 0
+            // Share the grid's ViewModel when its entry is still on the stack, so both see the same list.
+            val momentsEntry = remember(backStackEntry) {
+                runCatching { navController.getBackStackEntry(AppRoutes.MOMENTS) }.getOrNull()
+            }
+            val momentsViewModel = koinViewModel<MomentsViewModel>(
+                viewModelStoreOwner = momentsEntry ?: backStackEntry
+            )
+            MomentViewerScreen(
+                viewModel = momentsViewModel,
+                startIndex = startIndex,
+                onBack = { navController.popBackStack() },
+                onEdit = { uri -> navController.navigate(AppRoutes.imageDetail(uri)) },
+            )
+        }
+        composable(AppRoutes.CAMERA_PICKER) {
+            InkTheme {
+                val momentsViewModel = koinViewModel<MomentsViewModel>()
+                val moments by momentsViewModel.moments.collectAsState()
+                CameraPickerScreen(
+                    moments = moments,
+                    onConfirm = { profile ->
+                        // CameraScreen reads this on its own back-stack entry when the picker pops.
+                        navController.previousBackStackEntry?.savedStateHandle
+                            ?.set(CameraProfiles.RESULT_KEY, profile.filterId)
+                        navController.popBackStack()
+                    },
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
         composable(AppRoutes.PHOTO_BOOTH) { 
             PhotoBoothScreen(navController, viewmodel) 
@@ -100,7 +152,14 @@ object AppRoutes {
     const val PHOTO_BOOTH_RESULT = "photoBoothResult/{photoBoothId}"
     const val PHOTO_BOOTH_EDIT = "photoBoothEdit/{imagePaths}"
     const val IMAGE_DETAIL = "imageDetail/{imagePath}"
-    
+    const val MOMENTS = "moments"
+    const val MOMENT_VIEWER = "moment_viewer/{index}"
+    const val CAMERA_PICKER = "camera_picker"
+
+    fun momentViewer(index: Int): String {
+        return "moment_viewer/$index"
+    }
+
     fun photoBoothResult(photoBoothId: Long): String {
         return "photoBoothResult/$photoBoothId"
     }

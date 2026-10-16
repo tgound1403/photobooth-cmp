@@ -19,7 +19,6 @@ import org.koin.androidx.compose.get
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -36,8 +35,8 @@ import com.example.cameraxapp.data.billing.BillingRepository
 import com.example.cameraxapp.data.model.FrameTheme
 import com.example.cameraxapp.data.model.FrameThemes
 import com.example.cameraxapp.ui.components.GlassButton
-import com.example.cameraxapp.ui.theme.DeepBlack
-import com.example.cameraxapp.ui.theme.NeonCyan
+import com.example.cameraxapp.ui.theme.InkColors
+import com.example.cameraxapp.ui.theme.Stroke
 import com.example.cameraxapp.ui.view.DeviceImagePicker
 import com.example.cameraxapp.ui.viewmodel.PhotoBoothViewModel
 import kotlinx.coroutines.launch
@@ -137,15 +136,15 @@ fun PhotoBoothEditScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chỉnh Sửa Photo Booth", color = Color.White) },
+                title = { Text("Chỉnh Sửa Photo Booth", color = InkColors.textPrimary) },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = InkColors.textPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DeepBlack,
-                    titleContentColor = Color.White
+                    containerColor = InkColors.background,
+                    titleContentColor = InkColors.textPrimary
                 ),
                 actions = {
                     TextButton(
@@ -166,24 +165,20 @@ fun PhotoBoothEditScreen(
                     ) {
                         Text(
                             if (saveState is PhotoBoothViewModel.SaveState.Saving) "Đang lưu..." else "Lưu",
-                            color = if (saveState is PhotoBoothViewModel.SaveState.Saving) Color.Gray else NeonCyan,
+                            color = if (saveState is PhotoBoothViewModel.SaveState.Saving) InkColors.textSecondary else InkColors.accent,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
             )
         },
-        containerColor = DeepBlack
+        containerColor = InkColors.background
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(DeepBlack, Color(0xFF1a0b2e))
-                    )
-                )
+                .background(InkColors.background)
         ) {
             // Preview Section
             Box(
@@ -194,7 +189,7 @@ fun PhotoBoothEditScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (isGeneratingPreview) {
-                    CircularProgressIndicator(color = NeonCyan)
+                    CircularProgressIndicator(color = InkColors.accent)
                 } else if (previewImageUri != null) {
                     AsyncImage(
                         model = ImageRequest.Builder(context)
@@ -208,7 +203,7 @@ fun PhotoBoothEditScreen(
                         contentScale = ContentScale.Fit
                     )
                 } else {
-                    Text("Đang tạo preview...", color = Color.White)
+                    Text("Đang tạo preview...", color = InkColors.textPrimary)
                 }
             }
             
@@ -222,7 +217,8 @@ fun PhotoBoothEditScreen(
         GlassButton(
             onClick = { showImagePicker = true },
             modifier = Modifier.fillMaxWidth(),
-            text = if (selectedBackgroundImageUri != null) "Đổi ảnh nền" else "Chọn ảnh nền"
+            text = if (selectedBackgroundImageUri != null) "Đổi ảnh nền" else "Chọn ảnh nền",
+            containerColor = InkColors.accent
         )
 
         if (selectedBackgroundImageUri != null) {
@@ -236,7 +232,7 @@ fun PhotoBoothEditScreen(
                         .weight(1f)
                         .height(80.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .border(1.dp, NeonCyan.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                        .border(Stroke.border, InkColors.outline, RoundedCornerShape(8.dp))
                 ) {
                     AsyncImage(
                         model = selectedBackgroundImageUri,
@@ -253,7 +249,7 @@ fun PhotoBoothEditScreen(
                     Icon(
                         Icons.Default.Close,
                         contentDescription = "Xóa ảnh nền",
-                        tint = Color.White
+                        tint = InkColors.textPrimary
                     )
                 }
             }
@@ -262,7 +258,7 @@ fun PhotoBoothEditScreen(
         // Theme selection
         Text(
             "Hoặc chọn theme màu",
-            color = Color.White,
+            color = InkColors.textPrimary,
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -287,7 +283,7 @@ fun PhotoBoothEditScreen(
                         }
                         .then(
                             if (isSelected) {
-                                Modifier.border(2.dp, NeonCyan, RoundedCornerShape(8.dp))
+                                Modifier.border(Stroke.border, InkColors.textPrimary, RoundedCornerShape(8.dp))
                             } else Modifier
                         )
                         .padding(8.dp),
@@ -299,12 +295,12 @@ fun PhotoBoothEditScreen(
                                 .align(Alignment.TopEnd)
                                 .size(20.dp)
                                 .background(
-                                    NeonCyan,
+                                    InkColors.accent,
                                     shape = androidx.compose.foundation.shape.CircleShape
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("✓", color = Color.Black, fontSize = 12.sp)
+                            Text("✓", color = InkColors.onAccent, fontSize = 12.sp)
                         }
                     }
                     Text(
@@ -312,7 +308,7 @@ fun PhotoBoothEditScreen(
                         style = MaterialTheme.typography.labelSmall,
                         color = if (theme.backgroundColor == android.graphics.Color.WHITE ||
                             theme.backgroundColor == android.graphics.Color.parseColor("#F5E6D3")
-                        ) Color.Black else Color.White,
+                        ) InkColors.onAccent else InkColors.textPrimary,
                         maxLines = 2
                     )
                 }
@@ -331,16 +327,16 @@ fun PhotoBoothEditScreen(
             label = { 
                 Text(
                     "Chỉnh sửa dòng chữ trên ảnh",
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = InkColors.textPrimary.copy(alpha = 0.7f)
                 ) 
             },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White.copy(alpha = 0.8f),
-                focusedBorderColor = NeonCyan,
-                unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
-                focusedLabelColor = NeonCyan,
-                unfocusedLabelColor = Color.White.copy(alpha = 0.7f)
+                focusedTextColor = InkColors.textPrimary,
+                unfocusedTextColor = InkColors.textPrimary.copy(alpha = 0.8f),
+                focusedBorderColor = InkColors.highlight,
+                unfocusedBorderColor = InkColors.outline,
+                focusedLabelColor = InkColors.highlight,
+                unfocusedLabelColor = InkColors.textPrimary.copy(alpha = 0.7f)
             ),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Done),
             singleLine = true

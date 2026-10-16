@@ -7,6 +7,9 @@ import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.FilterInfo
 import com.example.cameraxapp.core.render.EditRenderer
 import com.example.cameraxapp.core.render.EditSnapshot
+import com.example.cameraxapp.core.render.FrameSpec
+import com.example.cameraxapp.core.render.PolaroidMode
+import com.example.cameraxapp.core.render.PolaroidPlacement
 import com.example.cameraxapp.core.render.RecipeCode
 import com.example.cameraxapp.data.FakeRecipeDao
 import com.example.cameraxapp.data.dao.RecipeDao
@@ -16,6 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -230,5 +234,77 @@ class EditorViewModelTest {
         vm.save()
         vm.dismissPaywall()
         assertFalse(vm.state.value.showPaywall)
+    }
+
+    @Test
+    fun frameDragIsOneUndoStepOnCommit() {
+        val vm = newViewModel()
+        // Five live frames, no commit yet: nothing recorded.
+        for (i in 1..5) {
+            vm.updateFrameLive { it.copy(polaroid = PolaroidMode.FILL, placement = PolaroidPlacement(zoom = 1f + i * 0.5f)) }
+        }
+        assertFalse(vm.state.value.canUndo)
+        assertEquals(3.5f, vm.state.value.snapshot.frame.placement.zoom, 0f)
+
+        vm.commitFrame()
+        assertTrue(vm.state.value.canUndo)
+
+        vm.undo()
+        assertEquals(FrameSpec(), vm.state.value.snapshot.frame)
+        assertFalse(vm.state.value.canUndo)
+    }
+
+    @Test
+    fun commitFrameWithoutChangesAddsNoStep() {
+        val vm = newViewModel()
+        vm.commitFrame()
+        assertFalse(vm.state.value.canUndo)
+    }
+
+    @Test
+    fun dragWithoutSourcePhotoChangesNothing() {
+        val vm = newViewModel()
+        vm.setFrame(FrameSpec(polaroid = PolaroidMode.FILL))
+        val before = vm.state.value.snapshot
+
+        vm.dragPlacement(panPxX = 40f, panPxY = -20f, zoomBy = 1.5f, windowSidePx = 300f)
+        vm.commitFrame()
+
+        assertEquals(before, vm.state.value.snapshot)
+        // Only the setFrame step is left: one undo clears it and nothing else remains.
+        vm.undo()
+        assertEquals(EditSnapshot(), vm.state.value.snapshot)
+        assertFalse(vm.state.value.canUndo)
+    }
+
+    @Test
+    fun savedImageOpensShareSheetAndDismissKeepsTheUri() {
+        val vm = newViewModel()
+        vm.onImageSaved("content://x/1")
+        assertTrue(vm.state.value.showShareSheet)
+        assertEquals("content://x/1", vm.state.value.lastSavedUri)
+
+        vm.dismissShareSheet()
+        assertFalse(vm.state.value.showShareSheet)
+        assertEquals("content://x/1", vm.state.value.lastSavedUri)
+    }
+
+    @Test
+    fun toggleFavoriteUpdatesTheFavoritesInState() {
+        val store = MutableStateFlow<Set<String>>(emptySet())
+        val vm = EditorViewModel(
+            io = NoImageIo,
+            renderer = UnusedRenderer(),
+            recipeRepository = RecipeRepository(FakeRecipeDao(), File(System.getProperty("java.io.tmpdir"), "editor-test")),
+            uiDispatcher = Dispatchers.Unconfined,
+            favorites = store,
+            onToggleFavorite = { id -> store.update { if (id in it) it - id else it + id } },
+        )
+
+        vm.toggleFavorite("kodak")
+        assertEquals(setOf("kodak"), vm.state.value.favorites)
+
+        vm.toggleFavorite("kodak")
+        assertTrue(vm.state.value.favorites.isEmpty())
     }
 }

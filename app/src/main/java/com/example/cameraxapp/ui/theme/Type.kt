@@ -16,61 +16,80 @@ private val googleFontsProvider = GoogleFont.Provider(
 )
 
 /**
- * Inter, downloaded through Google Fonts. If the download is unavailable the platform
+ * Space Mono, downloaded through Google Fonts. If the download is unavailable the platform
  * default font is used instead.
  */
-private val InterFamily = FontFamily(
-    Font(GoogleFont("Inter"), googleFontsProvider, FontWeight.Normal),
-    Font(GoogleFont("Inter"), googleFontsProvider, FontWeight.Medium),
-    Font(GoogleFont("Inter"), googleFontsProvider, FontWeight.SemiBold)
+private val SpaceMonoFamily = FontFamily(
+    Font(GoogleFont("Space Mono"), googleFontsProvider, FontWeight.Normal),
+    Font(GoogleFont("Space Mono"), googleFontsProvider, FontWeight.Bold)
 )
 
-// The app uses exactly four text styles.
-private val DisplayStyle = TextStyle(
-    fontFamily = InterFamily,
-    fontWeight = FontWeight.SemiBold,
-    fontSize = 28.sp,
-    lineHeight = 34.sp,
-    letterSpacing = (-0.3).sp
+/** Archivo Black, downloaded through Google Fonts. Only a regular weight exists. */
+private val ArchivoBlackFamily = FontFamily(
+    Font(GoogleFont("Archivo Black"), googleFontsProvider, FontWeight.Normal)
 )
 
-private val TitleStyle = TextStyle(
-    fontFamily = InterFamily,
-    fontWeight = FontWeight.SemiBold,
-    fontSize = 20.sp,
-    lineHeight = 26.sp
-)
+/** The app's text styles. Use these directly where Material typography has no slot (e.g. micro). */
+object BinsooType {
+    /** Archivo Black 56sp. Write the text in caps yourself with .uppercase(). */
+    val display = TextStyle(
+        fontFamily = ArchivoBlackFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 56.sp,
+        lineHeight = 52.sp,
+        letterSpacing = (-1).sp
+    )
 
-private val BodyStyle = TextStyle(
-    fontFamily = InterFamily,
-    fontWeight = FontWeight.Normal,
-    fontSize = 15.sp,
-    lineHeight = 22.sp
-)
+    /** Space Mono Bold 18sp. */
+    val title = TextStyle(
+        fontFamily = SpaceMonoFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        lineHeight = 24.sp
+    )
 
-private val LabelStyle = TextStyle(
-    fontFamily = InterFamily,
-    fontWeight = FontWeight.Medium,
-    fontSize = 12.sp,
-    lineHeight = 16.sp,
-    letterSpacing = 0.2.sp
-)
+    /** Space Mono 13sp. */
+    val body = TextStyle(
+        fontFamily = SpaceMonoFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 13.sp,
+        lineHeight = 19.sp
+    )
 
-/** Material 3 typography mapped onto the four app styles. */
+    /** Space Mono 11sp, usually uppercase. */
+    val label = TextStyle(
+        fontFamily = SpaceMonoFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 11.sp,
+        lineHeight = 14.sp,
+        letterSpacing = 0.6.sp
+    )
+
+    /** Space Mono 9sp. Photo metadata ("SHOT ON / LENS / DATE"). */
+    val micro = TextStyle(
+        fontFamily = SpaceMonoFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 9.sp,
+        lineHeight = 12.sp
+    )
+}
+
+/** Material 3 typography mapped onto the Binsoo styles. */
 val AppTypography = Typography(
-    displayLarge = DisplayStyle,
-    displayMedium = DisplayStyle,
-    displaySmall = DisplayStyle,
-    headlineLarge = DisplayStyle,
-    headlineMedium = DisplayStyle,
-    headlineSmall = DisplayStyle,
-    titleLarge = TitleStyle,
-    titleMedium = TitleStyle,
-    titleSmall = TitleStyle,
-    bodyLarge = BodyStyle,
-    bodyMedium = BodyStyle,
-    bodySmall = BodyStyle,
-    labelLarge = LabelStyle,
-    labelMedium = LabelStyle,
-    labelSmall = LabelStyle
+    displayLarge = BinsooType.display,
+    displayMedium = BinsooType.display,
+    displaySmall = BinsooType.display,
+    // Dialog titles and similar use headlineSmall. 56sp is too large there, so it gets 32sp.
+    headlineLarge = BinsooType.display,
+    headlineMedium = BinsooType.display,
+    headlineSmall = BinsooType.display.copy(fontSize = 32.sp, lineHeight = 38.sp),
+    titleLarge = BinsooType.title,
+    titleMedium = BinsooType.title,
+    titleSmall = BinsooType.title,
+    bodyLarge = BinsooType.body,
+    bodyMedium = BinsooType.body,
+    bodySmall = BinsooType.body,
+    labelLarge = BinsooType.label,
+    labelMedium = BinsooType.label,
+    labelSmall = BinsooType.label
 )

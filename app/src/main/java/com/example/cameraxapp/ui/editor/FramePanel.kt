@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.example.cameraxapp.core.render.FrameSpec
 import com.example.cameraxapp.core.render.PolaroidMode
+import com.example.cameraxapp.core.render.PolaroidPlacement
 import com.example.cameraxapp.data.model.FrameThemes
 import com.example.cameraxapp.ui.theme.Spacing
 import com.example.cameraxapp.ui.view.DeviceImagePicker
@@ -25,14 +26,21 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Frame choices: none, Polaroid (fit or fill, always dated), a theme, or a photo background.
- * The date caption applies to theme and background frames only.
+ * Frame choices: none, Polaroid (fit or fill), a theme, or a photo background.
+ * While a Polaroid is selected, [PolaroidControls] sets its style, border colour and caption.
+ * The date chip applies to theme and background frames only.
+ *
+ * [onFrameLive] receives changes that should update the preview without an undo step (typing a
+ * caption). [onCommit] runs when that typing is finished. Both default so existing callers still
+ * compile.
  */
 @Composable
 fun FramePanel(
     frame: FrameSpec,
     onFrame: (FrameSpec) -> Unit,
     modifier: Modifier = Modifier,
+    onFrameLive: (FrameSpec) -> Unit = onFrame,
+    onCommit: () -> Unit = {},
 ) {
     var showPicker by remember { mutableStateOf(false) }
 
@@ -57,13 +65,34 @@ fun FramePanel(
                 EditorChip(
                     label = if (mode == PolaroidMode.FIT) "Polaroid fit" else "Polaroid fill",
                     selected = frame.polaroid == mode,
-                    onClick = { onFrame(FrameSpec(polaroid = mode)) },
+                    onClick = {
+                        if (frame.polaroid != mode) {
+                            // Switching between fit and fill keeps style, colour and caption.
+                            // Pan and zoom are reset because they only apply to FILL.
+                            onFrame(
+                                if (frame.polaroid == null) {
+                                    FrameSpec(polaroid = mode)
+                                } else {
+                                    frame.copy(polaroid = mode, placement = PolaroidPlacement())
+                                },
+                            )
+                        }
+                    },
                 )
             }
             EditorChip(
                 label = "Photo",
                 selected = frame.backgroundUri != null,
                 onClick = { showPicker = true },
+            )
+        }
+
+        if (frame.polaroid != null) {
+            PolaroidControls(
+                frame = frame,
+                onFrame = onFrame,
+                onFrameLive = onFrameLive,
+                onCommit = onCommit,
             )
         }
 

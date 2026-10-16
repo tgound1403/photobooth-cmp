@@ -45,6 +45,7 @@ import com.example.cameraxapp.ui.components.DefaultAppBar
 import com.example.cameraxapp.ui.components.GlassBox
 import com.example.cameraxapp.ui.theme.AppColors
 import com.example.cameraxapp.ui.theme.IconSize
+import com.example.cameraxapp.ui.theme.InkColors
 import com.example.cameraxapp.ui.theme.PhotogetherTheme
 import com.example.cameraxapp.ui.theme.Radius
 import com.example.cameraxapp.ui.theme.Spacing
@@ -177,7 +178,7 @@ fun PhotoBoothItem(photoBooth: PhotoBooth, onDelete: () -> Unit, onClick: () -> 
             Icon(
                 Icons.Default.Delete,
                 contentDescription = "Delete",
-                tint = AppColors.textPrimary,
+                tint = InkColors.textPrimary,
                 modifier = Modifier.size(IconSize.sm)
             )
         }

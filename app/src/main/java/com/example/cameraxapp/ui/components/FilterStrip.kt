@@ -19,17 +19,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import com.example.cameraxapp.core.render.FilterInfo
 import com.example.cameraxapp.ui.theme.AppColors
+import com.example.cameraxapp.ui.theme.InkColors
 import com.example.cameraxapp.ui.theme.Radius
 import com.example.cameraxapp.ui.theme.Spacing
 import com.example.cameraxapp.ui.theme.Stroke
 
-/** Horizontal strip of filter chips. The selected chip gets the accent outline. */
+/**
+ * Horizontal strip of filter chips. The selected chip gets the accent outline. [dark] gives the
+ * camera-screen look: fully rounded dark pills, the selected one cream. Paper screens keep the default.
+ */
 @Composable
 fun FilterStrip(
     filters: List<FilterInfo>,
     selectedId: String,
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
+    dark: Boolean = false,
 ) {
     LazyRow(
         modifier = modifier.fillMaxWidth(),
@@ -37,11 +42,19 @@ fun FilterStrip(
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
         items(filters, key = { it.id }) { filter ->
-            FilterChip(
-                name = filter.name,
-                selected = filter.id == selectedId,
-                onClick = { onSelect(filter.id) },
-            )
+            if (dark) {
+                InkFilterChip(
+                    name = filter.name,
+                    selected = filter.id == selectedId,
+                    onClick = { onSelect(filter.id) },
+                )
+            } else {
+                FilterChip(
+                    name = filter.name,
+                    selected = filter.id == selectedId,
+                    onClick = { onSelect(filter.id) },
+                )
+            }
         }
     }
 }
@@ -66,6 +79,24 @@ private fun FilterChip(name: String, selected: Boolean, onClick: () -> Unit) {
             text = name,
             style = MaterialTheme.typography.labelLarge,
             color = if (selected) AppColors.textPrimary else AppColors.textSecondary,
+        )
+    }
+}
+
+@Composable
+private fun InkFilterChip(name: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(percent = 50))
+            .background(if (selected) InkColors.accent else InkColors.surfaceElevated.copy(alpha = 0.7f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = name,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (selected) InkColors.onAccent else InkColors.textSecondary,
         )
     }
 }

@@ -37,7 +37,7 @@ fun GlassBox(
             modifier =
                     modifier.clip(shape)
                             .background(backgroundColor)
-                            .border(width = Stroke.hairline, color = AppColors.outline, shape = shape),
+                            .border(width = Stroke.border, color = AppColors.outline, shape = shape),
             content = content
     )
 }
@@ -85,7 +85,7 @@ fun SecondaryButton(
                     modifier.clip(RoundedCornerShape(Radius.sm))
                             .background(AppColors.surfaceElevated.copy(alpha = alpha))
                             .border(
-                                    width = Stroke.hairline,
+                                    width = Stroke.border,
                                     color = AppColors.outline.copy(alpha = alpha),
                                     shape = RoundedCornerShape(Radius.sm)
                             )

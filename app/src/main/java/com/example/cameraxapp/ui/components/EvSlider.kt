@@ -8,6 +8,7 @@ import com.example.cameraxapp.core.camera.formatEv
 /**
  * Exposure-compensation ruler. Values snap to the steps of [range], and the readout uses
  * [formatEv]. Pass [enabled] = false when the camera ignores EV, such as with manual exposure.
+ * The value is shown by the EV pill on the viewfinder, so the ruler draws no header.
  */
 @Composable
 fun EvSlider(
@@ -33,5 +34,7 @@ fun EvSlider(
         majorTickEvery = range.majorTickEvery,
         enabled = enabled,
         modifier = modifier,
+        showHeader = false,
+        ink = true,
     )
 }

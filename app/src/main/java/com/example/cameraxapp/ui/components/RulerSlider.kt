@@ -23,15 +23,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.example.cameraxapp.ui.theme.AppColors
+import com.example.cameraxapp.ui.theme.InkColors
 import com.example.cameraxapp.ui.theme.Spacing
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -45,6 +50,12 @@ private const val DISABLED_ALPHA = 0.4f
  * Horizontal ruler for a continuous value. Drag to move the ruler under a fixed centre
  * indicator; one haptic tick per [step]. Double-tap resets to [defaultValue]. A dot after the
  * label marks a value that differs from the default.
+ *
+ * [ink] = false is the paper look used by the editor (thin ticks, cream centre line, paper colours).
+ * [ink] = true is the camera look: a pill, a white knob at the centre, and ink colours.
+ * [track] fills the ink pill (a gradient for white balance); null gives a dark translucent pill.
+ * [showHeader] shows the label, the readout and the dot. Camera screens pass false, because the
+ * value is shown elsewhere on the screen.
  */
 @Composable
 fun RulerSlider(
@@ -59,6 +70,9 @@ fun RulerSlider(
     majorTickEvery: Int = MAJOR_TICK_EVERY,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
+    track: Brush? = null,
+    showHeader: Boolean = true,
+    ink: Boolean = false,
 ) {
     val haptics = LocalHapticFeedback.current
     val tickPx = with(LocalDensity.current) { TICK_SPACING.toPx() }
@@ -67,23 +81,30 @@ fun RulerSlider(
     val latestOnFinished by rememberUpdatedState(onValueChangeFinished)
     val lastStep = remember { mutableIntStateOf(stepIndex(value, valueRange.start, step)) }
 
+    val labelColor = if (ink) InkColors.textSecondary else AppColors.textSecondary
+    val valueColor = if (ink) InkColors.textPrimary else AppColors.textPrimary
+    val dotColor = if (ink) InkColors.highlight else AppColors.accent
+
     Column(
         modifier = modifier.fillMaxWidth().alpha(if (enabled) 1f else DISABLED_ALPHA),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(label, style = MaterialTheme.typography.labelMedium, color = AppColors.textSecondary)
-                if (value != defaultValue) {
-                    Spacer(Modifier.width(Spacing.xs))
-                    Box(Modifier.size(6.dp).background(AppColors.accent, CircleShape))
+        if (showHeader) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(label, style = MaterialTheme.typography.labelMedium, color = labelColor)
+                    if (value != defaultValue) {
+                        Spacer(Modifier.width(Spacing.xs))
+                        Box(Modifier.size(6.dp).background(dotColor, CircleShape))
+                    }
                 }
+                Text(valueFormatter(value), style = MaterialTheme.typography.labelMedium, color = valueColor)
             }
-            Text(valueFormatter(value), style = MaterialTheme.typography.labelMedium, color = AppColors.textPrimary)
+            Spacer(Modifier.height(Spacing.xs))
         }
         Canvas(
             modifier = Modifier
@@ -120,12 +141,17 @@ fun RulerSlider(
                     )
                 },
         ) {
-            drawRuler(latestValue, valueRange, step, tickPx, majorTickEvery)
+            if (ink) {
+                drawInkRuler(latestValue, valueRange, step, tickPx, majorTickEvery, track)
+            } else {
+                drawPaperRuler(latestValue, valueRange, step, tickPx, majorTickEvery)
+            }
         }
     }
 }
 
-private fun DrawScope.drawRuler(
+/** Paper ruler, unchanged from the editor's original look. */
+private fun DrawScope.drawPaperRuler(
     value: Float,
     range: ClosedFloatingPointRange<Float>,
     step: Float,
@@ -157,6 +183,60 @@ private fun DrawScope.drawRuler(
         start = Offset(centre, 0f),
         end = Offset(centre, size.height),
         strokeWidth = 2.dp.toPx(),
+    )
+}
+
+/** Camera ruler: a pill, ticks centred vertically, and a white knob at the centre. */
+private fun DrawScope.drawInkRuler(
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    step: Float,
+    tickPx: Float,
+    majorTickEvery: Int,
+    track: Brush?,
+) {
+    val h = size.height
+    val centre = size.width / 2f
+    val fraction = (value - range.start) / step
+    val lastIndex = ((range.endInclusive - range.start) / step).roundToInt()
+    val visible = (centre / tickPx).toInt() + 2
+    val base = floor(fraction).toInt()
+    val minor = h * 0.3f
+    val major = h * 0.5f
+    val tickWidth = 1.dp.toPx()
+    val knobRadius = h * 0.36f
+    val corner = CornerRadius(h / 2f)
+
+    // The pill. White balance gets its gradient; exposure gets a dark translucent pill.
+    if (track != null) {
+        drawRoundRect(brush = track, cornerRadius = corner)
+    } else {
+        drawRoundRect(color = InkColors.surfaceElevated.copy(alpha = 0.7f), cornerRadius = corner)
+    }
+
+    val tickColor = if (track != null) Color.Black else Color.White
+    for (i in base - visible..base + visible) {
+        if (i < 0 || i > lastIndex) continue
+        val x = centre + (i - fraction) * tickPx
+        if (x < 0f || x > size.width) continue
+        val isMajor = i % majorTickEvery == 0
+        val length = if (isMajor) major else minor
+        drawLine(
+            color = tickColor.copy(alpha = if (isMajor) 0.8f else 0.45f),
+            start = Offset(x, (h - length) / 2f),
+            end = Offset(x, (h + length) / 2f),
+            strokeWidth = tickWidth,
+        )
+    }
+
+    // Fixed knob at the centre: white, with a faint ring so it reads on the gradient.
+    val knobCentre = Offset(centre, h / 2f)
+    drawCircle(color = Color.White, radius = knobRadius, center = knobCentre)
+    drawCircle(
+        color = Color.Black.copy(alpha = 0.25f),
+        radius = knobRadius,
+        center = knobCentre,
+        style = Stroke(width = 1.dp.toPx()),
     )
 }
 

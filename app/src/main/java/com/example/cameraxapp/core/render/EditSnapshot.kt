@@ -34,6 +34,12 @@ data class FrameSpec(
     val themeId: String? = null,
     val backgroundUri: String? = null,
     val caption: String? = null,
+    /** Polaroid style id from [PolaroidStyles]. Null or unknown ids give the classic look. */
+    val polaroidStyleId: String = "classic",
+    /** ARGB colour of the Polaroid border. */
+    val borderColor: Int = 0xFFFFFFFF.toInt(),
+    /** Pan and zoom of the photo inside a [PolaroidMode.FILL] frame. */
+    val placement: PolaroidPlacement = PolaroidPlacement(),
 )
 
 /**

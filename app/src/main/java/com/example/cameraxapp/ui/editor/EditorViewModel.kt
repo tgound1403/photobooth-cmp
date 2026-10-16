@@ -2,6 +2,7 @@ package com.example.cameraxapp.ui.editor
 
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
+import com.example.cameraxapp.core.render.CropMath
 import com.example.cameraxapp.core.render.CropParams
 import com.example.cameraxapp.core.analytics.Analytics
 import com.example.cameraxapp.core.analytics.AnalyticsEvent
@@ -12,6 +13,8 @@ import com.example.cameraxapp.core.render.EditSnapshot
 import com.example.cameraxapp.core.render.FilterInfo
 import com.example.cameraxapp.core.render.FrameSpec
 import com.example.cameraxapp.core.render.OverlaySpec
+import com.example.cameraxapp.core.render.PolaroidGesture
+import com.example.cameraxapp.core.render.PolaroidMode
 import com.example.cameraxapp.core.render.Recipe
 import com.example.cameraxapp.core.render.RecipeCode
 import com.example.cameraxapp.core.render.RecipeCodeResult
@@ -23,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -30,6 +34,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -50,6 +55,10 @@ class EditorViewModel(
     val isPremium: StateFlow<Boolean> = MutableStateFlow(false),
     private val analytics: Analytics = NoOpAnalytics,
     uiDispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
+    /** Ids of favorited filters. Empty unless the app supplies the favorites store. */
+    favorites: Flow<Set<String>> = emptyFlow(),
+    /** Stores a favorite toggle for a filter id. Does nothing unless the app supplies it. */
+    private val onToggleFavorite: suspend (String) -> Unit = {},
 ) : ViewModel() {
 
     private val scope = CoroutineScope(SupervisorJob() + uiDispatcher)
@@ -66,11 +75,19 @@ class EditorViewModel(
     private val _state = MutableStateFlow(EditorState())
     val state: StateFlow<EditorState> = _state.asStateFlow()
 
+    init {
+        scope.launch {
+            favorites.collect { ids -> _state.update { it.copy(favorites = ids) } }
+        }
+    }
+
     private val _saved = MutableSharedFlow<String>(extraBufferCapacity = 1)
     /** Emits the content uri of each saved image. */
     val saved: SharedFlow<String> = _saved.asSharedFlow()
 
     private var source: Bitmap? = null
+    /** True while a finger is on the photo. The preview then renders smaller; see [setFrameInteracting]. */
+    @Volatile private var interacting = false
     private var density = 1f
     private var backgroundUri: String? = null
     private var background: Bitmap? = null
@@ -126,6 +143,61 @@ class EditorViewModel(
 
     fun setFrame(frame: FrameSpec) = discreteEdit { it.copy(frame = frame) }
 
+    /** Frame change for the live preview only (caption typing, drags). Pair with [commitFrame]. */
+    fun updateFrameLive(transform: (FrameSpec) -> FrameSpec) = liveEdit { it.copy(frame = transform(it.frame)) }
+
+    /** Ends a frame edit: records the change since the last commit as one undo step. */
+    fun commitFrame() = commitEdit()
+
+    /**
+     * True while a finger is on the photo. The preview renders at [INTERACT_MAX_SIDE] then, and at
+     * full preview size once released.
+     */
+    fun setFrameInteracting(active: Boolean) {
+        if (interacting == active) return
+        interacting = active
+        if (!active) requestRender()
+    }
+
+    /**
+     * Pan and pinch of the photo inside a FILL Polaroid frame. [panPxX], [panPxY] and [windowSidePx]
+     * are in screen pixels; [zoomBy] is the pinch factor for this event. Live only: call
+     * [commitFrame] when the gesture ends. Does nothing without a source photo or outside FILL.
+     */
+    fun dragPlacement(panPxX: Float, panPxY: Float, zoomBy: Float, windowSidePx: Float) {
+        val src = source ?: return
+        val present = history.present
+        if (present.frame.polaroid != PolaroidMode.FILL) return
+        val (photoW, photoH) = croppedSize(src, present.params.crop)
+        updateFrameLive { frame ->
+            frame.copy(
+                placement = PolaroidGesture.apply(
+                    frame.placement,
+                    panPxX,
+                    panPxY,
+                    zoomBy,
+                    windowSidePx,
+                    photoW,
+                    photoH,
+                ),
+            )
+        }
+    }
+
+    /** Adds [filterId] to the favorites, or removes it. The result reaches [EditorState.favorites]. */
+    fun toggleFavorite(filterId: String) {
+        scope.launch { onToggleFavorite(filterId) }
+    }
+
+    fun dismissShareSheet() {
+        _state.update { it.copy(showShareSheet = false) }
+    }
+
+    /** Records the saved image and opens the share sheet. [lastSavedUri] stays after dismiss. */
+    internal fun onImageSaved(uri: String) {
+        _state.update { it.copy(lastSavedUri = uri, showShareSheet = true) }
+    }
+
     fun undo() {
         if (history.undo() != null) publish()
     }
@@ -169,6 +241,7 @@ class EditorViewModel(
             if (uri != null) {
                 analytics.log(AnalyticsEvent.IMAGE_SAVED)
                 _saved.emit(uri)
+                onImageSaved(uri)
             }
         }
     }
@@ -257,10 +330,19 @@ class EditorViewModel(
                 val src = source ?: continue
                 val snapshot = history.present
                 val bg = backgroundFor(snapshot.frame)
-                val out = renderer.render(src, snapshot, bg, density, PREVIEW_MAX_SIDE)
+                val maxSide = if (interacting) INTERACT_MAX_SIDE else PREVIEW_MAX_SIDE
+                val out = renderer.render(src, snapshot, bg, density, maxSide)
                 _state.update { it.copy(preview = out) }
             }
         }
+    }
+
+    /** Size of the photo after the crop (rotation and aspect), in source pixels. */
+    private fun croppedSize(src: Bitmap, crop: CropParams): Pair<Int, Int> {
+        val c = crop.normalized()
+        val (w, h) = CropMath.rotatedSize(src.width, src.height, c.quarterTurns)
+        val rect = CropMath.cropRect(w, h, c.aspect)
+        return rect.width to rect.height
     }
 
     private fun startThumbnailLoop() {
@@ -294,6 +376,8 @@ class EditorViewModel(
 
     companion object {
         const val PREVIEW_MAX_SIDE = 1280
+        /** Preview size while a finger is on the photo, so drags stay smooth. */
+        const val INTERACT_MAX_SIDE = 720
         const val SOURCE_MAX_SIDE = 2560
         const val THUMB_MAX_SIDE = 160
         const val THUMB_CACHE_SIZE = 40

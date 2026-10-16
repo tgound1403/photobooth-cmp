@@ -3,12 +3,9 @@ package com.example.cameraxapp.ui.view
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,52 +15,63 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.cameraxapp.core.moments.Moment
 import com.example.cameraxapp.core.navigation.AppRoutes
+import com.example.cameraxapp.core.render.FilterCatalog
+import com.example.cameraxapp.core.render.FilterGrouping
+import com.example.cameraxapp.core.render.FilterInfo
+import com.example.cameraxapp.ui.moments.CrystalFolder
+import com.example.cameraxapp.ui.moments.MomentsViewModel
 import com.example.cameraxapp.ui.theme.AppColors
+import com.example.cameraxapp.ui.theme.BinsooType
 import com.example.cameraxapp.ui.theme.IconSize
-import com.example.cameraxapp.ui.theme.Motion
+import com.example.cameraxapp.ui.theme.InkColors
 import com.example.cameraxapp.ui.theme.PhotogetherTheme
 import com.example.cameraxapp.ui.theme.Radius
 import com.example.cameraxapp.ui.theme.Spacing
 import com.example.cameraxapp.ui.theme.Stroke
 import com.example.cameraxapp.ui.viewmodel.GalleryViewModel
+import org.koin.androidx.compose.get
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun HomeScreen(
     navController: NavController,
-    galleryViewModel: GalleryViewModel = koinViewModel()
+    galleryViewModel: GalleryViewModel = koinViewModel(),
+    momentsViewModel: MomentsViewModel = koinViewModel(),
+    filterCatalog: FilterCatalog = get(),
 ) {
     val photoBooths by galleryViewModel.photoBooths.collectAsState()
     val recentImages = remember(photoBooths) {
@@ -72,6 +80,8 @@ fun HomeScreen(
             .mapNotNull { it.imagePaths.firstOrNull() }
             .take(RECENT_COUNT)
     }
+    val moments by momentsViewModel.moments.collectAsState()
+    val filterGroups = remember(filterCatalog) { homeFilterGroups(filterCatalog.filters) }
 
     // Pick an image from the device and open it straight in the editor.
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -88,11 +98,44 @@ fun HomeScreen(
         onSettingsClick = { navController.navigate(AppRoutes.SETTINGS) },
         onRecentClick = { path ->
             navController.navigate(AppRoutes.imageDetail(java.net.URLEncoder.encode(path, "UTF-8")))
-        }
+        },
+        onCameraClick = { navController.navigate(AppRoutes.MAIN) },
+        moments = moments,
+        onMomentsClick = { navController.navigate(AppRoutes.MOMENTS) },
+        filterGroups = filterGroups,
+        onFilterGroupClick = { navController.navigate(AppRoutes.CAMERA_PICKER) },
     )
 }
 
 private const val RECENT_COUNT = 10
+
+/** One filter group tile on Home. [count] is the number of filters in the group. */
+data class HomeFilterGroup(val name: String, val code: String, val count: Int)
+
+/**
+ * Filter groups for Home, in catalog order. Names come from [FilterGrouping.chips] (ALL is dropped);
+ * the count is the number of catalog filters in each group.
+ */
+internal fun homeFilterGroups(filters: List<FilterInfo>): List<HomeFilterGroup> =
+    FilterGrouping.chips(filters, hasFavorites = false)
+        .filter { it.id != FilterGrouping.ALL }
+        .map { chip ->
+            HomeFilterGroup(
+                name = chip.label,
+                code = groupCode(chip.label),
+                count = filters.count { it.group == chip.label },
+            )
+        }
+
+/** Tag codes such as "#CLS". Unverified for the names not listed here. */
+private fun groupCode(name: String): String = when (name) {
+    "Classic" -> "CLS"
+    "Film" -> "FLM"
+    "Mood" -> "MOD"
+    "Portrait" -> "PRT"
+    "B&W" -> "BNW"
+    else -> name.filter { it.isLetterOrDigit() }.take(3).uppercase()
+}
 
 @Composable
 fun HomeContent(
@@ -101,176 +144,253 @@ fun HomeContent(
     onEditClick: () -> Unit,
     onPickImageClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onRecentClick: (String) -> Unit
+    onRecentClick: (String) -> Unit,
+    onCameraClick: () -> Unit = {},
+    moments: List<Moment> = emptyList(),
+    onMomentsClick: () -> Unit = {},
+    filterGroups: List<HomeFilterGroup> = emptyList(),
+    onFilterGroupClick: () -> Unit = {},
 ) {
     Scaffold(containerColor = AppColors.background) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = Spacing.lg)
-        ) {
-            Row(
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = Spacing.md),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = Spacing.lg)
             ) {
-                Column {
-                    Text(
-                        text = "Photogether",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = AppColors.textPrimary
-                    )
-                    Text(
-                        text = "Chụp và chỉnh ảnh của bạn",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = AppColors.textSecondary
-                    )
-                }
-                IconButton(onClick = onSettingsClick) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Cài đặt",
-                        tint = AppColors.textSecondary
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(Spacing.xl))
-
-            HomeCard(
-                icon = Icons.Default.CameraAlt,
-                title = "Photobooth",
-                description = "Chụp ảnh thành dải, lưới hoặc GIF",
-                onClick = onPhotoBoothClick,
-                modifier = Modifier.fillMaxWidth().height(HERO_CARD_HEIGHT)
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.md))
-
-            HomeCard(
-                icon = Icons.Default.Edit,
-                title = "Edit photo",
-                description = "Chỉnh sửa bộ lọc cho ảnh đã lưu",
-                onClick = onEditClick,
-                modifier = Modifier.fillMaxWidth().height(HERO_CARD_HEIGHT)
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.md))
-
-            HomeCard(
-                icon = Icons.Default.PhotoLibrary,
-                title = "Chỉnh ảnh từ máy",
-                description = "Mở một ảnh trong thiết bị để chỉnh sửa",
-                onClick = onPickImageClick,
-                modifier = Modifier.fillMaxWidth().height(COMPACT_CARD_HEIGHT)
-            )
-
-            if (recentImages.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(Spacing.xl))
-                Text(
-                    text = "Gần đây",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = AppColors.textPrimary
-                )
-                Spacer(modifier = Modifier.height(Spacing.sm))
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                    contentPadding = PaddingValues(end = Spacing.lg)
+                // Hamburger, top right. Opens Settings.
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    items(recentImages) { path ->
-                        RecentThumbnail(path = path, onClick = { onRecentClick(path) })
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "Cài đặt",
+                            tint = AppColors.textPrimary
+                        )
                     }
                 }
+
+                Text(
+                    text = "PHOTO",
+                    style = BinsooType.display,
+                    color = AppColors.textPrimary
+                )
+                Text(
+                    text = "GETHER",
+                    style = BinsooType.display,
+                    color = AppColors.textPrimary
+                )
+
+                Spacer(modifier = Modifier.height(Spacing.xl))
+
+                filterGroups.chunked(2).forEach { pair ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.lg),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
+                    ) {
+                        pair.forEach { group ->
+                            FilterGroupTile(
+                                group = group,
+                                onClick = onFilterGroupClick,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        if (pair.size == 1) Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                ) {
+                    OutlinedBlockButton(
+                        label = "PHOTOBOOTH",
+                        onClick = onPhotoBoothClick,
+                        modifier = Modifier.weight(1f),
+                    )
+                    OutlinedBlockButton(
+                        label = "CHỈNH ẢNH",
+                        onClick = onEditClick,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(Spacing.xl))
+
+                CrystalFolder(
+                    moments = moments,
+                    onClick = onMomentsClick,
+                    modifier = Modifier.fillMaxWidth().height(FOLDER_HEIGHT)
+                )
+
+                if (recentImages.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(Spacing.xl))
+                    Text(
+                        text = "Gần đây",
+                        style = BinsooType.title,
+                        color = AppColors.textPrimary
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                        contentPadding = PaddingValues(end = Spacing.lg)
+                    ) {
+                        items(recentImages) { path ->
+                            RecentThumbnail(path = path, onClick = { onRecentClick(path) })
+                        }
+                    }
+                }
+
+                // Keeps the last row clear of the floating buttons.
+                Spacer(modifier = Modifier.height(FLOAT_CLEARANCE))
+            }
+
+            // Two floating round buttons: pick an image from the device (left), open the camera (right).
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = Spacing.xl),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xl),
+            ) {
+                FloatingRoundButton(
+                    icon = Icons.Default.AddPhotoAlternate,
+                    contentDescription = "Chỉnh ảnh từ máy",
+                    onClick = onPickImageClick,
+                )
+                FloatingRoundButton(
+                    icon = Icons.Default.CameraAlt,
+                    contentDescription = "Máy ảnh",
+                    onClick = onCameraClick,
+                )
             }
         }
     }
 }
 
-private val HERO_CARD_HEIGHT = 168.dp
-private val COMPACT_CARD_HEIGHT = 120.dp
+private val FOLDER_HEIGHT = 176.dp
+private val FLOAT_BUTTON_SIZE = 56.dp
+private val FLOAT_CLEARANCE = 96.dp
+private val GROUP_THUMB_SIZE = 64.dp
 
-/**
- * Large primary card. Scales to 0.97 on press with the default spring and gives a haptic tick
- * when tapped.
- */
+/** Filter group entry: square thumbnail with a black VIBE label, code tag, name and count. */
 @Composable
-private fun HomeCard(
-    icon: ImageVector,
-    title: String,
-    description: String,
+private fun FilterGroupTile(
+    group: HomeFilterGroup,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) Motion.PressedScale else 1f,
-        animationSpec = Motion.DefaultSpring,
-        label = "home_card_scale"
-    )
-    val haptic = LocalHapticFeedback.current
-    val shape = RoundedCornerShape(Radius.lg)
-
-    Box(
-        modifier = modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .clip(shape)
-            .background(AppColors.surface)
-            .border(Stroke.hairline, AppColors.outline, shape)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onClick()
-                }
-            )
-            .padding(Spacing.xl)
-    ) {
-        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+    val thumbShape = RoundedCornerShape(Radius.sm)
+    Column(modifier = modifier.clickable(onClick = onClick)) {
+        Box(
+            modifier = Modifier
+                .size(GROUP_THUMB_SIZE)
+                .border(Stroke.border, AppColors.outline, thumbShape)
+                .padding(Stroke.border)
+                .background(AppColors.surfaceElevated),
+        ) {
             Box(
                 modifier = Modifier
-                    .size(IconSize.xl)
-                    .clip(RoundedCornerShape(Radius.sm))
-                    .background(AppColors.surfaceElevated),
-                contentAlignment = Alignment.Center
+                    .align(Alignment.TopStart)
+                    .background(AppColors.accent)
+                    .padding(horizontal = Spacing.xs, vertical = 2.dp),
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = AppColors.accent,
-                    modifier = Modifier.size(IconSize.md)
-                )
-            }
-            Column {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = AppColors.textPrimary
-                )
-                Spacer(modifier = Modifier.height(Spacing.xs))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AppColors.textSecondary
+                    text = "VIBE",
+                    style = BinsooType.micro,
+                    color = AppColors.onAccent,
                 )
             }
         }
+        Spacer(modifier = Modifier.height(Spacing.xs))
+        Box(
+            modifier = Modifier
+                .background(AppColors.accent)
+                .padding(horizontal = Spacing.xs, vertical = 2.dp),
+        ) {
+            Text(
+                text = "#${group.code}",
+                style = BinsooType.label,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.highlight,
+            )
+        }
+        Spacer(modifier = Modifier.height(Spacing.xs))
+        Text(
+            text = group.name.uppercase(),
+            style = BinsooType.body.copy(fontWeight = FontWeight.Bold),
+            color = AppColors.textPrimary,
+        )
+        Text(
+            text = "${group.count} MÀU | ↓",
+            style = BinsooType.micro,
+            color = AppColors.textSecondary,
+        )
+    }
+}
+
+/** Rectangular button with a 2dp black ink border and a centred label. */
+@Composable
+private fun OutlinedBlockButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(Radius.sm)
+    Box(
+        modifier = modifier
+            .height(BLOCK_BUTTON_HEIGHT)
+            .border(Stroke.border, AppColors.outline, shape)
+            .clip(shape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            style = BinsooType.label,
+            color = AppColors.textPrimary,
+        )
+    }
+}
+
+private val BLOCK_BUTTON_HEIGHT = 52.dp
+
+/** Round black button with a white icon, over the paper background. */
+@Composable
+private fun FloatingRoundButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(FLOAT_BUTTON_SIZE)
+            .clip(CircleShape)
+            .background(InkColors.background.copy(alpha = 0.55f))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = InkColors.textPrimary,
+            modifier = Modifier.size(IconSize.md),
+        )
     }
 }
 
 @Composable
 private fun RecentThumbnail(path: String, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(Radius.sm)
     Box(
         modifier = Modifier
             .size(RECENT_SIZE)
-            .clip(RoundedCornerShape(Radius.sm))
+            .border(Stroke.border, AppColors.outline, shape)
+            .padding(Stroke.border)
             .background(AppColors.surfaceElevated)
             .clickable(onClick = onClick)
     ) {
@@ -283,7 +403,7 @@ private fun RecentThumbnail(path: String, onClick: () -> Unit) {
     }
 }
 
-private val RECENT_SIZE = 112.dp
+private val RECENT_SIZE: Dp = 112.dp
 
 @Preview(showBackground = true)
 @Composable
@@ -295,7 +415,11 @@ private fun HomeScreenPreview() {
             onEditClick = {},
             onPickImageClick = {},
             onSettingsClick = {},
-            onRecentClick = {}
+            onRecentClick = {},
+            filterGroups = listOf(
+                HomeFilterGroup("Classic", "CLS", 7),
+                HomeFilterGroup("Film", "FLM", 6),
+            ),
         )
     }
 }

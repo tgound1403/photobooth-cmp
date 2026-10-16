@@ -3,6 +3,10 @@ package com.example.cameraxapp.ui.editor
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.CompositionLocalProvider
@@ -46,25 +50,41 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import android.graphics.Bitmap
+import android.net.Uri
 import androidx.navigation.NavController
 import com.example.cameraxapp.core.extension.findActivity
+import com.example.cameraxapp.core.render.PolaroidGesture
+import com.example.cameraxapp.core.render.PolaroidMode
+import com.example.cameraxapp.core.render.PolaroidStyle
+import com.example.cameraxapp.core.render.PolaroidStyles
+import com.example.cameraxapp.core.render.RecipeCode
+import com.example.cameraxapp.core.share.launch as launchShareTarget
 import com.example.cameraxapp.data.billing.BillingRepository
 import com.example.cameraxapp.ui.components.GlassButton
+import com.example.cameraxapp.ui.components.ShareSheet
 import com.example.cameraxapp.ui.view.PaywallScreen
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Box
 import org.koin.androidx.compose.get
 import com.example.cameraxapp.ui.theme.AppColors
 import com.example.cameraxapp.ui.theme.IconSize
+import com.example.cameraxapp.ui.theme.InkColors
 import com.example.cameraxapp.ui.theme.Radius
 import com.example.cameraxapp.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
+import kotlin.math.min
 
 /** Bottom tabs of the editor. */
 enum class EditorTab(val label: String, val icon: ImageVector) {
@@ -90,16 +110,14 @@ fun EditorScreen(
     val isPremium by viewModel.isPremium.collectAsState()
     val billing: BillingRepository = get()
     val prices by billing.prices.collectAsState()
-    val activity = LocalContext.current.findActivity()
+    val context = LocalContext.current
+    val activity = context.findActivity()
     val density = LocalDensity.current.density
     val snackbar = remember { SnackbarHostState() }
     var tab by rememberSaveable { mutableStateOf(EditorTab.FILTER) }
 
     LaunchedEffect(imagePath, density) { viewModel.load(imagePath, density) }
     LaunchedEffect(isPremium) { if (isPremium) viewModel.dismissPaywall() }
-    LaunchedEffect(viewModel) {
-        viewModel.saved.collect { snackbar.showSnackbar("Image saved") }
-    }
     LaunchedEffect(viewModel) {
         viewModel.notices.collect { snackbar.showSnackbar(it) }
     }
@@ -127,6 +145,10 @@ fun EditorScreen(
                 PreviewArea(
                     state = state,
                     onPressOriginal = viewModel::setShowOriginal,
+                    placementEnabled = tab == EditorTab.FRAME && state.snapshot.frame.polaroid == PolaroidMode.FILL,
+                    onPlacementInteract = viewModel::setFrameInteracting,
+                    onPlacementDrag = viewModel::dragPlacement,
+                    onPlacementCommit = viewModel::commitFrame,
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                 )
                 EditorTabRow(selected = tab, onSelect = { tab = it })
@@ -147,6 +169,8 @@ fun EditorScreen(
                             onSaveRecipe = viewModel::saveRecipe,
                             onApplyRecipe = viewModel::applyRecipe,
                             onImportRecipe = viewModel::importRecipeCode,
+                            favorites = state.favorites,
+                            onToggleFavorite = viewModel::toggleFavorite,
                         )
                         EditorTab.ADJUST -> AdjustPanel(
                             params = params,
@@ -154,11 +178,29 @@ fun EditorScreen(
                             onCommit = viewModel::commitParams,
                         )
                         EditorTab.CROP -> CropPanel(crop = params.crop, onCrop = viewModel::setCrop)
-                        EditorTab.FRAME -> FramePanel(frame = state.snapshot.frame, onFrame = viewModel::setFrame)
+                        EditorTab.FRAME -> FramePanel(
+                            frame = state.snapshot.frame,
+                            onFrame = viewModel::setFrame,
+                            onFrameLive = { frame -> viewModel.updateFrameLive { frame } },
+                            onCommit = viewModel::commitFrame,
+                        )
                         EditorTab.OVERLAY -> OverlayPanel(overlays = state.snapshot.overlays, onOverlays = viewModel::setOverlays)
                     }
                 }
             }
+        }
+
+        if (state.showShareSheet) {
+            val savedUri = state.lastSavedUri
+            ShareSheet(
+                previewUri = savedUri,
+                recipeCode = RecipeCode.encode(state.snapshot.params),
+                onTarget = { target ->
+                    savedUri?.let { launchShareTarget(context, Uri.parse(it), target) }
+                },
+                onSaveRecipe = viewModel::saveRecipe,
+                onDismiss = viewModel::dismissShareSheet,
+            )
         }
 
         if (state.showPaywall) {
@@ -211,28 +253,66 @@ private fun EditorTopBar(
     }
 }
 
-/** Shows the edited preview. Holding a finger on it shows the original until release. */
+/**
+ * Shows the edited preview. Holding a finger on it shows the original until release.
+ * When [placementEnabled] (Frame tab, FILL Polaroid) a drag pans the photo and a pinch zooms it.
+ * Each gesture ends with [onPlacementCommit] as one undo step. The hold-to-see-original is off then.
+ */
 @Composable
 private fun PreviewArea(
     state: EditorState,
     onPressOriginal: (Boolean) -> Unit,
+    placementEnabled: Boolean,
+    onPlacementInteract: (Boolean) -> Unit,
+    onPlacementDrag: (panPxX: Float, panPxY: Float, zoomBy: Float, windowSidePx: Float) -> Unit,
+    onPlacementCommit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val shown = if (state.showOriginal) state.original else state.preview
+    var imageSize by remember { mutableStateOf(IntSize.Zero) }
+    val windowSide = placementWindowSide(
+        size = imageSize,
+        shown = shown,
+        style = PolaroidStyles.byId(state.snapshot.frame.polaroidStyleId),
+    )
+    // Read the latest values inside the gesture loop without restarting it mid-drag.
+    val currentWindowSide by rememberUpdatedState(windowSide)
+    val currentDrag by rememberUpdatedState(onPlacementDrag)
+    val currentInteract by rememberUpdatedState(onPlacementInteract)
+    val currentCommit by rememberUpdatedState(onPlacementCommit)
+
     Box(
         modifier = modifier
             .background(AppColors.background)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        onPressOriginal(true)
-                        try {
-                            tryAwaitRelease()
-                        } finally {
-                            onPressOriginal(false)
-                        }
-                    },
-                )
+            .pointerInput(placementEnabled) {
+                if (placementEnabled) {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        currentInteract(true)
+                        do {
+                            val event: PointerEvent = awaitPointerEvent()
+                            val zoomBy = event.calculateZoom()
+                            val pan = event.calculatePan()
+                            if (zoomBy != 1f || pan != Offset.Zero) {
+                                event.changes.forEach { it.consume() }
+                                currentDrag(pan.x, pan.y, zoomBy, currentWindowSide)
+                            }
+                        } while (event.changes.any { it.pressed })
+                        currentInteract(false)
+                        currentCommit()
+                    }
+                } else {
+                    detectTapGestures(
+                        onPress = {
+                            onPressOriginal(true)
+                            try {
+                                tryAwaitRelease()
+                            } finally {
+                                onPressOriginal(false)
+                            }
+                        },
+                    )
+                }
             },
         contentAlignment = Alignment.Center,
     ) {
@@ -242,22 +322,40 @@ private fun PreviewArea(
                 bitmap = image,
                 contentDescription = if (state.showOriginal) "Original photo" else "Edited photo",
                 contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize().padding(Spacing.lg),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(Spacing.lg)
+                    .onSizeChanged { imageSize = it },
             )
         } else {
             CircularProgressIndicator(color = AppColors.accent)
         }
         if (state.showOriginal) {
+            // Sits over the photo, so white ink on a black scrim.
             Text(
-                text = "Original",
+                text = "Gốc",
                 style = MaterialTheme.typography.labelMedium,
-                color = AppColors.textPrimary,
+                color = InkColors.textPrimary,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(Spacing.sm),
+                    .padding(Spacing.sm)
+                    .background(InkColors.background.copy(alpha = 0.6f), RoundedCornerShape(Radius.sm))
+                    .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
             )
         }
     }
+}
+
+/**
+ * Side in screen pixels of the Polaroid photo window. The preview bitmap is letterboxed into [size]
+ * (ContentScale.Fit), so the window is measured from the drawn size, not the whole box.
+ * Returns 0 until the box has been measured.
+ */
+private fun placementWindowSide(size: IntSize, shown: Bitmap?, style: PolaroidStyle): Float {
+    if (shown == null || shown.width <= 0 || shown.height <= 0) return 0f
+    if (size.width <= 0 || size.height <= 0) return 0f
+    val scale = min(size.width.toFloat() / shown.width, size.height.toFloat() / shown.height)
+    return PolaroidGesture.windowSidePx(shown.width * scale, shown.height * scale, style)
 }
 
 @Composable

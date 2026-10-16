@@ -22,6 +22,9 @@ val appModule = module {
     single { AppDatabase.getDatabase(androidApplication()) }
     single { RecipeRepository(get<AppDatabase>().recipeDao(), File(androidContext().filesDir, "recipes")) }
     single { CameraSettingsRepository.create(androidContext()) }
+    single { com.example.cameraxapp.data.prefs.FavoriteFiltersRepository.create(androidContext()) }
+    single { com.example.cameraxapp.data.moments.MomentsRepository(androidContext().contentResolver) }
+    viewModel { com.example.cameraxapp.ui.moments.MomentsViewModel(get()) }
     single { CreatePhotoBoothImageUseCase(get<BillingRepository>().isPremium) }
     single { com.example.cameraxapp.domain.usecase.GifExportUseCase(get<BillingRepository>().isPremium) }
     viewModel {
@@ -56,6 +59,10 @@ val appModule = module {
             recipeRepository = get(),
             isPremium = get<com.example.cameraxapp.data.billing.BillingRepository>().isPremium,
             analytics = get(),
+            favorites = get<com.example.cameraxapp.data.prefs.FavoriteFiltersRepository>().favorites,
+            onToggleFavorite = { id ->
+                get<com.example.cameraxapp.data.prefs.FavoriteFiltersRepository>().toggle(id)
+            },
         )
     }
 }

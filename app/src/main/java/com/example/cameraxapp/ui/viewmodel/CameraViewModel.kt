@@ -11,6 +11,7 @@ import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.MeteringPoint
 import androidx.camera.core.Preview
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
@@ -191,6 +192,15 @@ class CameraViewModel(
     fun clearManualExposure() {
         camera.value?.let { cameraService.clearManualExposure(it) }
         _adjust.update { it.copy(manualExposureActive = false) }
+    }
+
+    /**
+     * Focuses (and meters, unless manual exposure is on) at a tapped preview point. Metering is left
+     * alone while manual exposure is active, so it does not override the user's exposure.
+     */
+    fun focusAt(point: MeteringPoint) {
+        val bound = camera.value ?: return
+        cameraService.focusAt(bound, point, aeToo = !_adjust.value.manualExposureActive)
     }
 
     /** Sends the edit with the camera-adjust values (Kelvin, software EV) to the renderer. */

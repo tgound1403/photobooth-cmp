@@ -3,5 +3,10 @@
     <style name="Base.Theme.CameraXApp" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your dark theme here. -->
         <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <!-- Paper screens are light: dark system bar icons even when the system is in night mode.
+             Dialog windows (bottom sheets) inherit this. Ink screens flip it in code. -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 </resources>

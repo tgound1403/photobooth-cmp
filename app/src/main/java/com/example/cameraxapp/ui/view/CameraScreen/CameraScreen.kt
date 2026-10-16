@@ -4,30 +4,34 @@ import android.util.Log
 import android.widget.Toast
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.MeteringPoint
 import androidx.camera.core.Preview
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,31 +48,42 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.NavController
+import com.example.cameraxapp.core.camera.CameraTool
 import com.example.cameraxapp.core.navigation.AppRoutes
+import com.example.cameraxapp.core.render.CameraProfiles
 import com.example.cameraxapp.core.render.FilterCycle
 import com.example.cameraxapp.core.render.RecipeFilters
 import com.example.cameraxapp.ui.components.CameraAdjustPanel
 import com.example.cameraxapp.ui.components.CameraQuickBar
+import com.example.cameraxapp.ui.components.CameraToolButtons
 import com.example.cameraxapp.ui.components.FilterStrip
+import com.example.cameraxapp.ui.components.FocusIndicator
+import com.example.cameraxapp.ui.components.GridOverlay
 import com.example.cameraxapp.ui.components.ManualControls
 import com.example.cameraxapp.ui.components.ZoomControl
-import com.example.cameraxapp.ui.theme.AppColors
+import com.example.cameraxapp.ui.components.ZoomPill
+import com.example.cameraxapp.ui.components.kelvinLabel
+import com.example.cameraxapp.ui.theme.BinsooType
+import com.example.cameraxapp.ui.theme.InkColors
 import com.example.cameraxapp.ui.theme.Motion
 import com.example.cameraxapp.ui.theme.Radius
 import com.example.cameraxapp.ui.theme.Spacing
 import com.example.cameraxapp.ui.viewmodel.CameraViewModel
 import kotlin.math.abs
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.tooling.preview.Preview as ComposePreview
 
 private const val TAG = "CameraScreen"
@@ -95,6 +110,7 @@ fun CameraScreen(
     var selectedId by rememberSaveable { mutableStateOf(cameraViewModel.editParams.value.filterId) }
     var flash by remember { mutableStateOf<NameFlash?>(null) }
     val adjust by cameraViewModel.adjust.collectAsStateWithLifecycle()
+    val camera = cameraViewModel.camera.value
 
     val onSelect: (String) -> Unit = { id ->
         val recipe = RecipeFilters.recipeFor(id, recipes)
@@ -109,76 +125,183 @@ fun CameraScreen(
     val onSwipe: (Int) -> Unit = { delta ->
         onSelect(FilterCycle.next(sources.map { it.id }, selectedId, delta))
     }
+    val currentOnSelect by rememberUpdatedState(onSelect)
 
     LaunchedEffect(lifecycleOwner) {
         cameraViewModel.initCamera(lifecycleOwner, CameraSelector.LENS_FACING_BACK)
     }
 
-    Box(
+    // The camera picker returns its chosen filter id on this screen's back-stack entry. Entries are
+    // observed, so a result is handled again after the picker pops back.
+    LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.collectLatest { entry ->
+            entry.savedStateHandle.getStateFlow<String?>(CameraProfiles.RESULT_KEY, null).collect { id ->
+                if (id != null) {
+                    currentOnSelect(id)
+                    entry.savedStateHandle.remove<String>(CameraProfiles.RESULT_KEY)
+                }
+            }
+        }
+    }
+
+    Column(
         modifier = Modifier
-            .background(Color.Black)
             .fillMaxSize()
-            .padding(12.dp)
+            .background(InkColors.background)
+            .statusBarsPadding()
+            .navigationBarsPadding(),
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.padding(20.dp)) {
-                CameraPreviewViewfinder(
-                    navController = navController,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight(0.7f)
-                        .border(
-                            width = 2.dp, color = Color.White, shape = RoundedCornerShape(Radius.md)
-                        ),
-                    previewUseCase = cameraViewModel.preview.value,
-                    camera = cameraViewModel.camera.value,
-                    flash = flash,
-                    onSwipe = onSwipe,
-                )
-                // Overlays the bottom of the preview, directly above the quick bar. Kept outside the
-                // viewfinder's swipe box so slider drags do not also cycle filters.
-                CameraAdjustPanel(
+        CameraTopBar(
+            onBack = { navController.popBackStack() },
+            onOpenSettings = { navController.navigate(AppRoutes.SETTINGS) },
+        )
+
+        // The viewfinder takes the space the rest of the screen leaves. Its bottom overlays sit inside it.
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.lg),
+        ) {
+            CameraPreviewViewfinder(
+                navController = navController,
+                modifier = Modifier.fillMaxSize(),
+                previewUseCase = cameraViewModel.preview.value,
+                camera = camera,
+                flash = flash,
+                onSwipe = onSwipe,
+                onFocusPoint = cameraViewModel::focusAt,
+            )
+            // Overlays the bottom edge of the viewfinder. Kept outside the viewfinder's swipe box so
+            // slider drags do not also cycle filters.
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = Spacing.md),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                camera?.let { bound ->
+                    ZoomControl(cameraControl = bound.cameraControl, cameraInfo = bound.cameraInfo)
+                }
+                CameraQuickBar(
                     state = adjust,
-                    onKelvinChange = { cameraViewModel.setKelvin(it) },
-                    onKelvinAuto = cameraViewModel::setKelvinAuto,
-                    onEvChange = cameraViewModel::setEv,
-                    onCommit = cameraViewModel::commitAdjust,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = Spacing.md),
+                    onToolClick = cameraViewModel::toggleTool,
+                    zoomPill = { camera?.let { ZoomPill(cameraInfo = it.cameraInfo) } },
                 )
             }
-            CameraQuickBar(
+        }
+
+        // Readout: the Kelvin value in mono, plus the EV reset button while the EV panel is open.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.lg, vertical = Spacing.xs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm, Alignment.CenterHorizontally),
+        ) {
+            Text(
+                text = kelvinLabel(adjust.kelvin).uppercase(),
+                style = BinsooType.label,
+                color = InkColors.textPrimary,
+            )
+            if (adjust.openTool == CameraTool.EXPOSURE) {
+                EvResetButton(
+                    onClick = {
+                        cameraViewModel.resetEv()
+                        cameraViewModel.commitAdjust()
+                    },
+                )
+            }
+        }
+
+        // Ruler (only while a tool is open) beside the round tool buttons.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.lg),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            CameraAdjustPanel(
                 state = adjust,
+                onKelvinChange = { cameraViewModel.setKelvin(it) },
+                onKelvinAuto = cameraViewModel::setKelvinAuto,
+                onEvChange = cameraViewModel::setEv,
+                onCommit = cameraViewModel::commitAdjust,
+                modifier = Modifier.weight(1f),
+            )
+            CameraToolButtons(
+                state = adjust,
+                onAuto = cameraViewModel::setKelvinAuto,
                 onToolClick = cameraViewModel::toggleTool,
-                modifier = Modifier.padding(vertical = Spacing.sm),
             )
-            FilterStrip(
-                filters = sources,
-                selectedId = selectedId,
-                onSelect = onSelect,
-                modifier = Modifier.padding(vertical = Spacing.sm),
+        }
+
+        FilterStrip(
+            filters = sources,
+            selectedId = selectedId,
+            onSelect = onSelect,
+            modifier = Modifier.padding(vertical = Spacing.sm),
+            dark = true,
+        )
+
+        ManualControls(
+            onExposureChange = {
+                exposureTime.longValue = it
+                cameraViewModel.setManualExposure(it, isoValue.intValue)
+            },
+            onISOChange = {
+                isoValue.intValue = it
+                cameraViewModel.setManualExposure(exposureTime.longValue, it)
+            },
+            onClickCapture = {
+                cameraViewModel.takePhotoToGallery(
+                    onSaved = { Toast.makeText(context, "Photo taken", Toast.LENGTH_SHORT).show() },
+                    onError = { exception -> Log.e(TAG, "Capture failed", exception) },
+                )
+            },
+            onOpenGallery = { navController.navigate(AppRoutes.GALLERY) },
+            onOpenPicker = { navController.navigate(AppRoutes.CAMERA_PICKER) },
+            pickerName = CameraProfiles.forFilter(selectedId)?.name,
+            modifier = Modifier.padding(bottom = Spacing.md),
+        )
+    }
+}
+
+/** Back arrow on the left, settings (hamburger) on the right. */
+@Composable
+private fun CameraTopBar(onBack: () -> Unit, onOpenSettings: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Quay lại",
+                tint = InkColors.textPrimary,
             )
-            ManualControls(
-                onExposureChange = {
-                    exposureTime.longValue = it
-                    cameraViewModel.setManualExposure(it, isoValue.intValue)
-                },
-                onISOChange = {
-                    isoValue.intValue = it
-                    cameraViewModel.setManualExposure(exposureTime.longValue, it)
-                },
-                onClickCapture = {
-                    cameraViewModel.takePhotoToGallery(
-                        onSaved = { Toast.makeText(context, "Photo taken", Toast.LENGTH_SHORT).show() },
-                        onError = { exception -> Log.e(TAG, "Capture failed", exception) },
-                    )
-                },
+        }
+        IconButton(onClick = onOpenSettings) {
+            Icon(
+                imageVector = Icons.Default.Menu,
+                contentDescription = "Cài đặt",
+                tint = InkColors.textPrimary,
             )
         }
     }
 }
 
+/**
+ * The rounded viewfinder (28dp corners): the preview, the filter-name flash, the grid, the focus ring
+ * and the grid toggle. The zoom and tool pills are drawn by [CameraScreen] over its bottom edge.
+ *
+ * [navController] and [camera] are kept so the public signature does not change. They are not used
+ * here now that the gallery and picker buttons sit in the bottom row and the zoom is drawn by the screen.
+ */
 @Composable
 fun CameraPreviewViewfinder(
     navController: NavController,
@@ -187,59 +310,115 @@ fun CameraPreviewViewfinder(
     camera: Camera?,
     flash: NameFlash?,
     onSwipe: (Int) -> Unit,
+    onFocusPoint: (MeteringPoint) -> Unit = {},
 ) {
     val context = LocalContext.current
     val previewView = remember {
         PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER }
     }
     val currentOnSwipe by rememberUpdatedState(onSwipe)
+    val currentOnFocusPoint by rememberUpdatedState(onFocusPoint)
+    // Last tap position in the viewfinder, and a counter that replays the focus ring on each tap.
+    var focusPos by remember { mutableStateOf<Offset?>(null) }
+    var focusTrigger by remember { mutableIntStateOf(0) }
+    var showGrid by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(previewUseCase) {
         previewUseCase?.setSurfaceProvider(previewView.surfaceProvider)
     }
 
-    Column {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(Radius.viewfinder))
+            .background(InkColors.background)
+            .pointerInput(Unit) {
+                val threshold = Spacing.xxl.toPx()
+                var total = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { total = 0f },
+                    onDragEnd = {
+                        if (abs(total) >= threshold) currentOnSwipe(if (total < 0f) 1 else -1)
+                    },
+                    onDragCancel = { total = 0f },
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        total += dragAmount
+                    },
+                )
+            }
+    ) {
+        // Tap-to-focus lives on its own child so the grid button, a sibling, never reaches it.
         Box(
-            modifier = modifier
-                .clip(RoundedCornerShape(Radius.md))
+            modifier = Modifier
+                .fillMaxSize()
                 .pointerInput(Unit) {
-                    val threshold = Spacing.xxl.toPx()
-                    var total = 0f
-                    detectHorizontalDragGestures(
-                        onDragStart = { total = 0f },
-                        onDragEnd = {
-                            if (abs(total) >= threshold) currentOnSwipe(if (total < 0f) 1 else -1)
-                        },
-                        onDragCancel = { total = 0f },
-                        onHorizontalDrag = { change, dragAmount ->
-                            change.consume()
-                            total += dragAmount
+                    detectTapGestures(
+                        onTap = { offset ->
+                            currentOnFocusPoint(previewView.meteringPointFactory.createPoint(offset.x, offset.y))
+                            focusPos = offset
+                            focusTrigger++
                         },
                     )
                 },
         ) {
             AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
             FilterNameFlash(flash)
+            if (showGrid) GridOverlay()
+            FocusIndicator(position = focusPos, trigger = focusTrigger)
         }
-        Spacer(Modifier.height(Spacing.md))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Icon(
-                Icons.Default.Photo,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(shape = RoundedCornerShape(Radius.sm))
-                    .clickable { navController.navigate(AppRoutes.GALLERY) },
-                contentDescription = null,
-                tint = Color.White
+        GridToggle(
+            on = showGrid,
+            onToggle = { showGrid = !showGrid },
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(Spacing.sm),
+        )
+    }
+}
+
+/** Resets exposure compensation to 0 EV. Dark pill with a reset arrow, shown beside the Kelvin readout. */
+@Composable
+private fun EvResetButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .semantics { contentDescription = "Đặt lại EV về 0" }
+            .clip(RoundedCornerShape(percent = 50))
+            .background(InkColors.surfaceElevated.copy(alpha = 0.7f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "↺",
+            style = MaterialTheme.typography.labelMedium,
+            color = InkColors.textPrimary,
+        )
+    }
+}
+
+/** Grid on/off button. Draws a small 3x3 grid icon; the tint and fill change when the grid is on. */
+@Composable
+private fun GridToggle(on: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .semantics { contentDescription = if (on) "Tắt lưới" else "Bật lưới" }
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(
+                if (on) InkColors.accent else InkColors.surfaceElevated.copy(alpha = 0.7f)
             )
-        }
-        Spacer(Modifier.height(Spacing.md))
-        camera?.let { bound ->
-            ZoomControl(cameraControl = bound.cameraControl, cameraInfo = bound.cameraInfo)
+            .clickable(onClick = onToggle),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.size(20.dp)) {
+            val tint = if (on) InkColors.onAccent else InkColors.textPrimary
+            val stroke = 1.dp.toPx()
+            for (i in 1..2) {
+                val x = size.width * i / 3f
+                drawLine(tint, Offset(x, 0f), Offset(x, size.height), strokeWidth = stroke)
+                val y = size.height * i / 3f
+                drawLine(tint, Offset(0f, y), Offset(size.width, y), strokeWidth = stroke)
+            }
         }
     }
 }
@@ -260,7 +439,7 @@ private fun BoxScope.FilterNameFlash(flash: NameFlash?) {
             .align(Alignment.Center)
             .graphicsLayer { alpha = fade.value },
         style = MaterialTheme.typography.headlineSmall,
-        color = AppColors.textPrimary,
+        color = InkColors.textPrimary,
     )
 }
 

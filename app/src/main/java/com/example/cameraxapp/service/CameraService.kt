@@ -14,8 +14,10 @@ import androidx.camera.core.Camera
 import androidx.camera.core.CameraControl.OperationCanceledException
 import androidx.camera.core.CameraEffect
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.MeteringPoint
 import androidx.camera.core.Preview
 import androidx.camera.core.UseCaseGroup
 import androidx.camera.core.AspectRatio
@@ -39,6 +41,7 @@ import java.io.File
 import java.util.concurrent.CancellationException
 import java.util.concurrent.Executor
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -165,6 +168,24 @@ class CameraService(private val catalog: FilterCatalog) {
     fun clearManualExposure(camera: Camera) {
         overrides = overrides.copy(manual = null)
         applyOverrides(camera)
+    }
+
+    /**
+     * Focuses on [point] (a preview tap converted to a metering point). Also meters exposure there
+     * when [aeToo] is true. Auto-cancels after 3 seconds so the lens returns to continuous focus.
+     * Does nothing when the camera does not support metering at [point].
+     */
+    fun focusAt(camera: Camera, point: MeteringPoint, aeToo: Boolean = true) {
+        val flags = FocusMeteringAction.FLAG_AF or (if (aeToo) FocusMeteringAction.FLAG_AE else 0)
+        val action = FocusMeteringAction.Builder(point, flags)
+            .setAutoCancelDuration(FOCUS_AUTO_CANCEL_SECONDS, TimeUnit.SECONDS)
+            .build()
+        if (!camera.cameraInfo.isFocusMeteringSupported(action)) return
+        try {
+            camera.cameraControl.startFocusAndMetering(action)
+        } catch (e: Exception) {
+            Log.w(TAG, "Focus at tap failed: ${e.message}", e)
+        }
     }
 
     /**
@@ -334,5 +355,6 @@ class CameraService(private val catalog: FilterCatalog) {
         const val TAG = "CameraService"
         const val JPEG_QUALITY = 95
         const val MAX_FALLBACK_SIZE = 4096
+        const val FOCUS_AUTO_CANCEL_SECONDS = 3L
     }
 }

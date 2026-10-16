@@ -14,11 +14,14 @@ object Spacing {
     val xxl = 32.dp
 }
 
-/** Corner radius scale: 12 / 20 / 28 dp. */
+/** Corner radius scale: almost square. 2 / 6 / 10 dp. Camera viewfinder uses [viewfinder]. */
 object Radius {
-    val sm = 12.dp
-    val md = 20.dp
-    val lg = 28.dp
+    val sm = 2.dp
+    val md = 6.dp
+    val lg = 10.dp
+
+    /** Camera viewfinder corners. */
+    val viewfinder = 28.dp
 }
 
 /** Icon and touch-target sizes. */
@@ -37,6 +40,9 @@ object IconSize {
 object Stroke {
     val hairline = 1.dp
     val selected = 3.dp
+
+    /** Black ink border for cards, photo tiles and outlined buttons. */
+    val border = 2.dp
 }
 
 /** Motion tokens. */

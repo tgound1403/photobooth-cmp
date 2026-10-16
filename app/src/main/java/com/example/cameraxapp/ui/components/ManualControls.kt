@@ -7,11 +7,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -19,15 +29,34 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.cameraxapp.ui.theme.BinsooType
+import com.example.cameraxapp.ui.theme.InkColors
+import com.example.cameraxapp.ui.theme.Radius
+import com.example.cameraxapp.ui.theme.Spacing
 
+/**
+ * Bottom row of the camera screen: the gallery button (left), the shutter pill (centre) and the
+ * camera selector (right, shows the profile name and opens the picker).
+ *
+ * The left slot is a gallery button, not a last-photo thumbnail. The app holds no last-photo data
+ * on this screen, so the thumbnail is not faked.
+ */
 @Composable
 fun ManualControls(
     onExposureChange: (Long) -> Unit,
     onISOChange: (Int) -> Unit,
-    onClickCapture: () -> Unit
+    onClickCapture: () -> Unit,
+    onOpenGallery: () -> Unit = {},
+    onOpenPicker: () -> Unit = {},
+    pickerName: String? = null,
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     var isoValue by remember { mutableIntStateOf(100) }
@@ -44,12 +73,12 @@ fun ManualControls(
     val maxISO = sensitivityRange?.upper?.toFloat()
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .background(Color.Black)
-            .padding(8.dp),
+            .background(InkColors.background)
+            .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceEvenly
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
 //        if (minExposure != null && maxExposure != null) {
 //            DialControl(
@@ -74,26 +103,87 @@ fun ManualControls(
 //            )
 //        }
 
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(Color.White, shape = CircleShape)
-                .clickable { onClickCapture() },
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(30.dp)
-                    .background(Color.Black, shape = CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(20.dp)
-                        .background(Color.Red, shape = CircleShape)
-                )
-            }
+        GalleryButton(onClick = onOpenGallery)
+        Shutter(onClick = onClickCapture)
+        PickerButton(name = pickerName, onClick = onOpenPicker)
+    }
+}
 
+/** Gallery button in the thumbnail slot (36x56 rounded rectangle). */
+@Composable
+private fun GalleryButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(width = 36.dp, height = 56.dp)
+            .clip(RoundedCornerShape(Radius.md))
+            .background(InkColors.surfaceElevated.copy(alpha = 0.7f))
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = "Mở thư viện" },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Photo,
+            contentDescription = null,
+            tint = InkColors.textPrimary,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+/** Cream pill shutter, about 40% of the screen width and 64dp high, with six dots in a 2x3 grid. */
+@Composable
+private fun Shutter(onClick: () -> Unit) {
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    Box(
+        modifier = Modifier
+            .width(screenWidth * 0.4f)
+            .height(64.dp)
+            .clip(RoundedCornerShape(percent = 50))
+            .background(InkColors.accent)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = "Chụp ảnh" },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            repeat(3) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    repeat(2) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(InkColors.onAccent, CircleShape),
+                        )
+                    }
+                }
+            }
         }
+    }
+}
+
+/** Camera selector: a camera icon with the current profile name under it. Opens the picker. */
+@Composable
+private fun PickerButton(name: String?, onClick: () -> Unit) {
+    val label = name?.uppercase() ?: "CHỌN MÁY"
+    Column(
+        modifier = Modifier
+            .width(72.dp)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = "Chọn máy: $label" },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            imageVector = Icons.Default.PhotoCamera,
+            contentDescription = null,
+            tint = InkColors.textPrimary,
+            modifier = Modifier.size(22.dp),
+        )
+        Spacer(Modifier.height(Spacing.xs))
+        Text(
+            text = label,
+            style = BinsooType.label,
+            color = InkColors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }

@@ -3,8 +3,10 @@ package com.example.cameraxapp.ui.editor
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +20,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.FilterCatalog
+import com.example.cameraxapp.core.render.FilterGrouping
 import com.example.cameraxapp.core.render.FilterInfo
 import com.example.cameraxapp.core.render.Recipe
 import com.example.cameraxapp.ui.components.RulerSlider
@@ -71,6 +76,10 @@ fun FilterPanel(
     /** Premium filters get a PRO badge until the user has Premium. */
     isPremium: Boolean = false,
     modifier: Modifier = Modifier,
+    /** Ids of favorited filters. They appear under the FAVORITE chip. */
+    favorites: Set<String> = emptySet(),
+    /** Long-press on a thumbnail calls this with the filter id. Null disables the gesture. */
+    onToggleFavorite: ((String) -> Unit)? = null,
 ) {
     var section by rememberSaveable { mutableStateOf(FilterSection.FILTERS) }
     Column(
@@ -79,7 +88,18 @@ fun FilterPanel(
     ) {
         SectionRow(selected = section, onSelect = { section = it })
         when (section) {
-            FilterSection.FILTERS -> FilterStripSection(params, filters, thumbnails, onRequestThumbnail, onSelect, onLive, onCommit, isPremium)
+            FilterSection.FILTERS -> FilterStripSection(
+                params = params,
+                filters = filters,
+                thumbnails = thumbnails,
+                onRequestThumbnail = onRequestThumbnail,
+                onSelect = onSelect,
+                onLive = onLive,
+                onCommit = onCommit,
+                isPremium = isPremium,
+                favorites = favorites,
+                onToggleFavorite = onToggleFavorite,
+            )
             FilterSection.RECIPES -> RecipePanel(
                 params = params,
                 recipes = recipes,
@@ -122,20 +142,61 @@ private fun FilterStripSection(
     onLive: (ParamsEdit) -> Unit,
     onCommit: () -> Unit,
     isPremium: Boolean,
+    favorites: Set<String>,
+    onToggleFavorite: ((String) -> Unit)?,
 ) {
+    var chipId by rememberSaveable { mutableStateOf(FilterGrouping.ALL) }
+    val hasFavorites = favorites.isNotEmpty()
+    // FAVORITE falls back to ALL once the last favorite is removed.
+    val activeChip = if (chipId == FilterGrouping.FAVORITE && !hasFavorites) FilterGrouping.ALL else chipId
+    LaunchedEffect(activeChip) { chipId = activeChip }
+    val chips = remember(filters, hasFavorites) { FilterGrouping.chips(filters, hasFavorites) }
+    val visibleFilters = remember(filters, activeChip, favorites) {
+        FilterGrouping.filterBy(activeChip, filters, favorites)
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         LazyRow(
             contentPadding = PaddingValues(horizontal = Spacing.lg),
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            items(filters, key = { it.id }) { filter ->
+            items(chips, key = { it.id }) { chip ->
+                FilterChip(
+                    selected = chip.id == activeChip,
+                    onClick = { chipId = chip.id },
+                    label = {
+                        Text(
+                            // Display text only. chip.id and the comparisons above stay as they are.
+                            text = when (chip.id) {
+                                FilterGrouping.ALL -> "TẤT CẢ"
+                                FilterGrouping.FAVORITE -> "YÊU THÍCH"
+                                else -> chip.label
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = AppColors.accent,
+                        selectedLabelColor = AppColors.onAccent,
+                    ),
+                )
+            }
+        }
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = Spacing.lg),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            items(visibleFilters, key = { it.id }) { filter ->
                 LaunchedEffect(filter.id) { onRequestThumbnail(filter.id) }
                 FilterThumb(
                     filter = filter,
                     selected = params.filterId == filter.id,
                     thumbnail = thumbnails[filter.id],
                     showPro = filter.premium && !isPremium,
+                    favorite = filter.id in favorites,
                     onClick = { onSelect(filter.id) },
+                    onLongClick = onToggleFavorite?.let { toggle -> { toggle(filter.id) } },
                 )
             }
         }
@@ -154,17 +215,26 @@ private fun FilterStripSection(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FilterThumb(
     filter: FilterInfo,
     selected: Boolean,
     thumbnail: Bitmap?,
     showPro: Boolean,
+    favorite: Boolean,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
 ) {
     val shape = RoundedCornerShape(Radius.sm)
+    val gesture =
+        if (onLongClick != null) {
+            Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
+        } else {
+            Modifier.clickable(onClick = onClick)
+        }
     Column(
-        modifier = Modifier.width(THUMB_SIZE).clickable(onClick = onClick),
+        modifier = Modifier.width(THUMB_SIZE).then(gesture),
         horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
     ) {
         Box(
@@ -187,6 +257,18 @@ private fun FilterThumb(
                     modifier = Modifier.fillMaxSize(),
                 )
             }
+            if (favorite) {
+                Text(
+                    text = "♥",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.onAccent,
+                    modifier = Modifier
+                        .align(androidx.compose.ui.Alignment.TopStart)
+                        .padding(Spacing.xs)
+                        .background(AppColors.accent, RoundedCornerShape(Radius.sm))
+                        .padding(horizontal = Spacing.xs),
+                )
+            }
             if (showPro) {
                 Text(
                     text = stringResource(R.string.pro_badge),
@@ -201,7 +283,8 @@ private fun FilterThumb(
             }
         }
         Text(
-            text = filter.name,
+            // The catalog name for the original filter is shown as "Gốc". The id is unchanged.
+            text = if (filter.id == FilterCatalog.ORIGINAL_ID) "Gốc" else filter.name,
             style = MaterialTheme.typography.labelSmall,
             color = if (selected) AppColors.accent else AppColors.textSecondary,
             maxLines = 1,
