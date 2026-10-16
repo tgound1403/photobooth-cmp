@@ -193,6 +193,7 @@ class CameraViewModel(
                 halation = r.halation,
                 grain = r.grain,
                 vignette = r.vignette,
+                dateStamp = r.dateStamp,
             ),
         )
     }

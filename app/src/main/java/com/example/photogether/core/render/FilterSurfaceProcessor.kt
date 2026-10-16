@@ -46,6 +46,7 @@ class FilterSurfaceProcessor(private val assets: AssetManager? = null) : Surface
         val params: EditParams = params.clamped()
         val values = AdjustValues(this.params)
         val fx = FxValues(this.params, LIVE_FX_SEED)
+        val stamp = StampValues(this.params.dateStamp, this.params.dateStampMillis)
         val activeLut: Bitmap? =
             lut?.takeIf { this.params.filterId != FilterCatalog.ORIGINAL_ID && this.params.filterIntensity > 0f }
     }
@@ -233,7 +234,7 @@ class FilterSurfaceProcessor(private val assets: AssetManager? = null) : Surface
                 val out = outs[i] ?: continue
                 presentTo(
                     out, target.texture, inp.width, inp.height, p.sharpness, timestamp,
-                    if (useBloom) bloomTargets?.result ?: 0 else 0, snapshot.fx,
+                    if (useBloom) bloomTargets?.result ?: 0 else 0, snapshot.fx, snapshot.stamp,
                 )
             }
             if (useBloom && bloomTargets != null) bloomPass.invalidateResult(bloomTargets)
@@ -269,6 +270,7 @@ class FilterSurfaceProcessor(private val assets: AssetManager? = null) : Surface
         timestampNs: Long,
         bloomTexture: Int,
         fx: FxValues,
+        stamp: StampValues,
     ) {
         val sharpen = sharpenLoc ?: return
         try {
@@ -291,6 +293,7 @@ class FilterSurfaceProcessor(private val assets: AssetManager? = null) : Surface
                 GLES30.glUniform1i(sharpen.useBloom, 0)
             }
             fx.apply(sharpen, fxTextures)
+            stamp.apply(sharpen, System.currentTimeMillis(), size.width, size.height, rowsFromTop = false)
             debugCheckGl("fx uniforms")
             GLES30.glUniformMatrix4fv(sharpen.texMatrix, 1, false, outMatrix, 0)
             drawQuad()
@@ -427,6 +430,7 @@ class FilterSurfaceProcessor(private val assets: AssetManager? = null) : Surface
             GLES30.glUniform1i(sharpen.dustTex, FxTextures.DUST_UNIT)
             GLES30.glUniform1i(sharpen.useLeak, 0)
             GLES30.glUniform1i(sharpen.useDust, 0)
+            GLES30.glUniform1i(sharpen.stampStyle, 0)
             fxTextures = FxTextures.load(assets)
             bloomPass.init()
             val (vao, vbo) = createQuad()

@@ -59,6 +59,13 @@ internal class SharpenLocations(program: Int) {
     val fxVignette = GLES30.glGetUniformLocation(program, "uFxVignette")
     val scratchCount = GLES30.glGetUniformLocation(program, "uScratchCount")
     val scratchLines = GLES30.glGetUniformLocation(program, "uScratchLines")
+    val stampStyle = GLES30.glGetUniformLocation(program, "uStampStyle")
+    val stampDigits = GLES30.glGetUniformLocation(program, "uStampDigits")
+    val stampScale = GLES30.glGetUniformLocation(program, "uStampScale")
+    val stampOut = GLES30.glGetUniformLocation(program, "uStampOut")
+    val stampImage = GLES30.glGetUniformLocation(program, "uStampImage")
+    val stampRot = GLES30.glGetUniformLocation(program, "uStampRot")
+    val stampTopDown = GLES30.glGetUniformLocation(program, "uStampTopDown")
 }
 
 /**
@@ -262,5 +269,49 @@ internal class EffectValues(private val spec: EffectSpec, width: Int, height: In
         val count = if (lines != null) lines.size / 4 else 0
         GLES30.glUniform1i(l.scratchCount, count)
         if (lines != null) GLES30.glUniform4fv(l.scratchLines, count, lines, 0)
+    }
+}
+
+/**
+ * Date stamp uniform values. Created once per edit; [apply] runs per draw and allocates nothing:
+ * the six digits live in one reused array that is refreshed at most once a minute.
+ * [fixedMillis] > 0 prints that instant (capture); otherwise the time passed to [apply] (live).
+ */
+internal class StampValues(
+    style: DateStampStyle,
+    private val fixedMillis: Long,
+    private val quarterTurns: Int = 0, // clockwise turns that show the output upright (EXIF); 0 for live
+) {
+    private val styleCode = when (style) {
+        DateStampStyle.NONE -> 0
+        DateStampStyle.ORANGE_LCD -> 1
+        DateStampStyle.WHITE_DIGITAL -> 2
+    }
+    val active: Boolean get() = styleCode != 0
+    private val digits = IntArray(DateStampMath.DIGIT_COUNT)
+    private var bucket = Long.MIN_VALUE
+
+    /**
+     * Sets the stamp uniforms of the present program (must be in use). [rowsFromTop] is true when
+     * gl_FragCoord.y counts from the top of the image (offline read-back), false for a window surface.
+     */
+    fun apply(l: SharpenLocations, nowMs: Long, outW: Int, outH: Int, rowsFromTop: Boolean) {
+        GLES30.glUniform1i(l.stampStyle, styleCode)
+        if (styleCode == 0) return
+        val millis = if (fixedMillis > 0L) fixedMillis else nowMs
+        val b = millis / 60_000L
+        if (b != bucket) {
+            bucket = b
+            DateStampMath.fillDigits(millis, java.util.TimeZone.getDefault(), digits)
+        }
+        GLES30.glUniform1iv(l.stampDigits, DateStampMath.DIGIT_COUNT, digits, 0)
+        val turns = ((quarterTurns % 4) + 4) % 4
+        val dispW = if (turns % 2 == 1) outH else outW
+        val dispH = if (turns % 2 == 1) outW else outH
+        GLES30.glUniform1f(l.stampScale, DateStampMath.stampScale(dispW, dispH))
+        GLES30.glUniform2f(l.stampOut, dispW.toFloat(), dispH.toFloat())
+        GLES30.glUniform2f(l.stampImage, outW.toFloat(), outH.toFloat())
+        GLES30.glUniform1i(l.stampRot, turns)
+        GLES30.glUniform1i(l.stampTopDown, if (rowsFromTop) 1 else 0)
     }
 }

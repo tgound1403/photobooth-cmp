@@ -179,6 +179,15 @@ uniform float uFxVignette;
 uniform int uScratchCount;
 uniform vec4 uScratchLines[49]; // x0, y0, x1, y1 in pixels
 
+// Camera date stamp (DateStampMath), drawn last. 0 none, 1 orange LCD, 2 white digital.
+uniform int uStampStyle;
+uniform int uStampDigits[6];  // YY MM DD
+uniform float uStampScale;    // output height / 1080, clamped
+uniform vec2 uStampOut;       // size of the displayed (upright) image in pixels
+uniform vec2 uStampImage;     // size of the rendered image in pixels
+uniform int uStampRot;        // clockwise quarter turns that show the render upright
+uniform int uStampTopDown;    // 1 when gl_FragCoord.y already counts from the top of the image
+
 // Deterministic hash in [0, 1].
 float hash01(uvec2 p, uint seed) {
     uint h = p.x * 1664525u + p.y * 1013904223u + seed * 2654435761u;
@@ -234,6 +243,65 @@ float segmentDistance(vec2 p, vec2 a, vec2 b) {
     return length(p - (a + ab * h));
 }
 
+// Seven-segment masks, bit 0 = a (top) .. bit 6 = g (middle). Same table as DateStampMath.GLYPH_MASKS.
+const int STAMP_MASKS[10] = int[10](${DateStampMath.GLYPH_MASKS.joinToString(", ")});
+
+// Distance in pixels from p to a box of half size h centred at c (negative inside).
+float stampBox(vec2 p, vec2 c, vec2 h) {
+    vec2 d = abs(p - c) - h;
+    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}
+
+// Draws YY MM DD in the bottom-right corner as 7-segment digits and blends it over col.
+vec3 dateStamp(vec3 col) {
+    float s = uStampScale;
+    float dw = 20.0 * s;      // digit width
+    float dh = 36.0 * s;      // digit height
+    float t = 4.0 * s;        // segment thickness
+    float gap = 6.0 * s;      // between digits of a pair
+    float group = 18.0 * s;   // between YY, MM and DD
+    // 9% of the short side: the live preview is centre-cropped by the view, so a small margin runs off screen.
+    float margin = 0.09 * min(uStampOut.x, uStampOut.y);
+    float total = 6.0 * dw + 5.0 * gap + 2.0 * (group - gap);
+    float fy = uStampTopDown != 0 ? gl_FragCoord.y : uStampImage.y - gl_FragCoord.y;
+    vec2 origin = vec2(uStampOut.x - margin - total, uStampOut.y - margin - dh);
+    // Position in the rendered image, rows counted from the top, then turned into displayed coordinates.
+    vec2 pix = vec2(gl_FragCoord.x, fy);
+    if (uStampRot == 1) pix = vec2(uStampImage.y - pix.y, pix.x);
+    else if (uStampRot == 2) pix = uStampImage - pix;
+    else if (uStampRot == 3) pix = vec2(pix.y, uStampImage.x - pix.x);
+    vec2 p = pix - origin;
+    float reach = 10.0 * s;
+    if (p.x < -reach || p.y < -reach || p.x > total + reach || p.y > dh + reach) return col;
+
+    float dmin = 1e4;
+    float hh = dh * 0.25 - t * 0.5;
+    for (int i = 0; i < 6; i++) {
+        int mask = STAMP_MASKS[clamp(uStampDigits[i], 0, 9)];
+        vec2 q = p - vec2(float(i) * (dw + gap) + float(i / 2) * (group - gap), 0.0);
+        if (q.x < -reach || q.x > dw + reach) continue;
+        if ((mask & 1) != 0)  dmin = min(dmin, stampBox(q, vec2(dw * 0.5, t * 0.5), vec2(dw * 0.5 - t * 0.5, t * 0.5)));
+        if ((mask & 2) != 0)  dmin = min(dmin, stampBox(q, vec2(dw - t * 0.5, dh * 0.25), vec2(t * 0.5, hh)));
+        if ((mask & 4) != 0)  dmin = min(dmin, stampBox(q, vec2(dw - t * 0.5, dh * 0.75), vec2(t * 0.5, hh)));
+        if ((mask & 8) != 0)  dmin = min(dmin, stampBox(q, vec2(dw * 0.5, dh - t * 0.5), vec2(dw * 0.5 - t * 0.5, t * 0.5)));
+        if ((mask & 16) != 0) dmin = min(dmin, stampBox(q, vec2(t * 0.5, dh * 0.75), vec2(t * 0.5, hh)));
+        if ((mask & 32) != 0) dmin = min(dmin, stampBox(q, vec2(t * 0.5, dh * 0.25), vec2(t * 0.5, hh)));
+        if ((mask & 64) != 0) dmin = min(dmin, stampBox(q, vec2(dw * 0.5, dh * 0.5), vec2(dw * 0.5 - t * 0.5, t * 0.5)));
+    }
+    float cover = 1.0 - smoothstep(-0.5, 0.5, dmin);
+    if (uStampStyle == 1) {
+        vec3 orange = vec3(1.0, 0.55, 0.12);
+        float glow = exp(-max(dmin, 0.0) / (3.0 * s)) * 0.45;
+        col = mix(col, orange, glow);
+        col = mix(col, orange, cover);
+    } else {
+        float outline = 1.0 - smoothstep(0.5, 1.5 * max(s, 1.0) + 0.5, dmin);
+        col = mix(col, vec3(0.05), outline * 0.6);
+        col = mix(col, vec3(0.95), cover);
+    }
+    return col;
+}
+
 void main() {
     float alpha = texture(uSrc, vUv).a;
     vec3 col;
@@ -283,6 +351,7 @@ void main() {
         float cover = clamp(1.5 - segmentDistance(p, seg.xy, seg.zw), 0.0, 1.0);
         col = mix(col, vec3(1.0), cover * (150.0 / 255.0));
     }
+    if (uStampStyle != 0) col = dateStamp(col);
     fragColor = vec4(clamp(col, 0.0, 1.0), alpha);
 }
 """

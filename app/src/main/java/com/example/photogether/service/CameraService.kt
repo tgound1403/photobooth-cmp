@@ -367,7 +367,10 @@ class CameraService(private val catalog: FilterCatalog) {
      */
     private suspend fun applyEditToFile(file: File) = fallbackMutex.withLock { withContext(Dispatchers.IO) {
         // One seed per capture: the overlay placement of this render is the same wherever it is used.
-        val params = edit.copy(fxSeed = FxMath.newCaptureSeed(System.nanoTime()))
+        val params = edit.copy(
+            fxSeed = FxMath.newCaptureSeed(System.nanoTime()),
+            dateStampMillis = System.currentTimeMillis(),
+        )
         if (params.isIdentity) return@withContext
 
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -384,7 +387,15 @@ class CameraService(private val catalog: FilterCatalog) {
         // Owned by the renderer (reuseOutput): encode it before the next render, never recycle it.
         val rendered = try {
             val gl = renderer ?: GlRenderer(catalog.assets).also { renderer = it }
-            gl.render(source, params, lut, maxSize = MAX_FALLBACK_SIZE, reuseOutput = true)
+            gl.render(
+                source, params, lut, maxSize = MAX_FALLBACK_SIZE, reuseOutput = true,
+                stampQuarterTurns = when (orientation) {
+                    ExifInterface.ORIENTATION_ROTATE_90 -> 1
+                    ExifInterface.ORIENTATION_ROTATE_180 -> 2
+                    ExifInterface.ORIENTATION_ROTATE_270 -> 3
+                    else -> 0
+                },
+            )
         } finally {
             source.recycle()
         }

@@ -79,6 +79,7 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         maxSize: Int? = null,
         reuseOutput: Boolean = false,
         effects: EffectSpec = EffectSpec.NONE,
+        stampQuarterTurns: Int = 0,
     ): Bitmap {
         require(!src.isRecycled) { "Source bitmap is recycled" }
         require(maxSize == null || maxSize > 0) { "maxSize must be positive, was $maxSize" }
@@ -93,7 +94,7 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
                 "LUT must be ${LUT_SIZE}x$LUT_SIZE, was ${activeLut.width}x${activeLut.height}"
             }
         }
-        return runOnGlThread { renderOnGlThread(src, p, activeLut, maxSize, reuseOutput, effects) }
+        return runOnGlThread { renderOnGlThread(src, p, activeLut, maxSize, reuseOutput, effects, stampQuarterTurns) }
     }
 
     override fun close() {
@@ -130,6 +131,7 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         maxSize: Int?,
         reuseOutput: Boolean,
         effects: EffectSpec,
+        stampQuarterTurns: Int,
     ): Bitmap {
         ensureGl()
 
@@ -156,12 +158,13 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
                     bloomTex = targets.result
                 }
                 val fx = FxValues(p, p.fxSeed)
-                val useFx = fx.leak > 0f || fx.dust > 0f
+                val stamp = StampValues(p.dateStamp, p.dateStampMillis, stampQuarterTurns)
+                val useFx = fx.leak > 0f || fx.dust > 0f || stamp.active
                 // The present/composite pass is needed for sharpening, the bloom composite, an overlay or an editor effect.
                 if (second == null && (useBloom || useFx || !effects.isNone)) second = createTarget(outW, outH)
                 val final =
                     if (second != null) {
-                        drawSharpen(first.texture, second, p.sharpness, outW, outH, bloomTex, fx, EffectValues(effects, outW, outH))
+                        drawSharpen(first.texture, second, p.sharpness, outW, outH, bloomTex, fx, stamp, EffectValues(effects, outW, outH))
                         second
                     } else {
                         first
@@ -250,7 +253,7 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         return BloomTargets(w, h).also { bloomTargets = it }
     }
 
-    private fun drawSharpen(srcTex: Int, target: RenderTarget, sharpness: Float, w: Int, h: Int, bloomTex: Int, fx: FxValues, effects: EffectValues) {
+    private fun drawSharpen(srcTex: Int, target: RenderTarget, sharpness: Float, w: Int, h: Int, bloomTex: Int, fx: FxValues, stamp: StampValues, effects: EffectValues) {
         bindTarget(target, w, h)
         GLES30.glUseProgram(sharpenProgram)
         GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
@@ -270,6 +273,8 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         val locations = SharpenLocations(sharpenProgram)
         fx.apply(locations, fxTextures ?: FxTextures.NONE)
         effects.apply(locations)
+        // Read-back keeps GL row 0 as the first bitmap row, so fragment rows count from the image top.
+        stamp.apply(locations, System.currentTimeMillis(), w, h, rowsFromTop = true)
         checkGl("fx uniforms")
         drawQuad()
         checkGl("sharpen pass")
