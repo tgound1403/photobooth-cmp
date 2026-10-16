@@ -39,6 +39,15 @@ internal class SharpenLocations(program: Int) {
     val sharpness = GLES30.glGetUniformLocation(program, "uSharpness")
     val bloom = GLES30.glGetUniformLocation(program, "uBloom")
     val useBloom = GLES30.glGetUniformLocation(program, "uUseBloom")
+    val leakTex = GLES30.glGetUniformLocation(program, "uLeakTex")
+    val dustTex = GLES30.glGetUniformLocation(program, "uDustTex")
+    val leak = GLES30.glGetUniformLocation(program, "uLeak")
+    val dust = GLES30.glGetUniformLocation(program, "uDust")
+    val leakOffset = GLES30.glGetUniformLocation(program, "uLeakOffset")
+    val leakFlip = GLES30.glGetUniformLocation(program, "uLeakFlip")
+    val dustOffset = GLES30.glGetUniformLocation(program, "uDustOffset")
+    val useLeak = GLES30.glGetUniformLocation(program, "uUseLeak")
+    val useDust = GLES30.glGetUniformLocation(program, "uUseDust")
 }
 
 /**
@@ -174,5 +183,43 @@ internal class FrameTimer {
         const val TAG = "GpuTime"
         const val RING = 4
         const val LOG_EVERY = 120
+    }
+}
+
+/**
+ * Overlay (light leak + dust) uniform values derived from [EditParams] and a seed, computed once per
+ * edit. The strengths are already scaled, as the present shader expects.
+ */
+internal class FxValues(p: EditParams, seed: Int) {
+    val leak = FxMath.leakScale(p.leak)
+    val dust = FxMath.dustScale(p.dust)
+    val leakOffset = FxMath.leakOffset(seed)
+    val dustOffset = FxMath.dustOffset(seed)
+    val leakFlip = FxMath.leakFlip(seed)
+
+    /**
+     * Sets the overlay uniforms of the present program (must be in use) and binds the textures on
+     * [FxTextures.LEAK_UNIT] / [FxTextures.DUST_UNIT]. An overlay whose texture failed to load is off.
+     * Leaves texture unit 0 active. Allocation-free.
+     */
+    fun apply(l: SharpenLocations, tex: FxTextures) {
+        val useLeak = leak > 0f && tex.leak != 0
+        val useDust = dust > 0f && tex.dust != 0
+        GLES30.glUniform1i(l.useLeak, if (useLeak) 1 else 0)
+        GLES30.glUniform1i(l.useDust, if (useDust) 1 else 0)
+        if (useLeak) {
+            GLES30.glActiveTexture(GLES30.GL_TEXTURE0 + FxTextures.LEAK_UNIT)
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, tex.leak)
+            GLES30.glUniform1f(l.leak, leak)
+            GLES30.glUniform2f(l.leakOffset, leakOffset.first, leakOffset.second)
+            GLES30.glUniform1i(l.leakFlip, if (leakFlip) 1 else 0)
+        }
+        if (useDust) {
+            GLES30.glActiveTexture(GLES30.GL_TEXTURE0 + FxTextures.DUST_UNIT)
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, tex.dust)
+            GLES30.glUniform1f(l.dust, dust)
+            GLES30.glUniform2f(l.dustOffset, dustOffset.first, dustOffset.second)
+        }
+        if (useLeak || useDust) GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
     }
 }

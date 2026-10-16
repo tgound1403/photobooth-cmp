@@ -25,7 +25,7 @@ interface EditRenderer : AutoCloseable {
  */
 class EditPipeline(private val catalog: FilterCatalog) : EditRenderer {
 
-    private val gl = GlRenderer()
+    private val gl = GlRenderer(catalog.assets)
 
     override suspend fun render(
         source: Bitmap,

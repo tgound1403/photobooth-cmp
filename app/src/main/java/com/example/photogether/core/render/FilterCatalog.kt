@@ -36,6 +36,9 @@ class FilterCatalog(private val context: Context) {
             Companion.json.decodeFromString(CatalogFile.serializer(), json).filters
     }
 
+    /** Asset manager of the app, for other renderers that read bundled assets. */
+    val assets: android.content.res.AssetManager get() = context.assets
+
     val filters: List<FilterInfo> by lazy {
         val text = context.assets.open(CATALOG_ASSET).bufferedReader().use { it.readText() }
         parse(text)

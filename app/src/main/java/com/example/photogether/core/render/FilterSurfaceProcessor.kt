@@ -1,5 +1,6 @@
 package com.example.photogether.core.render
 
+import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.opengl.EGL14
@@ -38,12 +39,13 @@ import java.util.concurrent.Executor
  *
  * Create one instance per camera session and call [release] when the session ends.
  */
-class FilterSurfaceProcessor : SurfaceProcessor {
+class FilterSurfaceProcessor(private val assets: AssetManager? = null) : SurfaceProcessor {
 
     /** Everything the frame loop needs from an edit, derived once in [setEdit], not per frame. */
     private class Edit(params: EditParams, val lut: Bitmap?) {
         val params: EditParams = params.clamped()
         val values = AdjustValues(this.params)
+        val fx = FxValues(this.params, LIVE_FX_SEED)
         val activeLut: Bitmap? =
             lut?.takeIf { this.params.filterId != FilterCatalog.ORIGINAL_ID && this.params.filterIntensity > 0f }
     }
@@ -88,6 +90,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
     private var adjustLoc: AdjustLocations? = null
     private var sharpenLoc: SharpenLocations? = null
     private val bloomPass = BloomPass()
+    private var fxTextures = FxTextures.NONE
     private val frameTimer = FrameTimer()
     private val invalidateAttachments = intArrayOf(GLES30.GL_COLOR_ATTACHMENT0)
     private val texMatrix = FloatArray(16)
@@ -230,7 +233,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
                 val out = outs[i] ?: continue
                 presentTo(
                     out, target.texture, inp.width, inp.height, p.sharpness, timestamp,
-                    if (useBloom) bloomTargets?.result ?: 0 else 0,
+                    if (useBloom) bloomTargets?.result ?: 0 else 0, snapshot.fx,
                 )
             }
             if (useBloom && bloomTargets != null) bloomPass.invalidateResult(bloomTargets)
@@ -265,6 +268,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         sharpness: Float,
         timestampNs: Long,
         bloomTexture: Int,
+        fx: FxValues,
     ) {
         val sharpen = sharpenLoc ?: return
         try {
@@ -286,6 +290,8 @@ class FilterSurfaceProcessor : SurfaceProcessor {
             } else {
                 GLES30.glUniform1i(sharpen.useBloom, 0)
             }
+            fx.apply(sharpen, fxTextures)
+            debugCheckGl("fx uniforms")
             GLES30.glUniformMatrix4fv(sharpen.texMatrix, 1, false, outMatrix, 0)
             drawQuad()
             debugCheckGl("present pass")
@@ -417,6 +423,11 @@ class FilterSurfaceProcessor : SurfaceProcessor {
             GLES30.glUniform1i(sharpen.src, 0)
             GLES30.glUniform1i(sharpen.bloom, 1)
             GLES30.glUniform1i(sharpen.useBloom, 0)
+            GLES30.glUniform1i(sharpen.leakTex, FxTextures.LEAK_UNIT)
+            GLES30.glUniform1i(sharpen.dustTex, FxTextures.DUST_UNIT)
+            GLES30.glUniform1i(sharpen.useLeak, 0)
+            GLES30.glUniform1i(sharpen.useDust, 0)
+            fxTextures = FxTextures.load(assets)
             bloomPass.init()
             val (vao, vbo) = createQuad()
             quadVao = vao
@@ -437,6 +448,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
             makeCurrent(pbuffer)
             frameTimer.release()
             bloomPass.release()
+            fxTextures.release()
             if (lutTo != 0) GLES30.glDeleteTextures(1, intArrayOf(lutTo), 0)
             if (lutFrom != 0) GLES30.glDeleteTextures(1, intArrayOf(lutFrom), 0)
             if (adjustProgram != 0) GLES30.glDeleteProgram(adjustProgram)
@@ -461,6 +473,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
         lutTo = 0
         lutFrom = 0
         currentLut = null
+        fxTextures = FxTextures.NONE
         adjustLoc = null
         sharpenLoc = null
         outputCount = 0
@@ -485,5 +498,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
     private companion object {
         const val TAG = "FilterSurfaceProcessor"
         const val LUT_CROSSFADE_MS = 180L
+        /** Fixed overlay placement for the live preview, so it stays steady between frames. */
+        const val LIVE_FX_SEED = 1234
     }
 }

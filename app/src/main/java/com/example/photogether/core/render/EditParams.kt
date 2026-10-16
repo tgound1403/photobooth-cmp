@@ -59,6 +59,9 @@ data class EditParams(
     val kelvin: Int? = null,         // 2000..10000 K colour temperature; null = auto (no Kelvin white balance)
     val softwareEv: Float = 0f,      // -2..2 stops, applied in the shader; used when hardware EV is unavailable
     val halation: Float = 0f,        // 0..1, warm-red glow around highlights (bloom pass); 0 = pass skipped
+    val leak: Float = 0f,            // 0..1, light leak overlay strength; 0 = off
+    val dust: Float = 0f,            // 0..1, dust and scratch overlay strength; 0 = off
+    val fxSeed: Int = 0,             // placement seed of the overlays; set at capture time, not a UI parameter
 ) {
     /** Returns a copy with every field clamped to its documented range. */
     fun clamped(): EditParams =
@@ -80,6 +83,8 @@ data class EditParams(
             kelvin = kelvin?.coerceIn(KELVIN_MIN, KELVIN_MAX),
             softwareEv = softwareEv.coerceIn(-2f, 2f),
             halation = halation.coerceIn(0f, 1f),
+            leak = leak.coerceIn(0f, 1f),
+            dust = dust.coerceIn(0f, 1f),
         )
 
     /** True when rendering these params would leave the photo unchanged. */
@@ -99,6 +104,8 @@ data class EditParams(
                 sharpness == 0f &&
                 grain == 0f &&
                 halation == 0f &&
+                leak == 0f &&
+                dust == 0f &&
                 vignette == 0f &&
                 chromatic == 0f &&
                 crop.isIdentity

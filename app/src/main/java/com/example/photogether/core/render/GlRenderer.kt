@@ -1,5 +1,6 @@
 package com.example.photogether.core.render
 
+import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.opengl.EGL14
 import android.opengl.EGLConfig
@@ -32,7 +33,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
  *
  * Throws [IllegalStateException] if EGL or GLES 3.0 is unavailable, or if a GL call fails.
  */
-class GlRenderer : AutoCloseable {
+class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
 
     private val thread = HandlerThread("GlRenderer").apply { start() }
     private val handler = Handler(thread.looper)
@@ -53,6 +54,7 @@ class GlRenderer : AutoCloseable {
     private var lutTexture = 0
     private var lutSource: Bitmap? = null
     private val bloomPass = BloomPass()
+    private var fxTextures: FxTextures? = null
     private var bloomTargets: BloomTargets? = null
 
     // Reused readback resources. Only touched on the GL thread; released in releaseGl().
@@ -151,11 +153,13 @@ class GlRenderer : AutoCloseable {
                     checkGl("bloom pass")
                     bloomTex = targets.result
                 }
-                // The present/composite pass is needed for sharpening or for the bloom composite.
-                if (second == null && useBloom) second = createTarget(outW, outH)
+                val fx = FxValues(p, p.fxSeed)
+                val useFx = fx.leak > 0f || fx.dust > 0f
+                // The present/composite pass is needed for sharpening, the bloom composite or an overlay.
+                if (second == null && (useBloom || useFx)) second = createTarget(outW, outH)
                 val final =
                     if (second != null) {
-                        drawSharpen(first.texture, second, p.sharpness, outW, outH, bloomTex)
+                        drawSharpen(first.texture, second, p.sharpness, outW, outH, bloomTex, fx)
                         second
                     } else {
                         first
@@ -244,7 +248,7 @@ class GlRenderer : AutoCloseable {
         return BloomTargets(w, h).also { bloomTargets = it }
     }
 
-    private fun drawSharpen(srcTex: Int, target: RenderTarget, sharpness: Float, w: Int, h: Int, bloomTex: Int) {
+    private fun drawSharpen(srcTex: Int, target: RenderTarget, sharpness: Float, w: Int, h: Int, bloomTex: Int, fx: FxValues) {
         bindTarget(target, w, h)
         GLES30.glUseProgram(sharpenProgram)
         GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
@@ -259,6 +263,10 @@ class GlRenderer : AutoCloseable {
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, bloomTex)
             GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
         }
+        setUniform1i(sharpenProgram, "uLeakTex", FxTextures.LEAK_UNIT)
+        setUniform1i(sharpenProgram, "uDustTex", FxTextures.DUST_UNIT)
+        fx.apply(SharpenLocations(sharpenProgram), fxTextures ?: FxTextures.NONE)
+        checkGl("fx uniforms")
         drawQuad()
         checkGl("sharpen pass")
     }
@@ -314,6 +322,7 @@ class GlRenderer : AutoCloseable {
             adjustProgram = buildProgram(VERTEX_SHADER, ADJUST_FRAGMENT_SHADER)
             sharpenProgram = buildProgram(VERTEX_SHADER, SHARPEN_FRAGMENT_SHADER)
             bloomPass.init()
+            fxTextures = FxTextures.load(assets)
             setupQuad()
             val max = IntArray(1)
             GLES30.glGetIntegerv(GLES30.GL_MAX_TEXTURE_SIZE, max, 0)
@@ -383,6 +392,7 @@ class GlRenderer : AutoCloseable {
             if (lutTexture != 0) GLES30.glDeleteTextures(1, intArrayOf(lutTexture), 0)
             bloomTargets?.delete()
             bloomPass.release()
+            fxTextures?.release()
             if (adjustProgram != 0) GLES30.glDeleteProgram(adjustProgram)
             if (sharpenProgram != 0) GLES30.glDeleteProgram(sharpenProgram)
             if (quadVbo != 0) GLES30.glDeleteBuffers(1, intArrayOf(quadVbo), 0)
@@ -400,6 +410,7 @@ class GlRenderer : AutoCloseable {
         lutTexture = 0
         lutSource = null
         bloomTargets = null
+        fxTextures = null
         adjustProgram = 0
         sharpenProgram = 0
         quadVbo = 0

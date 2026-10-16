@@ -40,6 +40,7 @@ import com.example.photogether.core.extension.getCameraProvider
 import com.example.photogether.core.render.EditParams
 import com.example.photogether.core.render.FilterCatalog
 import com.example.photogether.core.render.FilterSurfaceProcessor
+import com.example.photogether.core.render.FxMath
 import com.example.photogether.core.render.GlRenderer
 import java.io.File
 import java.util.concurrent.CancellationException
@@ -73,7 +74,7 @@ class CameraService(private val catalog: FilterCatalog) {
 
     /** Serializes the capture fallback: its render output bitmap is shared (reuseOutput). */
     private val fallbackMutex = Mutex()
-    private val processor = FilterSurfaceProcessor()
+    private val processor = FilterSurfaceProcessor(catalog.assets)
     private var renderer: GlRenderer? = null
 
     @Volatile
@@ -365,7 +366,8 @@ class CameraService(private val catalog: FilterCatalog) {
      * Decode, GPU render, encode and EXIF restore all run off the main thread.
      */
     private suspend fun applyEditToFile(file: File) = fallbackMutex.withLock { withContext(Dispatchers.IO) {
-        val params = edit
+        // One seed per capture: the overlay placement of this render is the same wherever it is used.
+        val params = edit.copy(fxSeed = FxMath.newCaptureSeed(System.nanoTime()))
         if (params.isIdentity) return@withContext
 
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -381,7 +383,7 @@ class CameraService(private val catalog: FilterCatalog) {
 
         // Owned by the renderer (reuseOutput): encode it before the next render, never recycle it.
         val rendered = try {
-            val gl = renderer ?: GlRenderer().also { renderer = it }
+            val gl = renderer ?: GlRenderer(catalog.assets).also { renderer = it }
             gl.render(source, params, lut, maxSize = MAX_FALLBACK_SIZE, reuseOutput = true)
         } finally {
             source.recycle()

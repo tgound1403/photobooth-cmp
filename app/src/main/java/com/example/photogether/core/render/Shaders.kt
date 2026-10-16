@@ -140,7 +140,8 @@ void main() {
 
 /**
  * Present pass: unsharp mask with a 3x3 binomial blur (sharpness 0 = plain copy), then the optional
- * halation screen composite of uBloom.
+ * halation screen composite of uBloom, the light leak (screen) and the dust overlay (mix).
+ * Texture units: uSrc 0, uBloom 1, uLeakTex 3, uDustTex 4.
  *   out = c + sharpness * (c - blur3x3(c)),  blur weights [1 2 1; 2 4 2; 1 2 1] / 16
  */
 const val SHARPEN_FRAGMENT_SHADER = """#version 300 es
@@ -154,6 +155,15 @@ uniform vec2 uTexel;
 uniform float uSharpness;
 uniform sampler2D uBloom;
 uniform bool uUseBloom;
+uniform sampler2D uLeakTex;
+uniform sampler2D uDustTex;
+uniform float uLeak;        // already scaled by FxMath.leakScale
+uniform float uDust;        // already scaled by FxMath.dustScale
+uniform vec2 uLeakOffset;
+uniform int uLeakFlip;
+uniform vec2 uDustOffset;
+uniform int uUseLeak;
+uniform int uUseDust;
 
 void main() {
     vec2 t = uTexel;
@@ -173,6 +183,19 @@ void main() {
         // Halation composite (screen): 1 - (1 - c) * (1 - bloom). The bloom is already tinted and scaled.
         vec3 bloom = clamp(texture(uBloom, vUv).rgb, 0.0, 1.0);
         sharp = 1.0 - (1.0 - sharp) * (1.0 - bloom);
+    }
+    if (uUseLeak != 0) {
+        // Light leak (screen): colour from the texture, strength from its alpha.
+        vec2 luv = uLeakFlip != 0 ? vec2(1.0 - vUv.x, vUv.y) : vUv;
+        luv = fract(luv + uLeakOffset * 0.25);
+        vec4 leak = texture(uLeakTex, luv);
+        sharp = 1.0 - (1.0 - sharp) * (1.0 - leak.rgb * (leak.a * uLeak));
+    }
+    if (uUseDust != 0) {
+        // Dust and scratches: blend towards the speck colour by alpha.
+        vec2 duv = fract(vUv + uDustOffset * 0.25);
+        vec4 dust = texture(uDustTex, duv);
+        sharp = mix(sharp, dust.rgb, dust.a * uDust);
     }
     fragColor = vec4(clamp(sharp, 0.0, 1.0), c.a);
 }
