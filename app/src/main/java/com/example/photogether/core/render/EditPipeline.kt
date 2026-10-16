@@ -20,7 +20,7 @@ interface EditRenderer : AutoCloseable {
 }
 
 /**
- * The full edit chain: GPU grade (filter and adjustments), crop, CPU effects, frame, items.
+ * The full edit chain: GPU grade and effects (filter, adjustments, chromatic, leak, distortion, scratch), crop, frame, items.
  * Always starts from the source passed in; callers never feed a previous output back in.
  */
 class EditPipeline(private val catalog: FilterCatalog) : EditRenderer {
@@ -36,19 +36,25 @@ class EditPipeline(private val catalog: FilterCatalog) : EditRenderer {
     ): Bitmap {
         val params = snapshot.params.clamped()
         val lut = withContext(Dispatchers.IO) { catalog.loadLut(params.filterId) }
-        val graded = gl.render(source, params, lut, maxSize)
+        val overlays = snapshot.overlays
+        val effects = EffectSpec.of(params.chromatic, overlays.lightLeak, overlays.distortion, overlays.scratch)
+        // Chromatic aberration, light leak, distortion and scratch are per-pixel GPU effects. They
+        // ran after the crop on the CPU, and the leak corner and the horizontal shift depend on the
+        // cropped frame, so with a crop they get their own GPU pass on the cropped bitmap.
+        val grade = params.copy(chromatic = 0f)
+        val cropped =
+            if (effects.isNone || params.crop.isIdentity) {
+                val graded = gl.render(source, grade, lut, maxSize, effects = effects)
+                withContext(Dispatchers.Default) { CropRenderer.apply(graded, params.crop) }
+            } else {
+                val graded = gl.render(source, grade, lut, maxSize)
+                val crop = withContext(Dispatchers.Default) { CropRenderer.apply(graded, params.crop) }
+                gl.render(crop, EditParams(), null, null, effects = effects)
+            }
 
         return withContext(Dispatchers.Default) {
-            var out = CropRenderer.apply(graded, params.crop)
-            if (params.chromatic > 0f) {
-                out = OverlayRenderer.applyChromaticAberration(out, params.chromatic)
-            }
-            val overlays = snapshot.overlays
-            overlays.lightLeak?.let { out = OverlayRenderer.applyLightLeak(out, it) }
-            overlays.distortion?.let { out = OverlayRenderer.applyDistortion(out, it) }
-            overlays.scratch?.let { out = OverlayRenderer.applyScratch(out, it) }
-            out = FrameRenderer.apply(out, snapshot.frame, background, density)
-            OverlayRenderer.applyItems(out, overlays.items)
+            val framed = FrameRenderer.apply(cropped, snapshot.frame, background, density)
+            OverlayRenderer.applyItems(framed, overlays.items)
         }
     }
 

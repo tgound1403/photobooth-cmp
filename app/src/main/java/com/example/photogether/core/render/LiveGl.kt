@@ -48,6 +48,17 @@ internal class SharpenLocations(program: Int) {
     val dustOffset = GLES30.glGetUniformLocation(program, "uDustOffset")
     val useLeak = GLES30.glGetUniformLocation(program, "uUseLeak")
     val useDust = GLES30.glGetUniformLocation(program, "uUseDust")
+    val useChromatic = GLES30.glGetUniformLocation(program, "uUseChromatic")
+    val chromaticPx = GLES30.glGetUniformLocation(program, "uChromaticPx")
+    val useLeakGrad = GLES30.glGetUniformLocation(program, "uUseLeakGrad")
+    val leakGradCorner = GLES30.glGetUniformLocation(program, "uLeakGradCorner")
+    val leakGradRadius = GLES30.glGetUniformLocation(program, "uLeakGradRadius")
+    val useFxGrain = GLES30.glGetUniformLocation(program, "uUseFxGrain")
+    val fxGrain = GLES30.glGetUniformLocation(program, "uFxGrain")
+    val useFxVignette = GLES30.glGetUniformLocation(program, "uUseFxVignette")
+    val fxVignette = GLES30.glGetUniformLocation(program, "uFxVignette")
+    val scratchCount = GLES30.glGetUniformLocation(program, "uScratchCount")
+    val scratchLines = GLES30.glGetUniformLocation(program, "uScratchLines")
 }
 
 /**
@@ -221,5 +232,35 @@ internal class FxValues(p: EditParams, seed: Int) {
             GLES30.glUniform2f(l.dustOffset, dustOffset.first, dustOffset.second)
         }
         if (useLeak || useDust) GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
+    }
+}
+
+/**
+ * Editor-effect uniform values (chromatic aberration, light leak gradient, grain and vignette
+ * presets, scratches) for an image of [width] x [height] pixels. Computed once per render.
+ * The live preview never sets these; the flags default to 0 there, so the effect code is skipped.
+ */
+internal class EffectValues(private val spec: EffectSpec, width: Int, height: Int) {
+    private val chromaticPx = EffectMath.chromaticShiftPx(spec.chromatic)
+    private val leak = spec.leak?.let { EffectMath.leakGradient(it) }
+    private val scratch = spec.scratch?.let { EffectMath.scratchLines(it, width, height) }
+
+    /** Sets the uniforms of the present program, which must be in use. */
+    fun apply(l: SharpenLocations) {
+        GLES30.glUniform1i(l.useChromatic, if (chromaticPx > 0f) 1 else 0)
+        if (chromaticPx > 0f) GLES30.glUniform1f(l.chromaticPx, chromaticPx)
+        GLES30.glUniform1i(l.useLeakGrad, if (leak != null) 1 else 0)
+        if (leak != null) {
+            GLES30.glUniform2f(l.leakGradCorner, leak.cornerX, leak.cornerY)
+            GLES30.glUniform1f(l.leakGradRadius, leak.radiusFactor)
+        }
+        GLES30.glUniform1i(l.useFxGrain, if (spec.grain > 0f) 1 else 0)
+        if (spec.grain > 0f) GLES30.glUniform1f(l.fxGrain, spec.grain)
+        GLES30.glUniform1i(l.useFxVignette, if (spec.vignette > 0f) 1 else 0)
+        if (spec.vignette > 0f) GLES30.glUniform1f(l.fxVignette, spec.vignette)
+        val lines = scratch
+        val count = if (lines != null) lines.size / 4 else 0
+        GLES30.glUniform1i(l.scratchCount, count)
+        if (lines != null) GLES30.glUniform4fv(l.scratchLines, count, lines, 0)
     }
 }

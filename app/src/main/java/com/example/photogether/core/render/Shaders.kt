@@ -144,8 +144,9 @@ void main() {
  * Texture units: uSrc 0, uBloom 1, uLeakTex 3, uDustTex 4.
  *   out = c + sharpness * (c - blur3x3(c)),  blur weights [1 2 1; 2 4 2; 1 2 1] / 16
  */
-const val SHARPEN_FRAGMENT_SHADER = """#version 300 es
+val SHARPEN_FRAGMENT_SHADER: String = """#version 300 es
 precision highp float;
+precision highp int;
 
 in vec2 vUv;
 out vec4 fragColor;
@@ -165,39 +166,124 @@ uniform vec2 uDustOffset;
 uniform int uUseLeak;
 uniform int uUseDust;
 
-void main() {
+// Editor effects (EffectMath), applied after everything above. All gated by an int flag.
+uniform int uUseChromatic;
+uniform float uChromaticPx;   // horizontal shift of red (-) and blue (+), in pixels
+uniform int uUseLeakGrad;
+uniform vec2 uLeakGradCorner; // corner of the image, each component 0 or 1
+uniform float uLeakGradRadius; // times the longer side
+uniform int uUseFxGrain;
+uniform float uFxGrain;       // preset strength
+uniform int uUseFxVignette;
+uniform float uFxVignette;
+uniform int uScratchCount;
+uniform vec4 uScratchLines[49]; // x0, y0, x1, y1 in pixels
+
+// Deterministic hash in [0, 1].
+float hash01(uvec2 p, uint seed) {
+    uint h = p.x * 1664525u + p.y * 1013904223u + seed * 2654435761u;
+    h ^= h >> 16u;
+    h *= 0x7feb352du;
+    h ^= h >> 15u;
+    h *= 0x846ca68bu;
+    h ^= h >> 16u;
+    return float(h) / 4294967295.0;
+}
+
+// Unsharp mask, bloom, light leak texture and dust at one uv. Returns the colour only.
+vec3 shade(vec2 uv) {
     vec2 t = uTexel;
-    vec4 c = texture(uSrc, vUv);
+    vec3 c = texture(uSrc, uv).rgb;
     vec3 blur =
-        (texture(uSrc, vUv + t * vec2(-1.0, -1.0)).rgb
-        + 2.0 * texture(uSrc, vUv + t * vec2(0.0, -1.0)).rgb
-        + texture(uSrc, vUv + t * vec2(1.0, -1.0)).rgb
-        + 2.0 * texture(uSrc, vUv + t * vec2(-1.0, 0.0)).rgb
-        + 4.0 * c.rgb
-        + 2.0 * texture(uSrc, vUv + t * vec2(1.0, 0.0)).rgb
-        + texture(uSrc, vUv + t * vec2(-1.0, 1.0)).rgb
-        + 2.0 * texture(uSrc, vUv + t * vec2(0.0, 1.0)).rgb
-        + texture(uSrc, vUv + t * vec2(1.0, 1.0)).rgb) / 16.0;
-    vec3 sharp = clamp(c.rgb + uSharpness * (c.rgb - blur), 0.0, 1.0);
+        (texture(uSrc, uv + t * vec2(-1.0, -1.0)).rgb
+        + 2.0 * texture(uSrc, uv + t * vec2(0.0, -1.0)).rgb
+        + texture(uSrc, uv + t * vec2(1.0, -1.0)).rgb
+        + 2.0 * texture(uSrc, uv + t * vec2(-1.0, 0.0)).rgb
+        + 4.0 * c
+        + 2.0 * texture(uSrc, uv + t * vec2(1.0, 0.0)).rgb
+        + texture(uSrc, uv + t * vec2(-1.0, 1.0)).rgb
+        + 2.0 * texture(uSrc, uv + t * vec2(0.0, 1.0)).rgb
+        + texture(uSrc, uv + t * vec2(1.0, 1.0)).rgb) / 16.0;
+    vec3 sharp = clamp(c + uSharpness * (c - blur), 0.0, 1.0);
     if (uUseBloom) {
         // Halation composite (screen): 1 - (1 - c) * (1 - bloom). The bloom is already tinted and scaled.
-        vec3 bloom = clamp(texture(uBloom, vUv).rgb, 0.0, 1.0);
+        vec3 bloom = clamp(texture(uBloom, uv).rgb, 0.0, 1.0);
         sharp = 1.0 - (1.0 - sharp) * (1.0 - bloom);
     }
     if (uUseLeak != 0) {
         // Light leak (screen): colour from the texture, strength from its alpha.
-        vec2 luv = uLeakFlip != 0 ? vec2(1.0 - vUv.x, vUv.y) : vUv;
+        vec2 luv = uLeakFlip != 0 ? vec2(1.0 - uv.x, uv.y) : uv;
         luv = fract(luv + uLeakOffset * 0.25);
         vec4 leak = texture(uLeakTex, luv);
         sharp = 1.0 - (1.0 - sharp) * (1.0 - leak.rgb * (leak.a * uLeak));
     }
     if (uUseDust != 0) {
         // Dust and scratches: blend towards the speck colour by alpha.
-        vec2 duv = fract(vUv + uDustOffset * 0.25);
+        vec2 duv = fract(uv + uDustOffset * 0.25);
         vec4 dust = texture(uDustTex, duv);
         sharp = mix(sharp, dust.rgb, dust.a * uDust);
     }
-    fragColor = vec4(clamp(sharp, 0.0, 1.0), c.a);
+    return sharp;
+}
+
+// Distance in pixels from p to the segment a-b.
+float segmentDistance(vec2 p, vec2 a, vec2 b) {
+    vec2 ab = b - a;
+    float len2 = dot(ab, ab);
+    float h = len2 > 0.0 ? clamp(dot(p - a, ab) / len2, 0.0, 1.0) : 0.0;
+    return length(p - (a + ab * h));
+}
+
+void main() {
+    float alpha = texture(uSrc, vUv).a;
+    vec3 col;
+    if (uUseChromatic != 0) {
+        // Red looks right and blue looks left, so red moves left and blue moves right.
+        vec2 o = vec2(uChromaticPx * uTexel.x, 0.0);
+        col = vec3(shade(vUv + o).r, shade(vUv).g, shade(vUv - o).b);
+    } else {
+        col = shade(vUv);
+    }
+    vec2 size = 1.0 / uTexel;
+    vec2 p = vUv * size;
+    if (uUseLeakGrad != 0) {
+        // Radial gradient from a corner, screen blended. Stops (straight colour, alpha):
+        // t=0 (255,200,0) 150/255, t=0.5 (255,100,0) 100/255, t=1 transparent.
+        float t = length(p - uLeakGradCorner * size) / (max(size.x, size.y) * uLeakGradRadius);
+        vec3 lc;
+        float la;
+        if (t >= 1.0) {
+            lc = vec3(0.0);
+            la = 0.0;
+        } else if (t < 0.5) {
+            float u = t / 0.5;
+            lc = vec3(1.0, mix(200.0, 100.0, u) / 255.0, 0.0);
+            la = mix(150.0, 100.0, u) / 255.0;
+        } else {
+            float u = (t - 0.5) / 0.5;
+            lc = vec3(mix(1.0, 0.0, u), mix(100.0, 0.0, u) / 255.0, 0.0);
+            la = mix(100.0, 0.0, u) / 255.0;
+        }
+        col = 1.0 - (1.0 - col) * (1.0 - lc * la);
+    }
+    if (uUseFxGrain != 0) {
+        float n = hash01(uvec2(gl_FragCoord.xy), 7u) * 2.0 - 1.0;
+        col = clamp(col + n * uFxGrain * ${EffectMath.GRAIN_AMPLITUDE.glsl()}, 0.0, 1.0);
+    }
+    if (uUseFxVignette != 0) {
+        // Black radial gradient from transparent at 1 - i to opaque at 1, scaled by i.
+        float t = length(p - 0.5 * size) / (max(size.x, size.y) * 0.9);
+        float a = clamp((t - (1.0 - uFxVignette)) / uFxVignette, 0.0, 1.0) * uFxVignette;
+        col *= 1.0 - a;
+    }
+    for (int i = 0; i < 49; i++) {
+        if (i >= uScratchCount) break;
+        // White stroke 2 px wide at 150/255 opacity, one pixel of antialiasing.
+        vec4 seg = uScratchLines[i];
+        float cover = clamp(1.5 - segmentDistance(p, seg.xy, seg.zw), 0.0, 1.0);
+        col = mix(col, vec3(1.0), cover * (150.0 / 255.0));
+    }
+    fragColor = vec4(clamp(col, 0.0, 1.0), alpha);
 }
 """
 

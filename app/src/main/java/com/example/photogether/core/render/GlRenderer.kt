@@ -78,11 +78,12 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         lut: Bitmap?,
         maxSize: Int? = null,
         reuseOutput: Boolean = false,
+        effects: EffectSpec = EffectSpec.NONE,
     ): Bitmap {
         require(!src.isRecycled) { "Source bitmap is recycled" }
         require(maxSize == null || maxSize > 0) { "maxSize must be positive, was $maxSize" }
         val p = params.clamped()
-        if (p.isIdentity && maxSize == null) {
+        if (p.isIdentity && maxSize == null && effects.isNone) {
             return src.copy(Bitmap.Config.ARGB_8888, false)
         }
         val activeLut =
@@ -92,7 +93,7 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
                 "LUT must be ${LUT_SIZE}x$LUT_SIZE, was ${activeLut.width}x${activeLut.height}"
             }
         }
-        return runOnGlThread { renderOnGlThread(src, p, activeLut, maxSize, reuseOutput) }
+        return runOnGlThread { renderOnGlThread(src, p, activeLut, maxSize, reuseOutput, effects) }
     }
 
     override fun close() {
@@ -128,6 +129,7 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         lut: Bitmap?,
         maxSize: Int?,
         reuseOutput: Boolean,
+        effects: EffectSpec,
     ): Bitmap {
         ensureGl()
 
@@ -155,11 +157,11 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
                 }
                 val fx = FxValues(p, p.fxSeed)
                 val useFx = fx.leak > 0f || fx.dust > 0f
-                // The present/composite pass is needed for sharpening, the bloom composite or an overlay.
-                if (second == null && (useBloom || useFx)) second = createTarget(outW, outH)
+                // The present/composite pass is needed for sharpening, the bloom composite, an overlay or an editor effect.
+                if (second == null && (useBloom || useFx || !effects.isNone)) second = createTarget(outW, outH)
                 val final =
                     if (second != null) {
-                        drawSharpen(first.texture, second, p.sharpness, outW, outH, bloomTex, fx)
+                        drawSharpen(first.texture, second, p.sharpness, outW, outH, bloomTex, fx, EffectValues(effects, outW, outH))
                         second
                     } else {
                         first
@@ -248,7 +250,7 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         return BloomTargets(w, h).also { bloomTargets = it }
     }
 
-    private fun drawSharpen(srcTex: Int, target: RenderTarget, sharpness: Float, w: Int, h: Int, bloomTex: Int, fx: FxValues) {
+    private fun drawSharpen(srcTex: Int, target: RenderTarget, sharpness: Float, w: Int, h: Int, bloomTex: Int, fx: FxValues, effects: EffectValues) {
         bindTarget(target, w, h)
         GLES30.glUseProgram(sharpenProgram)
         GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
@@ -265,7 +267,9 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         }
         setUniform1i(sharpenProgram, "uLeakTex", FxTextures.LEAK_UNIT)
         setUniform1i(sharpenProgram, "uDustTex", FxTextures.DUST_UNIT)
-        fx.apply(SharpenLocations(sharpenProgram), fxTextures ?: FxTextures.NONE)
+        val locations = SharpenLocations(sharpenProgram)
+        fx.apply(locations, fxTextures ?: FxTextures.NONE)
+        effects.apply(locations)
         checkGl("fx uniforms")
         drawQuad()
         checkGl("sharpen pass")
