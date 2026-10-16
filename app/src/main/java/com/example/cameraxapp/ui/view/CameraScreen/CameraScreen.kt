@@ -51,11 +51,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.NavController
 import com.example.cameraxapp.core.navigation.AppRoutes
 import com.example.cameraxapp.core.render.FilterCycle
 import com.example.cameraxapp.core.render.RecipeFilters
+import com.example.cameraxapp.ui.components.CameraAdjustPanel
+import com.example.cameraxapp.ui.components.CameraQuickBar
 import com.example.cameraxapp.ui.components.FilterStrip
 import com.example.cameraxapp.ui.components.ManualControls
 import com.example.cameraxapp.ui.components.ZoomControl
@@ -91,6 +94,7 @@ fun CameraScreen(
     // The highlighted source. A recipe id is not a catalog id, so it is tracked here.
     var selectedId by rememberSaveable { mutableStateOf(cameraViewModel.editParams.value.filterId) }
     var flash by remember { mutableStateOf<NameFlash?>(null) }
+    val adjust by cameraViewModel.adjust.collectAsStateWithLifecycle()
 
     val onSelect: (String) -> Unit = { id ->
         val recipe = RecipeFilters.recipeFor(id, recipes)
@@ -131,7 +135,24 @@ fun CameraScreen(
                     flash = flash,
                     onSwipe = onSwipe,
                 )
+                // Overlays the bottom of the preview, directly above the quick bar. Kept outside the
+                // viewfinder's swipe box so slider drags do not also cycle filters.
+                CameraAdjustPanel(
+                    state = adjust,
+                    onKelvinChange = { cameraViewModel.setKelvin(it) },
+                    onKelvinAuto = cameraViewModel::setKelvinAuto,
+                    onEvChange = cameraViewModel::setEv,
+                    onCommit = cameraViewModel::commitAdjust,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = Spacing.md),
+                )
             }
+            CameraQuickBar(
+                state = adjust,
+                onToolClick = cameraViewModel::toggleTool,
+                modifier = Modifier.padding(vertical = Spacing.sm),
+            )
             FilterStrip(
                 filters = sources,
                 selectedId = selectedId,

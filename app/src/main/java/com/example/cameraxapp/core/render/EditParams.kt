@@ -56,6 +56,8 @@ data class EditParams(
     val vignette: Float = 0f,        // 0..1
     val chromatic: Float = 0f,       // 0..1, RGB channel split (CPU pass, not in the GPU shader)
     val crop: CropParams = CropParams(),
+    val kelvin: Int? = null,         // 2000..10000 K colour temperature; null = auto (no Kelvin white balance)
+    val softwareEv: Float = 0f,      // -2..2 stops, applied in the shader; used when hardware EV is unavailable
 ) {
     /** Returns a copy with every field clamped to its documented range. */
     fun clamped(): EditParams =
@@ -74,12 +76,16 @@ data class EditParams(
             vignette = vignette.coerceIn(0f, 1f),
             chromatic = chromatic.coerceIn(0f, 1f),
             crop = crop.normalized(),
+            kelvin = kelvin?.coerceIn(KELVIN_MIN, KELVIN_MAX),
+            softwareEv = softwareEv.coerceIn(-2f, 2f),
         )
 
     /** True when rendering these params would leave the photo unchanged. */
     val isIdentity: Boolean
         get() =
             (filterId == FilterCatalog.ORIGINAL_ID || filterIntensity == 0f) &&
+                kelvin == null &&
+                softwareEv == 0f &&
                 exposure == 0f &&
                 contrast == 0f &&
                 saturation == 0f &&
@@ -97,6 +103,10 @@ data class EditParams(
     fun toJson(): String = JSON.encodeToString(serializer(), this)
 
     companion object {
+        /** Range of [EditParams.kelvin]. Kept here so this file has no dependency on the WB maths. */
+        const val KELVIN_MIN = 2000
+        const val KELVIN_MAX = 10000
+
         private val JSON = Json {
             ignoreUnknownKeys = true
             encodeDefaults = false

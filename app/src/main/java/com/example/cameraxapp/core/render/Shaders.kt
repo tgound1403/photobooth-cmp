@@ -29,8 +29,11 @@ void main() {
 """
 
 /**
- * Pass 1: LUT filter, then the global adjustments, in this order:
- * LUT blend, exposure, white balance, contrast, saturation, highlights/shadows, fade, grain, vignette.
+ * Pass 1, in this order:
+ * pre-gain (Kelvin white balance and software EV), LUT blend, exposure, white balance (tint and
+ * temperature), contrast, saturation, highlights/shadows, fade, grain, vignette.
+ * The pre-gain runs before the LUT so the filter sees the corrected colour. uWbGain stays after the
+ * LUT so recipes saved before Kelvin keep their look. Both gains are 1 when unused.
  *
  * LUT lookup (512x512, 8x8 tiles of 64x64, slice index b = blue level):
  *   level = c * 63                          (fractional, 0..63)
@@ -51,6 +54,7 @@ out vec4 fragColor;
 uniform sampler2D uSrc;
 uniform sampler2D uLut;
 uniform bool uUseLut;
+uniform vec3 uPreGain;
 uniform float uFilterIntensity;
 uniform float uExposureGain;
 uniform vec3 uWbGain;
@@ -94,6 +98,9 @@ float hash01(uvec2 p) {
 void main() {
     vec4 texel = texture(uSrc, vUv);
     vec3 c = clamp(texel.rgb, 0.0, 1.0);
+
+    // 0. Pre-gain: Kelvin white balance and software EV, before the LUT. (1,1,1) when unused.
+    c = clamp(c * uPreGain, 0.0, 1.0);
 
     // 1. Filter: blend the original with the LUT result by intensity.
     if (uUseLut) {

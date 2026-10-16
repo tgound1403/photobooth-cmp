@@ -4,6 +4,7 @@ import android.opengl.GLES11Ext
 import android.opengl.GLES30
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import kotlin.math.pow
 
 /** GL helpers shared by [GlRenderer] (offscreen bitmaps) and [FilterSurfaceProcessor] (live frames). */
 internal object GlUtil {
@@ -118,9 +119,12 @@ internal object GlUtil {
      */
     fun applyAdjustUniforms(program: Int, p: EditParams, useLut: Boolean) {
         val (wr, wg, wb) = whiteBalanceGains(p.temperature, p.tint)
+        val (kr, kg, kb) = kelvinGains(p.kelvin)
+        val evGain = 2f.pow(p.softwareEv / 2.2f)
         setUniform1i(program, "uSrc", 0)
         setUniform1i(program, "uLut", 1)
         setUniform1i(program, "uUseLut", if (useLut) 1 else 0)
+        setUniform3f(program, "uPreGain", kr * evGain, kg * evGain, kb * evGain)
         setUniform1f(program, "uFilterIntensity", p.filterIntensity)
         setUniform1f(program, "uExposureGain", exposureGain(p.exposure))
         setUniform3f(program, "uWbGain", wr, wg, wb)

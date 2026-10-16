@@ -3,12 +3,15 @@ package com.example.cameraxapp.service
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.media.ExifInterface
 import android.util.Log
 import androidx.camera.camera2.interop.Camera2CameraControl
+import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.camera2.interop.CaptureRequestOptions
 import androidx.camera.core.Camera
+import androidx.camera.core.CameraControl.OperationCanceledException
 import androidx.camera.core.CameraEffect
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -21,13 +24,21 @@ import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.example.cameraxapp.core.camera.Camera2Overrides
+import com.example.cameraxapp.core.camera.Camera2Setting
+import com.example.cameraxapp.core.camera.CameraCapabilities
+import com.example.cameraxapp.core.camera.EvRange
+import com.example.cameraxapp.core.camera.ManualExposure
+import com.example.cameraxapp.core.camera.toSettings
 import com.example.cameraxapp.core.extension.getCameraProvider
 import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.FilterCatalog
 import com.example.cameraxapp.core.render.FilterSurfaceProcessor
 import com.example.cameraxapp.core.render.GlRenderer
 import java.io.File
+import java.util.concurrent.CancellationException
 import java.util.concurrent.Executor
+import java.util.concurrent.ExecutionException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -68,8 +79,15 @@ class CameraService(private val catalog: FilterCatalog) {
     private var imageCapture: ImageCapture? = null
 
     /**
+     * Camera2 settings the user chose (manual exposure, AWB lock). Kept here so they survive a
+     * rebind; [applyOverrides] re-applies them to every new camera. Touched on the main thread only.
+     */
+    private var overrides = Camera2Overrides()
+
+    /**
      * Binds preview and image capture to [lifecycleOwner] with the camera facing [lensFacing].
-     * Must run on the main thread. Replaces any previous binding.
+     * Must run on the main thread. Replaces any previous binding. Re-applies the stored Camera2
+     * overrides to the new camera.
      */
     suspend fun bind(context: Context, lifecycleOwner: LifecycleOwner, lensFacing: Int): BoundCamera {
         val app = context.applicationContext
@@ -78,21 +96,101 @@ class CameraService(private val catalog: FilterCatalog) {
         val executor = ContextCompat.getMainExecutor(app)
 
         provider.unbindAll()
-        return try {
-            val bound = bindUseCases(
+        val bound = try {
+            val b = bindUseCases(
                 app, provider, lifecycleOwner, selector, executor,
                 CameraEffect.PREVIEW or CameraEffect.IMAGE_CAPTURE,
             )
             captureUsesEffect = true
             Log.i(TAG, "Filter effect bound to preview and image capture")
-            bound
+            b
         } catch (e: Exception) {
             Log.w(TAG, "Filter effect on image capture rejected, using preview-only effect: ${e.message}", e)
             provider.unbindAll()
             captureUsesEffect = false
             bindUseCases(app, provider, lifecycleOwner, selector, executor, CameraEffect.PREVIEW)
         }
+        applyOverrides(bound.camera)
+        return bound
     }
+
+    /**
+     * What the opened camera supports: EV compensation range (null when unavailable, so the caller
+     * falls back to software EV) and whether AWB lock is available.
+     */
+    fun capabilities(camera: Camera): CameraCapabilities {
+        val state = camera.cameraInfo.exposureState
+        val range = state.exposureCompensationRange
+        val step = state.exposureCompensationStep.toFloat()
+        val evRange = if (state.isExposureCompensationSupported && step > 0f && range.upper >= range.lower) {
+            EvRange(minIndex = range.lower, maxIndex = range.upper, step = step)
+        } else {
+            null
+        }
+        return CameraCapabilities(evRange = evRange, awbLockAvailable = awbLockAvailable(camera))
+    }
+
+    /**
+     * Hardware exposure compensation, by index. CameraX cancels the previous request when a new one
+     * arrives, so a cancelled future is expected and not logged.
+     */
+    fun setExposureCompensation(camera: Camera, index: Int) {
+        val future = camera.cameraControl.setExposureCompensationIndex(index)
+        future.addListener({
+            try {
+                future.get()
+            } catch (e: ExecutionException) {
+                if (e.cause !is OperationCanceledException) {
+                    Log.w(TAG, "Exposure compensation $index failed", e)
+                }
+            } catch (e: CancellationException) {
+                // Superseded by a newer request.
+            }
+        }, Executor { it.run() })
+    }
+
+    /** Locks or unlocks auto white balance through Camera2 request options. Applied live. */
+    fun setAwbLock(camera: Camera, locked: Boolean) {
+        overrides = overrides.copy(awbLocked = locked)
+        applyOverrides(camera)
+    }
+
+    /** Manual exposure (ns) and ISO through Camera2 request options. Applied live, no rebind. */
+    fun setManualExposure(camera: Camera, exposureNs: Long, iso: Int) {
+        overrides = overrides.copy(manual = ManualExposure(exposureNs, iso))
+        applyOverrides(camera)
+    }
+
+    /** Returns auto exposure to the camera. */
+    fun clearManualExposure(camera: Camera) {
+        overrides = overrides.copy(manual = null)
+        applyOverrides(camera)
+    }
+
+    /**
+     * Rebuilds the whole Camera2 option set from [overrides]. Setting options replaces the previous
+     * set, so keys that are no longer wanted (AE off, AWB lock) are cleared.
+     */
+    private fun applyOverrides(camera: Camera) {
+        val builder = CaptureRequestOptions.Builder()
+        for ((setting, value) in overrides.toSettings(awbLockAvailable(camera))) {
+            when (setting) {
+                Camera2Setting.AE_MODE_OFF ->
+                    builder.setCaptureRequestOption(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF)
+                Camera2Setting.EXPOSURE_TIME ->
+                    builder.setCaptureRequestOption(CaptureRequest.SENSOR_EXPOSURE_TIME, value as Long)
+                Camera2Setting.SENSITIVITY ->
+                    builder.setCaptureRequestOption(CaptureRequest.SENSOR_SENSITIVITY, value as Int)
+                Camera2Setting.AWB_LOCK ->
+                    builder.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_LOCK, value as Boolean)
+            }
+        }
+        Camera2CameraControl.from(camera.cameraControl).setCaptureRequestOptions(builder.build())
+    }
+
+    private fun awbLockAvailable(camera: Camera): Boolean =
+        Camera2CameraInfo.from(camera.cameraInfo)
+            .getCameraCharacteristic(CameraCharacteristics.CONTROL_AWB_LOCK_AVAILABLE) == true
 
     private fun bindUseCases(
         app: Context,
@@ -133,16 +231,6 @@ class CameraService(private val catalog: FilterCatalog) {
             lut = bitmap
             processor.setEdit(p, bitmap)
         }
-    }
-
-    /** Manual exposure (ns) and ISO through Camera2 request options. Applied live, no rebind. */
-    fun setManualExposure(camera: Camera, exposureNs: Long, iso: Int) {
-        val options = CaptureRequestOptions.Builder()
-            .setCaptureRequestOption(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF)
-            .setCaptureRequestOption(CaptureRequest.SENSOR_EXPOSURE_TIME, exposureNs)
-            .setCaptureRequestOption(CaptureRequest.SENSOR_SENSITIVITY, iso)
-            .build()
-        Camera2CameraControl.from(camera.cameraControl).setCaptureRequestOptions(options)
     }
 
     /**

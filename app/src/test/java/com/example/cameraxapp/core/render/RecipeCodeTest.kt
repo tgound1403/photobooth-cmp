@@ -95,6 +95,24 @@ class RecipeCodeTest {
     }
 
     @Test
+    fun oldRecipeCodeDecodesWithAutoWhiteBalanceAndNoSoftwareEv() {
+        // Recipe code as produced before the Kelvin and EV fields existed.
+        val code = RecipeCode.PREFIX + base64Of("""{"filterId":"kodak","temperature":0.4,"grain":0.3}""")
+        val result = RecipeCode.decode(code)
+        assertTrue("expected Ok but got $result", result is RecipeCodeResult.Ok)
+        val params = (result as RecipeCodeResult.Ok).params
+        assertEquals(null, params.kelvin)
+        assertEquals(0f, params.softwareEv, 0f)
+        assertEquals(EditParams(filterId = "kodak", temperature = 0.4f, grain = 0.3f), params)
+    }
+
+    @Test
+    fun kelvinSurvivesEncodeAndDecode() {
+        val withKelvin = sample.copy(kelvin = 3200, softwareEv = 0.5f)
+        assertEquals(RecipeCodeResult.Ok(withKelvin), RecipeCode.decode(RecipeCode.encode(withKelvin)))
+    }
+
+    @Test
     fun handWrittenBase64MatchesJavaReferenceEncoder() {
         val random = Random(42)
         repeat(200) {

@@ -113,4 +113,45 @@ class EditParamsTest {
             )
         changed.forEach { assertFalse(it.toString(), it.isIdentity) }
     }
+
+    @Test
+    fun legacyJsonWithoutKelvinDecodesToAuto() {
+        val params = EditParams.fromJson("""{"filterId":"kodak","temperature":0.4}""")
+        assertEquals(null, params.kelvin)
+        assertEquals(0f, params.softwareEv, 0f)
+    }
+
+    @Test
+    fun toJsonOmitsKelvinAndSoftwareEvWhenUnset() {
+        val json = EditParams().toJson()
+        assertFalse(json, json.contains("kelvin"))
+        assertFalse(json, json.contains("softwareEv"))
+    }
+
+    @Test
+    fun kelvinRoundTrip() {
+        val original = EditParams(kelvin = 3200)
+        val decoded = EditParams.fromJson(original.toJson())
+        assertEquals(3200, decoded.kelvin)
+        assertEquals(original, decoded)
+    }
+
+    @Test
+    fun isIdentityFalseWhenKelvinSet() {
+        assertFalse(EditParams(kelvin = 3200).isIdentity)
+    }
+
+    @Test
+    fun isIdentityFalseWhenSoftwareEvSet() {
+        assertFalse(EditParams(softwareEv = 0.3f).isIdentity)
+    }
+
+    @Test
+    fun clampedClampsKelvinAndSoftwareEv() {
+        assertEquals(10000, EditParams(kelvin = 99999).clamped().kelvin)
+        assertEquals(2000, EditParams(kelvin = 100).clamped().kelvin)
+        assertEquals(null, EditParams(kelvin = null).clamped().kelvin)
+        assertEquals(2f, EditParams(softwareEv = 5f).clamped().softwareEv, 0f)
+        assertEquals(-2f, EditParams(softwareEv = -5f).clamped().softwareEv, 0f)
+    }
 }

@@ -17,10 +17,19 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewModelScope
+import com.example.cameraxapp.core.camera.CameraAdjustState
+import com.example.cameraxapp.core.camera.CameraTool
+import com.example.cameraxapp.core.camera.EvMode
+import com.example.cameraxapp.core.camera.withCameraAdjust
+import com.example.cameraxapp.core.camera.withCapabilities
+import com.example.cameraxapp.core.camera.withEv
+import com.example.cameraxapp.core.camera.withKelvin
 import com.example.cameraxapp.core.render.EditParams
 import com.example.cameraxapp.core.render.FilterCatalog
 import com.example.cameraxapp.core.render.Recipe
 import com.example.cameraxapp.data.repository.RecipeRepository
+import com.example.cameraxapp.data.settings.CameraSettings
+import com.example.cameraxapp.data.settings.CameraSettingsRepository
 import com.example.cameraxapp.service.CameraService
 import com.example.cameraxapp.core.analytics.Analytics
 import com.example.cameraxapp.core.analytics.AnalyticsEvent
@@ -31,10 +40,13 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -42,6 +54,7 @@ import kotlinx.coroutines.withContext
 class CameraViewModel(
     application: Application,
     private val recipeRepository: RecipeRepository,
+    private val settingsRepository: CameraSettingsRepository,
     private val analytics: Analytics = NoOpAnalytics,
 ) : AndroidViewModel(application) {
     private val imageProcessingService = ImageProcessingService()
@@ -62,7 +75,28 @@ class CameraViewModel(
     val camera = mutableStateOf<Camera?>(null)
     val editParams = mutableStateOf(EditParams())
 
+    private val _adjust = MutableStateFlow(CameraAdjustState())
+
+    /** Kelvin, EV and open panel. The filter edit itself stays in [editParams]. */
+    val adjust: StateFlow<CameraAdjustState> = _adjust.asStateFlow()
+
+    /** Restores the saved Kelvin and EV once. [initCamera] waits for it before applying hardware settings. */
+    private val restoreJob: Job
+
     private var isTakingPicture = false // use for view model
+
+    init {
+        restoreJob = viewModelScope.launch {
+            val saved = try {
+                settingsRepository.settings.first()
+            } catch (e: IOException) {
+                Log.w(TAG, "Cannot read camera settings, using defaults: ${e.message}", e)
+                CameraSettings()
+            }
+            _adjust.update { it.withKelvin(saved.kelvin).withEv(saved.ev) }
+            pushRender()
+        }
+    }
 
     fun startCapturing() {
         _isCapturing.value = true
@@ -86,6 +120,10 @@ class CameraViewModel(
             val bound = cameraService.bind(getApplication(), lifecycleOwner, lensFacing)
             preview.value = bound.preview
             camera.value = bound.camera
+            restoreJob.join()
+            _adjust.update { it.withCapabilities(cameraService.capabilities(bound.camera)) }
+            applyHardware(bound.camera)
+            pushRender()
         } catch (e: Exception) {
             Log.e(TAG, "Error setting up camera: ${e.message}", e)
             preview.value = null
@@ -96,7 +134,7 @@ class CameraViewModel(
     /** Sets the live and captured filter. Does not rebind the camera. */
     fun setFilter(params: EditParams) {
         editParams.value = params
-        cameraService.setFilter(params)
+        pushRender()
     }
 
     /** Selects a catalog filter by id, keeping the other edit values. */
@@ -104,9 +142,69 @@ class CameraViewModel(
         setFilter(editParams.value.copy(filterId = filterId))
     }
 
+    /** Sets the colour temperature in Kelvin, or null for auto white balance. Live; not saved until [commitAdjust]. */
+    fun setKelvin(kelvin: Int?) {
+        _adjust.update { it.withKelvin(kelvin) }
+        camera.value?.let { applyHardware(it) }
+        pushRender()
+    }
+
+    /** Returns white balance to auto. */
+    fun setKelvinAuto() = setKelvin(null)
+
+    /** Sets exposure compensation in stops, snapped to the camera's step. Live; saved on [commitAdjust]. */
+    fun setEv(ev: Float) {
+        _adjust.update { it.withEv(ev) }
+        camera.value?.let { applyHardware(it) }
+        pushRender()
+    }
+
+    /** Returns exposure compensation to 0 EV. */
+    fun resetEv() = setEv(0f)
+
+    /** Opens [tool]'s panel, or closes it if it is already open. */
+    fun toggleTool(tool: CameraTool) {
+        _adjust.update { it.copy(openTool = if (it.openTool == tool) null else tool) }
+    }
+
+    /** Saves the current Kelvin and EV. Call when the user lifts a finger, not on every slider change. */
+    fun commitAdjust() {
+        val current = _adjust.value
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                settingsRepository.setKelvin(current.kelvin)
+                settingsRepository.setEv(current.ev)
+            } catch (e: IOException) {
+                Log.e(TAG, "Saving camera settings failed: ${e.message}", e)
+            }
+        }
+    }
+
     /** Manual exposure (ns) and ISO. Applied to the bound camera only when the user changes them. */
     fun setManualExposure(exposureNs: Long, iso: Int) {
-        camera.value?.let { cameraService.setManualExposure(it, exposureNs, iso) }
+        val bound = camera.value ?: return
+        cameraService.setManualExposure(bound, exposureNs, iso)
+        _adjust.update { it.copy(manualExposureActive = true) }
+    }
+
+    /** Returns exposure to auto. */
+    fun clearManualExposure() {
+        camera.value?.let { cameraService.clearManualExposure(it) }
+        _adjust.update { it.copy(manualExposureActive = false) }
+    }
+
+    /** Sends the edit with the camera-adjust values (Kelvin, software EV) to the renderer. */
+    private fun pushRender() {
+        cameraService.setFilter(editParams.value.withCameraAdjust(_adjust.value))
+    }
+
+    /** Pushes EV (hardware mode only) and the AWB lock for the current Kelvin to [bound]. */
+    private fun applyHardware(bound: Camera) {
+        val state = _adjust.value
+        if (state.evMode == EvMode.HARDWARE) {
+            cameraService.setExposureCompensation(bound, state.evRange.indexFor(state.ev))
+        }
+        cameraService.setAwbLock(bound, locked = state.kelvin != null)
     }
 
     /** Captures a filtered JPEG, stores it through [ImageProcessingService] and returns its Uri. */

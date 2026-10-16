@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -38,6 +39,7 @@ import kotlin.math.roundToInt
 private val TICK_SPACING = 10.dp
 private val RULER_HEIGHT = 40.dp
 private const val MAJOR_TICK_EVERY = 5
+private const val DISABLED_ALPHA = 0.4f
 
 /**
  * Horizontal ruler for a continuous value. Drag to move the ruler under a fixed centre
@@ -53,6 +55,9 @@ fun RulerSlider(
     step: Float,
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: () -> Unit,
+    valueFormatter: (Float) -> String = { defaultRulerFormat(it, valueRange) },
+    majorTickEvery: Int = MAJOR_TICK_EVERY,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -62,7 +67,10 @@ fun RulerSlider(
     val latestOnFinished by rememberUpdatedState(onValueChangeFinished)
     val lastStep = remember { mutableIntStateOf(stepIndex(value, valueRange.start, step)) }
 
-    Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = modifier.fillMaxWidth().alpha(if (enabled) 1f else DISABLED_ALPHA),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -75,13 +83,14 @@ fun RulerSlider(
                     Box(Modifier.size(6.dp).background(AppColors.accent, CircleShape))
                 }
             }
-            Text(formatValue(value, valueRange), style = MaterialTheme.typography.labelMedium, color = AppColors.textPrimary)
+            Text(valueFormatter(value), style = MaterialTheme.typography.labelMedium, color = AppColors.textPrimary)
         }
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(RULER_HEIGHT)
-                .pointerInput(valueRange, step, tickPx) {
+                .pointerInput(enabled, valueRange, step, tickPx) {
+                    if (!enabled) return@pointerInput
                     var dragValue = 0f
                     detectHorizontalDragGestures(
                         onDragStart = { dragValue = latestValue },
@@ -100,7 +109,8 @@ fun RulerSlider(
                         },
                     )
                 }
-                .pointerInput(defaultValue) {
+                .pointerInput(enabled, defaultValue) {
+                    if (!enabled) return@pointerInput
                     detectTapGestures(
                         onDoubleTap = {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -110,12 +120,18 @@ fun RulerSlider(
                     )
                 },
         ) {
-            drawRuler(latestValue, valueRange, step, tickPx)
+            drawRuler(latestValue, valueRange, step, tickPx, majorTickEvery)
         }
     }
 }
 
-private fun DrawScope.drawRuler(value: Float, range: ClosedFloatingPointRange<Float>, step: Float, tickPx: Float) {
+private fun DrawScope.drawRuler(
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    step: Float,
+    tickPx: Float,
+    majorTickEvery: Int,
+) {
     val centre = size.width / 2f
     val fraction = (value - range.start) / step
     val lastIndex = ((range.endInclusive - range.start) / step).roundToInt()
@@ -127,7 +143,7 @@ private fun DrawScope.drawRuler(value: Float, range: ClosedFloatingPointRange<Fl
     for (i in base - visible..base + visible) {
         if (i < 0 || i > lastIndex) continue
         val x = centre + (i - fraction) * tickPx
-        val isMajor = i % MAJOR_TICK_EVERY == 0
+        val isMajor = i % majorTickEvery == 0
         val length = if (isMajor) major else minor
         drawLine(
             color = AppColors.textSecondary.copy(alpha = if (isMajor) 0.9f else 0.5f),
@@ -147,8 +163,8 @@ private fun DrawScope.drawRuler(value: Float, range: ClosedFloatingPointRange<Fl
 private fun stepIndex(value: Float, start: Float, step: Float): Int =
     ((value - start) / step).roundToInt()
 
-/** Shows the value as a whole percentage of the range, with a sign for bipolar ranges. */
-private fun formatValue(value: Float, range: ClosedFloatingPointRange<Float>): String {
+/** Default readout: the value as a whole percentage of the range, with a sign for bipolar ranges. */
+private fun defaultRulerFormat(value: Float, range: ClosedFloatingPointRange<Float>): String {
     val n = (value * 100f).roundToInt()
     return if (range.start < 0f && n > 0) "+$n" else "$n"
 }
