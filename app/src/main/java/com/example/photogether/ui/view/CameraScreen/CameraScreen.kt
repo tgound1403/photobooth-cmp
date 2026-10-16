@@ -65,7 +65,9 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.NavController
 import com.example.photogether.core.camera.CameraTool
 import com.example.photogether.core.navigation.AppRoutes
+import com.example.photogether.core.render.CameraAspect
 import com.example.photogether.core.render.CameraProfiles
+import com.example.photogether.core.render.CropMath
 import com.example.photogether.core.render.FilterCycle
 import com.example.photogether.core.render.RecipeFilters
 import com.example.photogether.ui.components.CameraAdjustPanel
@@ -151,6 +153,9 @@ fun CameraScreen(
         cameraViewModel.initCamera(lifecycleOwner, CameraSelector.LENS_FACING_BACK)
     }
 
+    // Captures crop to the active camera's aspect.
+    LaunchedEffect(cameraProfile) { cameraViewModel.setCameraAspect(cameraProfile.recipe.aspect) }
+
     // The picker opens on the camera in use.
     LaunchedEffect(navController, cameraId) {
         navController.currentBackStackEntry?.savedStateHandle?.set(CameraProfiles.CURRENT_KEY, cameraId)
@@ -202,6 +207,7 @@ fun CameraScreen(
                     previewUseCase = cameraViewModel.preview.value,
                     camera = camera,
                     flash = flash,
+                    aspect = cameraProfile.recipe.aspect,
                     onSwipe = onSwipe,
                     onFocusPoint = cameraViewModel::focusAt,
                 )
@@ -369,6 +375,7 @@ fun CameraPreviewViewfinder(
     previewUseCase: Preview?,
     camera: Camera?,
     flash: NameFlash?,
+    aspect: CameraAspect = CameraAspect.FOUR_THREE,
     onSwipe: (Int) -> Unit,
     onFocusPoint: (MeteringPoint) -> Unit = {},
 ) {
@@ -423,6 +430,7 @@ fun CameraPreviewViewfinder(
         ) {
             AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
             FilterNameFlash(flash)
+            if (aspect.crops) AspectMask(aspect.widthOverHeight)
             if (showGrid) GridOverlay()
             FocusIndicator(position = focusPos, trigger = focusTrigger)
         }
@@ -509,3 +517,22 @@ fun ManualControlsPreview() {
     ManualControls(onExposureChange = {}, onISOChange = {}, onClickCapture = {})
 }
 // endregion
+
+/** Darkens the viewfinder outside the centred frame of [ratio] (width / height), the area a capture crops away. */
+@Composable
+private fun AspectMask(ratio: Float) {
+    androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+        val w = size.width.toInt()
+        val h = size.height.toInt()
+        if (w <= 0 || h <= 0) return@Canvas
+        val r = CropMath.centerCrop(w, h, ratio)
+        val scrim = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f)
+        fun band(l: Int, t: Int, rr: Int, b: Int) {
+            if (rr > l && b > t) drawRect(scrim, Offset(l.toFloat(), t.toFloat()), androidx.compose.ui.geometry.Size((rr - l).toFloat(), (b - t).toFloat()))
+        }
+        band(0, 0, w, r.top)
+        band(0, r.bottom, w, h)
+        band(0, r.top, r.left, r.bottom)
+        band(r.right, r.top, w, r.bottom)
+    }
+}

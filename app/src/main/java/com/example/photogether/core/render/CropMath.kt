@@ -24,6 +24,12 @@ object CropMath {
     fun cropRect(width: Int, height: Int, aspect: CropAspect): PixelRect {
         require(width > 0 && height > 0) { "Invalid size ${width}x$height" }
         val target = aspect.ratio ?: return PixelRect(0, 0, width, height)
+        return centerCrop(width, height, target)
+    }
+
+    /** Largest centred rectangle with width / height equal to [target], inside [width] x [height]. */
+    fun centerCrop(width: Int, height: Int, target: Float): PixelRect {
+        require(width > 0 && height > 0) { "Invalid size ${width}x$height" }
         val current = width.toFloat() / height
         return if (current > target) {
             // Image is wider than the target: keep full height, trim the sides.

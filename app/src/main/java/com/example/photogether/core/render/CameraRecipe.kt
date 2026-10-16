@@ -3,12 +3,26 @@ package com.example.photogether.core.render
 /** Date stamp printed on a photo by the present pass (see DateStampMath and the stamp helper in Shaders.kt). */
 enum class DateStampStyle { NONE, ORANGE_LCD, WHITE_DIGITAL }
 
-/** Crop aspect of a camera body. Stored only; rendering is not implemented yet. */
-enum class CameraAspect { FOUR_THREE, ONE_ONE, THREE_TWO, SIXTEEN_NINE }
+/** Crop aspect of a camera body. Drives the live-preview mask and the centre crop of a captured photo. */
+enum class CameraAspect {
+    FOUR_THREE, ONE_ONE, THREE_TWO, SIXTEEN_NINE;
+
+    /** Portrait width / height. FOUR_THREE is 3/4, the full sensor frame, so it needs no crop. */
+    val widthOverHeight: Float
+        get() = when (this) {
+            FOUR_THREE -> 3f / 4f
+            ONE_ONE -> 1f
+            THREE_TWO -> 2f / 3f
+            SIXTEEN_NINE -> 9f / 16f
+        }
+
+    /** True when the camera trims the 3:4 frame. */
+    val crops: Boolean get() = this != FOUR_THREE
+}
 
 /**
  * Film effects a camera body applies when it is chosen. The float fields mirror the same-named
- * [EditParams] fields and are applied on selection. [dateStamp] is copied into EditParams and drawn by the GPU; [aspect] is only stored.
+ * [EditParams] fields and are applied on selection. [dateStamp] is copied into EditParams and drawn by the GPU; [aspect] masks the preview and crops the capture.
  */
 data class CameraRecipe(
     val leak: Float = 0f,        // 0..1, light leak overlay

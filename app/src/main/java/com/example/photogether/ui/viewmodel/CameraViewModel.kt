@@ -180,6 +180,11 @@ class CameraViewModel(
         setFilter(editParams.value.copy(filterId = filterId))
     }
 
+    /** Sets the aspect that following captures are centre-cropped to (the active camera body's). */
+    fun setCameraAspect(aspect: com.example.photogether.core.render.CameraAspect) {
+        cameraService.cameraAspect = aspect
+    }
+
     /**
      * Sets the five film-effect fields from a camera's [recipe]. Called when the user picks a camera,
      * which resets these fields; other edit values are kept.

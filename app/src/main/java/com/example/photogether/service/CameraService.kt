@@ -37,6 +37,8 @@ import com.example.photogether.core.camera.EvRange
 import com.example.photogether.core.camera.ManualExposure
 import com.example.photogether.core.camera.toSettings
 import com.example.photogether.core.extension.getCameraProvider
+import com.example.photogether.core.render.CameraAspect
+import com.example.photogether.core.render.CropMath
 import com.example.photogether.core.render.EditParams
 import com.example.photogether.core.render.FilterCatalog
 import com.example.photogether.core.render.FilterSurfaceProcessor
@@ -82,6 +84,9 @@ class CameraService(private val catalog: FilterCatalog) {
 
     @Volatile
     private var edit = EditParams()
+
+    /** Aspect of the active camera body. Captures are centre-cropped to it; set by the view model. */
+    @Volatile var cameraAspect: CameraAspect = CameraAspect.FOUR_THREE
 
     @Volatile
     private var lut: Bitmap? = null
@@ -371,7 +376,8 @@ class CameraService(private val catalog: FilterCatalog) {
             fxSeed = FxMath.newCaptureSeed(System.nanoTime()),
             dateStampMillis = System.currentTimeMillis(),
         )
-        if (params.isIdentity) return@withContext
+        val aspect = cameraAspect
+        if (params.isIdentity && !aspect.crops) return@withContext
 
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.absolutePath, bounds)
@@ -379,10 +385,23 @@ class CameraService(private val catalog: FilterCatalog) {
             inSampleSize = fallbackSampleSize(bounds.outWidth, bounds.outHeight, MAX_FALLBACK_SIZE)
             inPreferredConfig = Bitmap.Config.ARGB_8888
         }
-        val source = BitmapFactory.decodeFile(file.absolutePath, opts)
+        val decoded = BitmapFactory.decodeFile(file.absolutePath, opts)
             ?: error("Cannot decode captured photo ${file.name}")
         val orientation = ExifInterface(file.absolutePath)
             .getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+        val sideways = orientation == ExifInterface.ORIENTATION_ROTATE_90 ||
+            orientation == ExifInterface.ORIENTATION_ROTATE_270 ||
+            orientation == ExifInterface.ORIENTATION_TRANSPOSE ||
+            orientation == ExifInterface.ORIENTATION_TRANSVERSE
+        // Crop the source before the GPU pass so grade, vignette and the date stamp all land on the final
+        // frame. The aspect is for the displayed (portrait) image, so a sideways source uses its inverse.
+        val source = if (aspect.crops) {
+            val ratio = aspect.widthOverHeight.let { if (sideways) 1f / it else it }
+            val r = CropMath.centerCrop(decoded.width, decoded.height, ratio)
+            Bitmap.createBitmap(decoded, r.left, r.top, r.width, r.height).also { if (it !== decoded) decoded.recycle() }
+        } else {
+            decoded
+        }
 
         // Owned by the renderer (reuseOutput): encode it before the next render, never recycle it.
         val rendered = try {
