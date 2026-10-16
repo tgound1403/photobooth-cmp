@@ -64,6 +64,8 @@ uniform float uShadow;
 uniform float uFadeAmount;
 uniform float uGrainAmplitude;
 uniform float uVignetteStrength;
+uniform float uGrainSeed;
+uniform float uGrainScale;
 
 const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
 
@@ -75,9 +77,9 @@ vec3 applyLut(vec3 c) {
     return mix(a, b, uLutMix);
 }
 
-// Deterministic per-pixel hash in [0, 1]. Same pixel coordinate always gives the same value.
-float hash01(uvec2 p) {
-    uint h = p.x * 1664525u + p.y * 1013904223u;
+// Deterministic hash in [0, 1]. The same (pixel coordinate, seed) always gives the same value.
+float hash01(uvec2 p, uint seed) {
+    uint h = p.x * 1664525u + p.y * 1013904223u + seed * 2654435761u;
     h ^= h >> 16u;
     h *= 0x7feb352du;
     h ^= h >> 15u;
@@ -121,9 +123,12 @@ void main() {
     // 7. Fade: lift blacks.
     c = c * (1.0 - uFadeAmount) + uFadeAmount;
 
-    // 8. Grain: deterministic noise from the output pixel coordinate.
-    float noise = hash01(uvec2(gl_FragCoord.xy)) * 2.0 - 1.0;
-    c = clamp(c + noise * uGrainAmplitude, 0.0, 1.0);
+    // 8. Grain: noise from (pixel coordinate / grain scale, per-frame seed), strongest in the mid tones.
+    //    uGrainScale keeps the grain size constant across output resolutions.
+    float noise = hash01(uvec2(gl_FragCoord.xy / uGrainScale), uint(uGrainSeed)) * 2.0 - 1.0;
+    float grainL = dot(c, LUMA);
+    float grainWeight = clamp(4.0 * grainL * (1.0 - grainL), 0.0, 1.0);
+    c = clamp(c + noise * uGrainAmplitude * mix(0.35, 1.0, grainWeight), 0.0, 1.0);
 
     // 9. Vignette: smooth radial falloff; r = 1 at the corners.
     float r = length(vUv - 0.5) * 1.41421356;

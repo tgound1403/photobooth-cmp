@@ -27,6 +27,8 @@ internal class AdjustLocations(program: Int) {
     val fadeAmount = GLES30.glGetUniformLocation(program, "uFadeAmount")
     val grainAmplitude = GLES30.glGetUniformLocation(program, "uGrainAmplitude")
     val vignetteStrength = GLES30.glGetUniformLocation(program, "uVignetteStrength")
+    val grainSeed = GLES30.glGetUniformLocation(program, "uGrainSeed")
+    val grainScale = GLES30.glGetUniformLocation(program, "uGrainScale")
 }
 
 /** Uniform locations of the sharpen/present program, looked up once after link. */

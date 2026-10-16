@@ -84,6 +84,7 @@ class FilterSurfaceProcessor : SurfaceProcessor {
     private var outputSnapshot = arrayOfNulls<Output>(4)
     private var outputCount = 0
     private var outputsDirty = true
+    private var grainFrame = 0
     private var adjustLoc: AdjustLocations? = null
     private var sharpenLoc: SharpenLocations? = null
     private val frameTimer = FrameTimer()
@@ -205,6 +206,9 @@ class FilterSurfaceProcessor : SurfaceProcessor {
             GLES30.glUniform1i(adjust.useLutB, if (lutTo != 0) 1 else 0)
             GLES30.glUniform1f(adjust.lutMix, mix)
             snapshot.values.apply(adjust)
+            GLES30.glUniform1f(adjust.grainSeed, (grainFrame++ % GrainMath.SEED_RANGE).toFloat())
+            GLES30.glUniform1f(adjust.grainScale, GrainMath.sizeScale(inp.height))
+            if (BuildConfig.DEBUG) GlUtil.checkGl("grain uniforms")
             drawQuad()
             debugCheckGl("adjust pass")
 

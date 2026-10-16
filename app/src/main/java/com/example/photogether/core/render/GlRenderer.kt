@@ -217,7 +217,7 @@ class GlRenderer : AutoCloseable {
         GLES30.glActiveTexture(GLES30.GL_TEXTURE2)
         GLES30.glBindTexture(GLES30.GL_TEXTURE_3D, lutTex)
 
-        GlUtil.applyAdjustUniforms(adjustProgram, p, useLut = lutTex != 0)
+        GlUtil.applyAdjustUniforms(adjustProgram, p, useLut = lutTex != 0, outputHeight = h)
 
         drawQuad()
         checkGl("adjust pass")

@@ -151,7 +151,13 @@ internal object GlUtil {
      * Texture units: uSrc = 0, uLutA = 1, uLutB = 2 (the same texture on both, uLutMix = 1).
      * [useLut] false disables the LUT lookup.
      */
-    fun applyAdjustUniforms(program: Int, p: EditParams, useLut: Boolean) {
+    fun applyAdjustUniforms(
+        program: Int,
+        p: EditParams,
+        useLut: Boolean,
+        grainSeed: Float = GrainMath.CAPTURE_SEED,
+        outputHeight: Int = 1080,
+    ) {
         val (wr, wg, wb) = whiteBalanceGains(p.temperature, p.tint)
         val (kr, kg, kb) = kelvinGains(p.kelvin)
         val evGain = 2f.pow(p.softwareEv / 2.2f)
@@ -173,6 +179,9 @@ internal object GlUtil {
         setUniform1f(program, "uFadeAmount", fadeAmount(p.fade))
         setUniform1f(program, "uGrainAmplitude", grainAmplitude(p.grain))
         setUniform1f(program, "uVignetteStrength", vignetteStrength(p.vignette))
+        setUniform1f(program, "uGrainSeed", grainSeed)
+        setUniform1f(program, "uGrainScale", GrainMath.sizeScale(outputHeight))
+        checkGl("grain uniforms")
     }
 
     fun setUniform1i(program: Int, name: String, value: Int) {
