@@ -186,6 +186,7 @@ uniform float uStampScale;    // output height / 1080, clamped
 uniform vec2 uStampOut;       // size of the displayed (upright) image in pixels
 uniform vec2 uStampImage;     // size of the rendered image in pixels
 uniform int uStampRot;        // clockwise quarter turns that show the render upright
+uniform vec2 uStampOffset;    // top-left of the stamp frame inside the rendered image, pixels (live crop)
 uniform int uStampTopDown;    // 1 when gl_FragCoord.y already counts from the top of the image
 
 // Deterministic hash in [0, 1].
@@ -270,7 +271,7 @@ vec3 dateStamp(vec3 col) {
     if (uStampRot == 1) pix = vec2(uStampImage.y - pix.y, pix.x);
     else if (uStampRot == 2) pix = uStampImage - pix;
     else if (uStampRot == 3) pix = vec2(pix.y, uStampImage.x - pix.x);
-    vec2 p = pix - origin;
+    vec2 p = pix - uStampOffset - origin;
     float reach = 10.0 * s;
     if (p.x < -reach || p.y < -reach || p.x > total + reach || p.y > dh + reach) return col;
 

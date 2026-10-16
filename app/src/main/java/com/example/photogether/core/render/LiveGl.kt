@@ -65,6 +65,7 @@ internal class SharpenLocations(program: Int) {
     val stampOut = GLES30.glGetUniformLocation(program, "uStampOut")
     val stampImage = GLES30.glGetUniformLocation(program, "uStampImage")
     val stampRot = GLES30.glGetUniformLocation(program, "uStampRot")
+    val stampOffset = GLES30.glGetUniformLocation(program, "uStampOffset")
     val stampTopDown = GLES30.glGetUniformLocation(program, "uStampTopDown")
 }
 
@@ -290,12 +291,27 @@ internal class StampValues(
     val active: Boolean get() = styleCode != 0
     private val digits = IntArray(DateStampMath.DIGIT_COUNT)
     private var bucket = Long.MIN_VALUE
+    private var cropW = 0
+    private var cropH = 0
+    private var cropR = 0f
+    private var crop = PixelRect(0, 0, 1, 1)
+
+    private fun cropFor(w: Int, h: Int, ratio: Float): PixelRect {
+        if (w != cropW || h != cropH || ratio != cropR) {
+            cropW = w; cropH = h; cropR = ratio
+            crop = CropMath.centerCrop(w, h, ratio)
+        }
+        return crop
+    }
 
     /**
      * Sets the stamp uniforms of the present program (must be in use). [rowsFromTop] is true when
      * gl_FragCoord.y counts from the top of the image (offline read-back), false for a window surface.
      */
-    fun apply(l: SharpenLocations, nowMs: Long, outW: Int, outH: Int, rowsFromTop: Boolean) {
+    fun apply(
+        l: SharpenLocations, nowMs: Long, outW: Int, outH: Int, rowsFromTop: Boolean,
+        cropRatio: Float = 0f, // > 0: the stamp lives in the centred crop of this ratio (live preview mask)
+    ) {
         GLES30.glUniform1i(l.stampStyle, styleCode)
         if (styleCode == 0) return
         val millis = if (fixedMillis > 0L) fixedMillis else nowMs
@@ -306,8 +322,15 @@ internal class StampValues(
         }
         GLES30.glUniform1iv(l.stampDigits, DateStampMath.DIGIT_COUNT, digits, 0)
         val turns = ((quarterTurns % 4) + 4) % 4
-        val dispW = if (turns % 2 == 1) outH else outW
-        val dispH = if (turns % 2 == 1) outW else outH
+        var dispW = if (turns % 2 == 1) outH else outW
+        var dispH = if (turns % 2 == 1) outW else outH
+        var offX = 0f
+        var offY = 0f
+        if (cropRatio > 0f && turns == 0) {
+            val r = cropFor(outW, outH, cropRatio)
+            dispW = r.width; dispH = r.height; offX = r.left.toFloat(); offY = r.top.toFloat()
+        }
+        GLES30.glUniform2f(l.stampOffset, offX, offY)
         GLES30.glUniform1f(l.stampScale, DateStampMath.stampScale(dispW, dispH))
         GLES30.glUniform2f(l.stampOut, dispW.toFloat(), dispH.toFloat())
         GLES30.glUniform2f(l.stampImage, outW.toFloat(), outH.toFloat())

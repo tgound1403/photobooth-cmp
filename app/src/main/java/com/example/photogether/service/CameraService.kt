@@ -89,6 +89,11 @@ class CameraService(private val catalog: FilterCatalog) {
 
     /** Aspect of the active camera body. Captures are centre-cropped to it; set by the view model. */
     @Volatile var cameraAspect: CameraAspect = CameraAspect.FOUR_THREE
+        set(value) {
+            field = value
+            // The live date stamp sits inside the same crop the capture keeps.
+            processor.stampCropRatio = if (value.crops) value.widthOverHeight else 0f
+        }
 
     @Volatile
     private var lut: Bitmap? = null
@@ -439,11 +444,22 @@ class CameraService(private val catalog: FilterCatalog) {
         } finally {
             source.recycle()
         }
-        file.outputStream().use { rendered.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, it) }
-
-        ExifInterface(file.absolutePath).apply {
-            setAttribute(ExifInterface.TAG_ORIENTATION, orientation.toString())
-            saveAttributes()
+        // Atomic write: the final file only ever holds a complete JPEG (never truncated, never 0 bytes).
+        val tmp = File(file.parentFile, file.name + ".tmp")
+        try {
+            java.io.FileOutputStream(tmp).use { out ->
+                rendered.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+                out.flush()
+                out.fd.sync()
+            }
+            ExifInterface(tmp.absolutePath).apply {
+                setAttribute(ExifInterface.TAG_ORIENTATION, orientation.toString())
+                saveAttributes()
+            }
+            // Same-directory rename replaces the target atomically on Linux. File.renameTo keeps minSdk 24.
+            if (!tmp.renameTo(file)) throw java.io.IOException("Rename failed: ${tmp.name} -> ${file.name}")
+        } finally {
+            tmp.delete() // no-op after a successful move
         }
     } }
 

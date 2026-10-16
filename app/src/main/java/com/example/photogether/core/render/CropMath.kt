@@ -43,4 +43,25 @@ object CropMath {
             PixelRect(0, top, width, top + h)
         }
     }
+
+    /**
+     * The saved crop as seen in a view of [viewW] x [viewH] that shows a frame of [frameRatio] (width / height)
+     * with FILL_CENTER (uniform scale to cover the view, centred). The crop is the centred [cropRatio] part of
+     * the frame, clipped to the view. This is the one rule shared by the mask and the capture.
+     */
+    fun visibleCrop(viewW: Float, viewH: Float, frameRatio: Float, cropRatio: Float): FloatRect {
+        require(viewW > 0f && viewH > 0f && frameRatio > 0f && cropRatio > 0f) { "Invalid geometry" }
+        val scale = maxOf(viewW / frameRatio, viewH)
+        val frameW = frameRatio * scale
+        val frameH = scale
+        val cropW: Float
+        val cropH: Float
+        if (frameW / frameH > cropRatio) { cropH = frameH; cropW = frameH * cropRatio } else { cropW = frameW; cropH = frameW / cropRatio }
+        val cx = viewW / 2f
+        val cy = viewH / 2f
+        return FloatRect(
+            maxOf(0f, cx - cropW / 2f), maxOf(0f, cy - cropH / 2f),
+            minOf(viewW, cx + cropW / 2f), minOf(viewH, cy + cropH / 2f),
+        )
+    }
 }

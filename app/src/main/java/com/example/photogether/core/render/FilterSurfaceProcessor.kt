@@ -58,6 +58,10 @@ class FilterSurfaceProcessor(private val assets: AssetManager? = null) : Surface
     @Volatile
     private var edit = Edit(EditParams(), null)
 
+    /** Width / height of the capture crop (0 = none). The live date stamp is placed inside this centred crop. */
+    @Volatile
+    var stampCropRatio: Float = 0f
+
     @Volatile
     private var released = false
 
@@ -293,7 +297,7 @@ class FilterSurfaceProcessor(private val assets: AssetManager? = null) : Surface
                 GLES30.glUniform1i(sharpen.useBloom, 0)
             }
             fx.apply(sharpen, fxTextures)
-            stamp.apply(sharpen, System.currentTimeMillis(), size.width, size.height, rowsFromTop = false)
+            stamp.apply(sharpen, System.currentTimeMillis(), size.width, size.height, rowsFromTop = false, cropRatio = stampCropRatio)
             debugCheckGl("fx uniforms")
             GLES30.glUniformMatrix4fv(sharpen.texMatrix, 1, false, outMatrix, 0)
             drawQuad()

@@ -218,6 +218,11 @@ class CameraViewModel(
         ShutterSoundPrefs.write(getApplication(), enabled)
     }
 
+    /** Re-reads the saved shutter sound setting. The Settings screen changes it while this view model stays alive. */
+    fun reloadShutterSound() {
+        _shutterSoundEnabled.value = ShutterSoundPrefs.read(getApplication())
+    }
+
     /** Sets the shutter sound that following captures play (the active camera body's). */
     fun setCameraShutterSound(sound: ShutterSound) {
         cameraShutterSound = sound

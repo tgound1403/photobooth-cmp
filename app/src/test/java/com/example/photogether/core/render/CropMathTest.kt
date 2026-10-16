@@ -49,4 +49,27 @@ class CropMathTest {
             }
         }
     }
+
+    @Test
+    fun visibleCropOnExactFrameViewMatchesCenterCrop() {
+        val r = CropMath.visibleCrop(300f, 400f, 3f / 4f, 1f)
+        assertEquals(0f, r.left, 0.01f); assertEquals(300f, r.right, 0.01f)
+        assertEquals(50f, r.top, 0.01f); assertEquals(350f, r.bottom, 0.01f)
+    }
+
+    @Test
+    fun visibleCropOnNarrowViewFollowsFrameNotView() {
+        // View 300x500 (narrower than 3:4): frame is scaled to height 500, width 375, sides cut by the view.
+        // The 1:1 saved crop is 375 wide, so it spans the whole view width, not a view-width square.
+        val r = CropMath.visibleCrop(300f, 500f, 3f / 4f, 1f)
+        assertEquals(0f, r.left, 0.01f); assertEquals(300f, r.right, 0.01f)
+        assertEquals(375f, r.height, 0.01f); assertEquals(62.5f, r.top, 0.01f)
+    }
+
+    @Test
+    fun visibleCropOnWideViewKeepsSquareOfFrameWidth() {
+        // View 400x400 (wider than 3:4): frame 400x533, 1:1 crop is 400x400 = the whole view.
+        val r = CropMath.visibleCrop(400f, 400f, 3f / 4f, 1f)
+        assertEquals(400f, r.width, 0.01f); assertEquals(400f, r.height, 0.01f)
+    }
 }

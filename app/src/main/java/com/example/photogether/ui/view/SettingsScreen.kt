@@ -12,8 +12,11 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,15 +27,27 @@ import com.example.photogether.ui.theme.AppColors
 import com.example.photogether.ui.theme.PhotogetherTheme
 import com.example.photogether.ui.theme.Radius
 import com.example.photogether.ui.theme.Spacing
+import com.example.photogether.ui.viewmodel.SettingsViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SettingsScreen(navController: NavController) {
-    SettingsContent(onBack = { navController.navigateUp() })
+    val viewModel = koinViewModel<SettingsViewModel>()
+    val shutterSoundOn by viewModel.shutterSoundEnabled.collectAsState()
+    SettingsContent(
+        onBack = { navController.navigateUp() },
+        shutterSoundOn = shutterSoundOn,
+        onShutterSoundChange = viewModel::setShutterSoundEnabled,
+    )
 }
 
 /** Stateless settings body. The app uses a single dark theme, so the appearance row is informational. */
 @Composable
-fun SettingsContent(onBack: () -> Unit) {
+fun SettingsContent(
+    onBack: () -> Unit,
+    shutterSoundOn: Boolean = true,
+    onShutterSoundChange: (Boolean) -> Unit = {},
+) {
     Scaffold(
         topBar = { DefaultAppBar(onBack = onBack, title = "Cài Đặt") },
         containerColor = AppColors.background
@@ -77,6 +92,29 @@ fun SettingsContent(onBack: () -> Unit) {
                             color = AppColors.textSecondary
                         )
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+
+            GlassBox(
+                modifier = Modifier.fillMaxWidth(),
+                cornerRadius = Radius.lg
+            ) {
+                Row(
+                    modifier = Modifier.padding(Spacing.lg),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Âm chụp",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AppColors.textPrimary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Switch(
+                        checked = shutterSoundOn,
+                        onCheckedChange = onShutterSoundChange
+                    )
                 }
             }
         }

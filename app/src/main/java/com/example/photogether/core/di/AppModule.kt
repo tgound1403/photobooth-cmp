@@ -47,6 +47,7 @@ val appModule = module {
         )
     }
     viewModel { com.example.photogether.ui.viewmodel.GalleryViewModel(get()) }
+    viewModel { com.example.photogether.ui.viewmodel.SettingsViewModel(androidApplication()) }
     single { com.example.photogether.core.render.FilterCatalog(androidContext()) }
     factory<com.example.photogether.ui.editor.EditorImageIo> {
         com.example.photogether.ui.editor.AndroidEditorImageIo(androidContext())

@@ -29,8 +29,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.FlashAuto
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
@@ -45,6 +43,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -69,6 +68,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
@@ -140,7 +141,6 @@ fun CameraScreen(
     val adjust by cameraViewModel.adjust.collectAsStateWithLifecycle()
     val camera = cameraViewModel.camera.value
     val flashMode by cameraViewModel.flashMode.collectAsStateWithLifecycle()
-    val shutterSoundOn by cameraViewModel.shutterSoundEnabled.collectAsStateWithLifecycle()
     var flashFx by remember { mutableStateOf<FlashFx?>(null) }
     // The gallery box shows the last photo taken this session. A new photo flies from the viewfinder
     // into the box; both are measured in window px so the flight lands exactly on the box.
@@ -170,6 +170,15 @@ fun CameraScreen(
     }
 
     // Captures crop to the active camera's aspect.
+    // The shutter sound is set on the Settings screen. Re-read it whenever this screen resumes, so a change made there applies.
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) cameraViewModel.reloadShutterSound()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     // The same effect sets the camera's default flash, for the first camera and every change after.
     LaunchedEffect(cameraProfile) {
         cameraViewModel.setCameraAspect(cameraProfile.recipe.aspect)
@@ -213,8 +222,6 @@ fun CameraScreen(
                 onOpenSettings = { navController.navigate(AppRoutes.SETTINGS) },
                 flashMode = if (cameraViewModel.hasFlash.value) flashMode else null,
                 onFlashClick = { cameraViewModel.setFlashMode(flashMode.next()) },
-                shutterSoundOn = shutterSoundOn,
-                onShutterSoundClick = { cameraViewModel.setShutterSoundEnabled(!shutterSoundOn) },
             )
 
             // The viewfinder takes the space the rest of the screen leaves. Its bottom overlays sit inside it.
@@ -382,8 +389,6 @@ private fun CameraTopBar(
     onOpenSettings: () -> Unit,
     flashMode: FlashMode?,
     onFlashClick: () -> Unit,
-    shutterSoundOn: Boolean,
-    onShutterSoundClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -409,13 +414,6 @@ private fun CameraTopBar(
                         tint = InkColors.textPrimary,
                     )
                 }
-            }
-            IconButton(onClick = onShutterSoundClick) {
-                Icon(
-                    imageVector = if (shutterSoundOn) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
-                    contentDescription = if (shutterSoundOn) "Âm chụp: bật" else "Âm chụp: tắt",
-                    tint = InkColors.textPrimary,
-                )
             }
         }
         IconButton(onClick = onOpenSettings) {
@@ -585,21 +583,24 @@ fun ManualControlsPreview() {
 }
 // endregion
 
-/** Darkens the viewfinder outside the centred frame of [ratio] (width / height), the area a capture crops away. */
+/**
+ * Darkens the viewfinder outside the saved crop. The crop is placed with the same FILL_CENTER rule PreviewView
+ * uses for the 3:4 camera frame ([CropMath.visibleCrop]), so the mask matches the capture on any viewfinder size.
+ */
 @Composable
 private fun AspectMask(ratio: Float) {
     androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-        val w = size.width.toInt()
-        val h = size.height.toInt()
-        if (w <= 0 || h <= 0) return@Canvas
-        val r = CropMath.centerCrop(w, h, ratio)
+        val w = size.width
+        val h = size.height
+        if (w <= 0f || h <= 0f) return@Canvas
+        val r = CropMath.visibleCrop(w, h, CameraAspect.FOUR_THREE.widthOverHeight, ratio)
         val scrim = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f)
-        fun band(l: Int, t: Int, rr: Int, b: Int) {
-            if (rr > l && b > t) drawRect(scrim, Offset(l.toFloat(), t.toFloat()), androidx.compose.ui.geometry.Size((rr - l).toFloat(), (b - t).toFloat()))
+        fun band(l: Float, t: Float, rr: Float, b: Float) {
+            if (rr > l && b > t) drawRect(scrim, Offset(l, t), androidx.compose.ui.geometry.Size(rr - l, b - t))
         }
-        band(0, 0, w, r.top)
-        band(0, r.bottom, w, h)
-        band(0, r.top, r.left, r.bottom)
+        band(0f, 0f, w, r.top)
+        band(0f, r.bottom, w, h)
+        band(0f, r.top, r.left, r.bottom)
         band(r.right, r.top, w, r.bottom)
     }
 }
