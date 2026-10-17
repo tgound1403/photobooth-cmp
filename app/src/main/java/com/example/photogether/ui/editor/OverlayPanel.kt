@@ -20,10 +20,11 @@ import com.example.photogether.core.render.OverlayCatalog
 import com.example.photogether.core.render.OverlayItem
 import com.example.photogether.core.render.OverlayKind
 import com.example.photogether.core.render.OverlaySpec
+import com.example.photogether.core.render.ViewfinderSkin
 import com.example.photogether.ui.theme.Spacing
 
 /**
- * Light leak, scratch and distortion presets, plus stickers and text placed at the centre.
+ * Light leak, scratch, distortion and camera skin presets, plus stickers and text placed at the centre.
  * Tapping an item removes it.
  */
 @Composable
@@ -49,6 +50,7 @@ fun OverlayPanel(
         PresetRow("Distortion", OverlayCatalog.distortions, overlays.distortion) { id ->
             onOverlays(overlays.copy(distortion = id))
         }
+        SkinRow(overlays.skin) { skin -> onOverlays(overlays.copy(skin = skin)) }
 
         SectionLabel("Stickers")
         Row(
@@ -105,6 +107,29 @@ fun OverlayPanel(
             }
         }
     }
+}
+
+/** Camera body skins painted over the photo. Tapping the active skin keeps it; "None" turns it off. */
+@Composable
+private fun SkinRow(selected: ViewfinderSkin, onSelect: (ViewfinderSkin) -> Unit) {
+    SectionLabel("Skin")
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+        ViewfinderSkin.entries.forEach { skin ->
+            EditorChip(label = skin.label(), selected = selected == skin, onClick = { onSelect(skin) })
+        }
+    }
+}
+
+private fun ViewfinderSkin.label(): String = when (this) {
+    ViewfinderSkin.NONE -> "None"
+    ViewfinderSkin.FILM_FRAME -> "Film frame"
+    ViewfinderSkin.RANGEFINDER -> "Rangefinder"
+    ViewfinderSkin.RANGEFINDER_MONO -> "Mono rangefinder"
+    ViewfinderSkin.SOFT_GLASS -> "Soft glass"
+    ViewfinderSkin.LCD_DIGICAM -> "LCD digicam"
 }
 
 /** One row of presets; tapping the active preset turns it off. */

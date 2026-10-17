@@ -20,7 +20,7 @@ interface EditRenderer : AutoCloseable {
 }
 
 /**
- * The full edit chain: GPU grade and effects (filter, adjustments, chromatic, leak, distortion, scratch), crop, frame, items.
+ * The full edit chain: GPU grade and effects (filter, adjustments, chromatic, leak, distortion, scratch), crop, skin, frame, items.
  * Always starts from the source passed in; callers never feed a previous output back in.
  */
 class EditPipeline(private val catalog: FilterCatalog) : EditRenderer {
@@ -53,7 +53,8 @@ class EditPipeline(private val catalog: FilterCatalog) : EditRenderer {
             }
 
         return withContext(Dispatchers.Default) {
-            val framed = FrameRenderer.apply(cropped, snapshot.frame, background, density)
+            val skinned = SkinRenderer.apply(cropped, overlays.skin)
+            val framed = FrameRenderer.apply(skinned, snapshot.frame, background, density)
             OverlayRenderer.applyItems(framed, overlays.items)
         }
     }

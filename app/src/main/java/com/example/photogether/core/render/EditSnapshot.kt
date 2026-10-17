@@ -25,6 +25,8 @@ data class OverlaySpec(
     val lightLeak: String? = null,
     val scratch: String? = null,
     val distortion: String? = null,
+    /** Camera body skin painted over the photo, before the frame. [ViewfinderSkin.NONE] paints nothing. */
+    val skin: ViewfinderSkin = ViewfinderSkin.NONE,
     val items: List<OverlayItem> = emptyList(),
 )
 

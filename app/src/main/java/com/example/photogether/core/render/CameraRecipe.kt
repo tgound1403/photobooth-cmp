@@ -21,9 +21,10 @@ enum class CameraAspect {
 }
 
 /**
- * Viewfinder skin of a camera body: a Compose overlay on the live preview. [RANGEFINDER_MONO] is the grey
- * variant of [RANGEFINDER], kept separate so every camera has its own shutter tint.
- * Colours are ARGB ints so this file stays free of Compose types; see ViewfinderSkin.kt for drawing.
+ * Skin of a camera body. It is no longer drawn on the camera preview; the editor offers it as an overlay
+ * ([OverlaySpec.skin]), drawn by [SkinRenderer]. The camera keeps it only for the shutter tint.
+ * [RANGEFINDER_MONO] is the grey variant of [RANGEFINDER], kept separate so every camera has its own shutter tint.
+ * Colours are ARGB ints so this file stays free of Compose types.
  */
 enum class ViewfinderSkin(val shutterTint: Long, val shutterRing: Long) {
     NONE(0L, 0L),

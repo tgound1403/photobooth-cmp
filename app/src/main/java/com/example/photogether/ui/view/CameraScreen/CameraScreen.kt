@@ -255,12 +255,6 @@ fun CameraScreen(
                     onSwipe = onSwipe,
                     onFocusPoint = cameraViewModel::focusAt,
                 )
-                ViewfinderSkinOverlay(
-                    skin = cameraProfile.recipe.skin,
-                    modifier = Modifier
-                        .matchParentSize()
-                        .clip(RoundedCornerShape(Radius.viewfinder)),
-                )
                 ScreenFlash(
                     fx = flashFx,
                     modifier = Modifier
