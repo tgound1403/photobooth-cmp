@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -35,27 +34,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.example.photogether.ui.theme.BinsooType
 import com.example.photogether.ui.theme.InkColors
-import com.example.photogether.ui.theme.Radius
 import com.example.photogether.ui.theme.Spacing
 
 /**
- * Bottom row of the camera screen: the gallery box (left), the shutter pill (centre) and the
+ * Bottom row of the camera screen: the gallery iris (left), the shutter pill (centre) and the
  * camera selector (right, shows the profile name and opens the picker).
  *
- * The left slot shows [lastPhoto] once one has been taken in this session. [onGalleryBoundsChanged]
- * reports its position in the window, so a freshly taken photo can fly into it.
+ * The left slot shows [lastPhoto] through the iris. [captureSeq] changes on each shutter press and
+ * makes the iris close and reopen on the new photo.
  */
 @Composable
 fun ManualControls(
@@ -67,7 +60,7 @@ fun ManualControls(
     onOpenPicker: () -> Unit = {},
     pickerName: String? = null,
     lastPhoto: Uri? = null,
-    onGalleryBoundsChanged: (Rect) -> Unit = {},
+    captureSeq: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     var isoValue by remember { mutableIntStateOf(100) }
@@ -103,44 +96,13 @@ fun ManualControls(
 //            )
 //        }
 
-        GalleryButton(
+        ApertureGalleryButton(
             lastPhoto = lastPhoto,
+            captureSeq = captureSeq,
             onClick = onOpenGallery,
-            onBoundsChanged = onGalleryBoundsChanged,
         )
         Shutter(onClick = onClickCapture, skin = skin)
         PickerButton(name = pickerName, onClick = onOpenPicker)
-    }
-}
-
-/** Gallery box in the thumbnail slot (36x56 rounded rectangle). Shows the last photo once taken. */
-@Composable
-private fun GalleryButton(lastPhoto: Uri?, onClick: () -> Unit, onBoundsChanged: (Rect) -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(width = 36.dp, height = 56.dp)
-            .onGloballyPositioned { onBoundsChanged(it.boundsInRoot()) }
-            .clip(RoundedCornerShape(Radius.md))
-            .background(InkColors.surfaceElevated.copy(alpha = 0.7f))
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = "Mở thư viện" },
-        contentAlignment = Alignment.Center,
-    ) {
-        if (lastPhoto != null) {
-            AsyncImage(
-                model = lastPhoto,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Default.Photo,
-                contentDescription = null,
-                tint = InkColors.textPrimary,
-                modifier = Modifier.size(20.dp),
-            )
-        }
     }
 }
 

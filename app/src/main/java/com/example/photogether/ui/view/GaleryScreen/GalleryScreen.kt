@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.photogether.core.moments.CameraShotQuery
 import com.example.photogether.core.navigation.AppRoutes
 import com.example.photogether.ui.components.DefaultAppBar
 import com.example.photogether.ui.theme.AppColors
@@ -42,8 +43,9 @@ import com.example.photogether.ui.theme.PhotogetherTheme
 import com.example.photogether.ui.theme.Radius
 import com.example.photogether.ui.theme.Spacing
 
+/** [cameraOnly] lists just the photos taken on the camera screen; otherwise every image on the device. */
 @Composable
-fun GalleryScreen(navController: NavController) {
+fun GalleryScreen(navController: NavController, cameraOnly: Boolean = false) {
     val context = LocalContext.current
     var images by remember { mutableStateOf(listOf<String>()) }
     val readPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -73,7 +75,7 @@ fun GalleryScreen(navController: NavController) {
     }
 
     LaunchedEffect(granted) {
-        if (granted) images = fetchImages(context)
+        if (granted) images = fetchImages(context, cameraOnly)
     }
 
     GalleryPickerContent(
@@ -127,14 +129,15 @@ private fun ImageItem(imagePath: String, onClick: () -> Unit) {
     }
 }
 
-fun fetchImages(context: Context): List<String> {
+fun fetchImages(context: Context, cameraOnly: Boolean = false): List<String> {
     val images = mutableListOf<String>()
     val projection = arrayOf(MediaStore.Images.Media.DATA)
+    val shots = if (cameraOnly) CameraShotQuery.selection(Build.VERSION.SDK_INT) else null
     val cursor = context.contentResolver.query(
         MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
         projection,
-        null,
-        null,
+        shots?.first,
+        shots?.second,
         MediaStore.Images.Media.DATE_ADDED + " DESC"
     )
 

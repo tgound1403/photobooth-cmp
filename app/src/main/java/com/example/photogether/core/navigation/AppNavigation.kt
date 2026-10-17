@@ -49,6 +49,10 @@ fun AppNavigation() {
         composable(AppRoutes.PHOTO_PICKER) {
             GalleryScreen(navController)
         }
+        // Photos taken on the camera screen, opened from its gallery button.
+        composable(AppRoutes.CAMERA_GALLERY) {
+            GalleryScreen(navController, cameraOnly = true)
+        }
         composable(AppRoutes.NO_PERMISSION_GRANTED) {
             NoPermissionGrantedScreen()
         }
@@ -153,6 +157,7 @@ object AppRoutes {
     const val MAIN = "main"
     const val GALLERY = "gallery"
     const val PHOTO_PICKER = "photo_picker"
+    const val CAMERA_GALLERY = "camera_gallery"
     const val NO_PERMISSION_GRANTED = "noPermissionGranted"
     const val PHOTO_BOOTH = "photoBooth"
     const val PHOTO_BOOTH_SELECTION = "photoBoothSelection"

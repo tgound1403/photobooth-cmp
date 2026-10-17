@@ -58,11 +58,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -94,8 +91,6 @@ import com.example.photogether.ui.components.GridOverlay
 import com.example.photogether.ui.components.ManualControls
 import com.example.photogether.ui.components.ZoomControl
 import com.example.photogether.ui.components.ZoomPill
-import com.example.photogether.ui.camera.PhotoFlight
-import com.example.photogether.ui.camera.PhotoFlightOverlay
 import com.example.photogether.ui.components.kelvinLabel
 import com.example.photogether.ui.theme.BinsooType
 import com.example.photogether.ui.theme.InkColors
@@ -148,13 +143,11 @@ fun CameraScreen(
     val cropZoomMm = (cameraViewModel.lensMm.floatValue * cameraZoom * cameraViewModel.cropZoom.floatValue).roundToInt()
     val flashMode by cameraViewModel.flashMode.collectAsStateWithLifecycle()
     var flashFx by remember { mutableStateOf<FlashFx?>(null) }
-    // The gallery box shows the last photo taken this session. A new photo flies from the viewfinder
-    // into the box; both are measured in window px so the flight lands exactly on the box.
-    // rememberSaveable: the screen leaves composition when the picker opens, and a plain remember would reset the box.
+    // The gallery iris shows the last photo taken this session. captureSeq counts shutter presses, so the
+    // iris closes on each one and reopens on the new photo.
+    // rememberSaveable: the screen leaves composition when the gallery opens, and a plain remember would reset the box.
     var lastPhoto by rememberSaveable { mutableStateOf<Uri?>(null) }
-    var flight by remember { mutableStateOf<PhotoFlight?>(null) }
-    var viewfinderBounds by remember { mutableStateOf<Rect?>(null) }
-    var galleryBounds by remember { mutableStateOf<Rect?>(null) }
+    var captureSeq by remember { mutableIntStateOf(0) }
 
     val onSelect: (String) -> Unit = { id ->
         val recipe = RecipeFilters.recipeFor(id, recipes)
@@ -243,8 +236,7 @@ fun CameraScreen(
                 CameraPreviewViewfinder(
                     navController = navController,
                     modifier = Modifier
-                        .fillMaxSize()
-                        .onGloballyPositioned { viewfinderBounds = it.boundsInRoot() },
+                        .fillMaxSize(),
                     previewUseCase = cameraViewModel.preview.value,
                     camera = camera,
                     flash = flash,
@@ -357,39 +349,24 @@ fun CameraScreen(
                     cameraViewModel.setManualExposure(exposureTime.longValue, it)
                 },
                 onClickCapture = {
+                    captureSeq++
                     if (flashMode == FlashMode.ON && cameraViewModel.hasFlash.value) {
                         flashFx = FlashFx(cameraProfile.recipe.flashStyle)
                     }
                     cameraViewModel.takePhotoToGallery(
                         cameraId = cameraProfile.id,
-                        onSaved = { uri ->
-                            // A flight still in the air lands now, so its photo is not lost.
-                            flight?.let { lastPhoto = it.uri }
-                            val from = viewfinderBounds
-                            val to = galleryBounds
-                            if (from != null && to != null) {
-                                flight = PhotoFlight(uri, from, to)
-                            } else {
-                                lastPhoto = uri
-                            }
-                        },
+                        onSaved = { uri -> lastPhoto = uri },
                         onError = { exception -> Log.e(TAG, "Capture failed", exception) },
                     )
                 },
                 skin = cameraProfile.recipe.skin,
-                onOpenGallery = { navController.navigate(AppRoutes.PHOTO_PICKER) },
+                onOpenGallery = { navController.navigate(AppRoutes.CAMERA_GALLERY) },
                 onOpenPicker = { navController.navigate(AppRoutes.CAMERA_PICKER) },
                 pickerName = cameraProfile.name,
                 lastPhoto = lastPhoto,
-                onGalleryBoundsChanged = { galleryBounds = it },
+                captureSeq = captureSeq,
                 modifier = Modifier.padding(bottom = Spacing.md),
             )
-        }
-        flight?.let { current ->
-            PhotoFlightOverlay(flight = current) {
-                lastPhoto = current.uri
-                flight = null
-            }
         }
     }
 }
