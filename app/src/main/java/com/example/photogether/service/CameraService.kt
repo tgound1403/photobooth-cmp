@@ -41,6 +41,7 @@ import com.example.photogether.core.render.CameraAspect
 import com.example.photogether.core.render.CropMath
 import com.example.photogether.core.render.EditParams
 import com.example.photogether.core.render.FilterCatalog
+import com.example.photogether.core.render.PixelRect
 import com.example.photogether.core.render.FlashMode
 import com.example.photogether.core.render.flashPlan
 import com.example.photogether.core.render.FilterSurfaceProcessor
@@ -94,6 +95,9 @@ class CameraService(private val catalog: FilterCatalog) {
             // The live date stamp sits inside the same crop the capture keeps.
             processor.stampCropRatio = if (value.crops) value.widthOverHeight else 0f
         }
+
+    /** Extra zoom applied by centre-cropping the capture (1 = none). Set by the view model for crop-frame zoom. */
+    @Volatile var cropZoom: Float = 1f
 
     @Volatile
     private var lut: Bitmap? = null
@@ -403,7 +407,9 @@ class CameraService(private val catalog: FilterCatalog) {
             dateStampMillis = System.currentTimeMillis(),
         )
         val aspect = cameraAspect
-        if (params.isIdentity && !aspect.crops) return@withContext
+        val cropZoom = cropZoom
+        val zoomCrops = cropZoom > 1.001f
+        if (params.isIdentity && !aspect.crops && !zoomCrops) return@withContext
 
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.absolutePath, bounds)
@@ -421,9 +427,15 @@ class CameraService(private val catalog: FilterCatalog) {
             orientation == ExifInterface.ORIENTATION_TRANSVERSE
         // Crop the source before the GPU pass so grade, vignette and the date stamp all land on the final
         // frame. The aspect is for the displayed (portrait) image, so a sideways source uses its inverse.
-        val source = if (aspect.crops) {
+        val source = if (aspect.crops || zoomCrops) {
             val ratio = aspect.widthOverHeight.let { if (sideways) 1f / it else it }
-            val r = CropMath.centerCrop(decoded.width, decoded.height, ratio)
+            val aspectRect = if (aspect.crops) {
+                CropMath.centerCrop(decoded.width, decoded.height, ratio)
+            } else {
+                PixelRect(0, 0, decoded.width, decoded.height)
+            }
+            // Crop-frame zoom: a further uniform centred crop, so it does not depend on the EXIF orientation.
+            val r = if (zoomCrops) CropMath.zoomCrop(aspectRect, cropZoom) else aspectRect
             Bitmap.createBitmap(decoded, r.left, r.top, r.width, r.height).also { if (it !== decoded) decoded.recycle() }
         } else {
             decoded

@@ -1,7 +1,6 @@
 package com.example.photogether.ui.components
 
 import androidx.annotation.OptIn
-import androidx.camera.core.CameraControl
 import androidx.camera.core.CameraInfo
 import androidx.camera.core.ExperimentalZeroShutterLag
 import androidx.compose.foundation.background
@@ -23,11 +22,15 @@ import com.example.photogether.core.camera.FOCAL_STOPS_MM
 import com.example.photogether.ui.theme.InkColors
 import kotlin.math.roundToInt
 
+/**
+ * Zoom slider. The shown zoom is the camera ratio times [cropZoom]; changes go to [onZoom] (the view model),
+ * which decides whether the camera or the crop frame takes them.
+ */
 @OptIn(ExperimentalZeroShutterLag::class)
 @Composable
-fun ZoomControl(cameraControl: CameraControl, cameraInfo: CameraInfo) {
+fun ZoomControl(cameraInfo: CameraInfo, cropZoom: Float, onZoom: (Float) -> Unit) {
     val zoomState = cameraInfo.zoomState.observeAsState()
-    val currentZoom = zoomState.value?.zoomRatio ?: 1f
+    val currentZoom = (zoomState.value?.zoomRatio ?: 1f) * cropZoom
     val maxZoom = zoomState.value?.maxZoomRatio ?: 1f
     val minZoom = zoomState.value?.minZoomRatio ?: 1f
 
@@ -38,9 +41,7 @@ fun ZoomControl(cameraControl: CameraControl, cameraInfo: CameraInfo) {
             inactiveTrackColor = InkColors.textPrimary.copy(alpha = 0.35f),
         ),
         value = currentZoom,
-        onValueChange = { zoomRatio ->
-            cameraControl.setZoomRatio(zoomRatio)
-        },
+        onValueChange = onZoom,
         valueRange = minZoom..maxZoom,
         modifier = Modifier.padding(horizontal = 12.dp),
     )
@@ -48,7 +49,7 @@ fun ZoomControl(cameraControl: CameraControl, cameraInfo: CameraInfo) {
 
 /**
  * Dark pill that shows the simulated 35mm-equivalent focal length, such as "35mm" or "75mm". [lensMm]
- * is the focal length of the lens in use and the shown value is lensMm times the zoom ratio. Tapping
+ * is the focal length of the lens in use and the shown value is lensMm times the zoom ratio and [cropZoom]. Tapping
  * calls [onTap] with the next focal stop in [FOCAL_STOPS_MM] that is above the current one, wrapping
  * back to the first stop.
  */
@@ -57,13 +58,14 @@ fun ZoomControl(cameraControl: CameraControl, cameraInfo: CameraInfo) {
 fun ZoomPill(
     cameraInfo: CameraInfo,
     lensMm: Float,
+    cropZoom: Float,
     onTap: (targetMm: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val zoomState = cameraInfo.zoomState.observeAsState()
     val zoom = zoomState.value?.zoomRatio ?: 1f
     val maxZoom = zoomState.value?.maxZoomRatio ?: 1f
-    val currentMm = (lensMm * zoom).roundToInt()
+    val currentMm = (lensMm * zoom * cropZoom).roundToInt()
     // Stops the lens can reach by digital zoom alone. Telephoto lenses are reached by switching lens.
     val reachableMm = lensMm * maxZoom
     Box(

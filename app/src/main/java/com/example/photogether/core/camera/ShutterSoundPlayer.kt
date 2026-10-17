@@ -99,3 +99,27 @@ object ShutterSoundPrefs {
         }
     }
 }
+
+/** The crop-frame zoom switch, kept in the app's SharedPreferences. Defaults to off. */
+object CropZoomPrefs {
+    const val KEY_ENABLED = "crop_zoom_enabled"
+    private const val TAG = "CropZoomPrefs"
+
+    /** Saved value, or false when it cannot be read. */
+    fun read(context: Context): Boolean =
+        try {
+            context.getSharedPreferences(ShutterSoundPrefs.PREFS_NAME, Context.MODE_PRIVATE).getBoolean(KEY_ENABLED, false)
+        } catch (e: Exception) {
+            Log.w(TAG, "Cannot read crop zoom setting, using off: ${e.message}", e)
+            false
+        }
+
+    /** Saves [enabled]. A failure is logged and otherwise ignored. */
+    fun write(context: Context, enabled: Boolean) {
+        try {
+            context.getSharedPreferences(ShutterSoundPrefs.PREFS_NAME, Context.MODE_PRIVATE).edit().putBoolean(KEY_ENABLED, enabled).apply()
+        } catch (e: Exception) {
+            Log.w(TAG, "Cannot save crop zoom setting: ${e.message}", e)
+        }
+    }
+}

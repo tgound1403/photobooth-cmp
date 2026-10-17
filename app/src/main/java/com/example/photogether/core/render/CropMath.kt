@@ -49,7 +49,15 @@ object CropMath {
      * with FILL_CENTER (uniform scale to cover the view, centred). The crop is the centred [cropRatio] part of
      * the frame, clipped to the view. This is the one rule shared by the mask and the capture.
      */
-    fun visibleCrop(viewW: Float, viewH: Float, frameRatio: Float, cropRatio: Float): FloatRect {
+    fun visibleCrop(viewW: Float, viewH: Float, frameRatio: Float, cropRatio: Float): FloatRect =
+        clipTo(unclippedCrop(viewW, viewH, frameRatio, cropRatio), viewW, viewH)
+
+    /** [rect] intersected with the view [viewW] x [viewH]. */
+    fun clipTo(rect: FloatRect, viewW: Float, viewH: Float): FloatRect =
+        FloatRect(maxOf(0f, rect.left), maxOf(0f, rect.top), minOf(viewW, rect.right), minOf(viewH, rect.bottom))
+
+    /** Same as [visibleCrop] but not clipped to the view, so it can extend past the view edges. */
+    fun unclippedCrop(viewW: Float, viewH: Float, frameRatio: Float, cropRatio: Float): FloatRect {
         require(viewW > 0f && viewH > 0f && frameRatio > 0f && cropRatio > 0f) { "Invalid geometry" }
         val scale = maxOf(viewW / frameRatio, viewH)
         val frameW = frameRatio * scale
@@ -59,9 +67,26 @@ object CropMath {
         if (frameW / frameH > cropRatio) { cropH = frameH; cropW = frameH * cropRatio } else { cropW = frameW; cropH = frameW / cropRatio }
         val cx = viewW / 2f
         val cy = viewH / 2f
-        return FloatRect(
-            maxOf(0f, cx - cropW / 2f), maxOf(0f, cy - cropH / 2f),
-            minOf(viewW, cx + cropW / 2f), minOf(viewH, cy + cropH / 2f),
-        )
+        return FloatRect(cx - cropW / 2f, cy - cropH / 2f, cx + cropW / 2f, cy + cropH / 2f)
+    }
+
+    /** [rect] shrunk about its centre to 1 / [factor] of its size. A factor of 1 or less returns [rect]. */
+    fun zoomCrop(rect: FloatRect, factor: Float): FloatRect {
+        if (factor <= 1f) return rect
+        val cx = (rect.left + rect.right) / 2f
+        val cy = (rect.top + rect.bottom) / 2f
+        val halfW = rect.width / factor / 2f
+        val halfH = rect.height / factor / 2f
+        return FloatRect(cx - halfW, cy - halfH, cx + halfW, cy + halfH)
+    }
+
+    /** Centred part of [rect] that keeps 1 / [factor] of each side, at least 1 px. A factor of 1 or less returns [rect]. */
+    fun zoomCrop(rect: PixelRect, factor: Float): PixelRect {
+        if (factor <= 1f) return rect
+        val w = (rect.width / factor).roundToInt().coerceIn(1, rect.width)
+        val h = (rect.height / factor).roundToInt().coerceIn(1, rect.height)
+        val left = rect.left + (rect.width - w) / 2
+        val top = rect.top + (rect.height - h) / 2
+        return PixelRect(left, top, left + w, top + h)
     }
 }

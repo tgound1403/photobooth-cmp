@@ -34,10 +34,13 @@ import org.koin.androidx.compose.koinViewModel
 fun SettingsScreen(navController: NavController) {
     val viewModel = koinViewModel<SettingsViewModel>()
     val shutterSoundOn by viewModel.shutterSoundEnabled.collectAsState()
+    val cropZoomOn by viewModel.cropZoomEnabled.collectAsState()
     SettingsContent(
         onBack = { navController.navigateUp() },
         shutterSoundOn = shutterSoundOn,
         onShutterSoundChange = viewModel::setShutterSoundEnabled,
+        cropZoomOn = cropZoomOn,
+        onCropZoomChange = viewModel::setCropZoomEnabled,
     )
 }
 
@@ -47,6 +50,8 @@ fun SettingsContent(
     onBack: () -> Unit,
     shutterSoundOn: Boolean = true,
     onShutterSoundChange: (Boolean) -> Unit = {},
+    cropZoomOn: Boolean = false,
+    onCropZoomChange: (Boolean) -> Unit = {},
 ) {
     Scaffold(
         topBar = { DefaultAppBar(onBack = onBack, title = "Cài Đặt") },
@@ -114,6 +119,35 @@ fun SettingsContent(
                     Switch(
                         checked = shutterSoundOn,
                         onCheckedChange = onShutterSoundChange
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+
+            GlassBox(
+                modifier = Modifier.fillMaxWidth(),
+                cornerRadius = Radius.lg
+            ) {
+                Row(
+                    modifier = Modifier.padding(Spacing.lg),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Zoom bằng khung cắt",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = AppColors.textPrimary,
+                        )
+                        Text(
+                            text = "Giữ nguyên khung ngắm, hiện khung ảnh sẽ chụp thay vì phóng to",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.textSecondary,
+                        )
+                    }
+                    Switch(
+                        checked = cropZoomOn,
+                        onCheckedChange = onCropZoomChange
                     )
                 }
             }

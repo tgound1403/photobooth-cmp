@@ -67,6 +67,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
+import androidx.compose.ui.text.drawText
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -140,6 +144,8 @@ fun CameraScreen(
     var flash by remember { mutableStateOf<NameFlash?>(null) }
     val adjust by cameraViewModel.adjust.collectAsStateWithLifecycle()
     val camera = cameraViewModel.camera.value
+    val cameraZoom = camera?.cameraInfo?.zoomState?.observeAsState()?.value?.zoomRatio ?: 1f
+    val cropZoomMm = (cameraViewModel.lensMm.floatValue * cameraZoom * cameraViewModel.cropZoom.floatValue).roundToInt()
     val flashMode by cameraViewModel.flashMode.collectAsStateWithLifecycle()
     var flashFx by remember { mutableStateOf<FlashFx?>(null) }
     // The gallery box shows the last photo taken this session. A new photo flies from the viewfinder
@@ -173,7 +179,10 @@ fun CameraScreen(
     // The shutter sound is set on the Settings screen. Re-read it whenever this screen resumes, so a change made there applies.
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) cameraViewModel.reloadShutterSound()
+            if (event == Lifecycle.Event.ON_RESUME) {
+                cameraViewModel.reloadShutterSound()
+                cameraViewModel.reloadCropZoom()
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -240,6 +249,9 @@ fun CameraScreen(
                     camera = camera,
                     flash = flash,
                     aspect = cameraProfile.recipe.aspect,
+                    cropZoom = cameraViewModel.cropZoom.floatValue,
+                    cropZoomOn = cameraViewModel.cropZoomActive.value,
+                    zoomMm = cropZoomMm,
                     onSwipe = onSwipe,
                     onFocusPoint = cameraViewModel::focusAt,
                 )
@@ -264,7 +276,11 @@ fun CameraScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     camera?.let { bound ->
-                        ZoomControl(cameraControl = bound.cameraControl, cameraInfo = bound.cameraInfo)
+                        ZoomControl(
+                            cameraInfo = bound.cameraInfo,
+                            cropZoom = cameraViewModel.cropZoom.floatValue,
+                            onZoom = cameraViewModel::setZoomRatio,
+                        )
                     }
                     CameraQuickBar(
                         state = adjust,
@@ -274,6 +290,7 @@ fun CameraScreen(
                                 ZoomPill(
                                     cameraInfo = it.cameraInfo,
                                     lensMm = cameraViewModel.lensMm.floatValue,
+                                    cropZoom = cameraViewModel.cropZoom.floatValue,
                                     onTap = cameraViewModel::setFocal,
                                 )
                             }
@@ -350,6 +367,7 @@ fun CameraScreen(
                         flashFx = FlashFx(cameraProfile.recipe.flashStyle)
                     }
                     cameraViewModel.takePhotoToGallery(
+                        cameraId = cameraProfile.id,
                         onSaved = { uri ->
                             // A flight still in the air lands now, so its photo is not lost.
                             flight?.let { lastPhoto = it.uri }
@@ -441,6 +459,9 @@ fun CameraPreviewViewfinder(
     camera: Camera?,
     flash: NameFlash?,
     aspect: CameraAspect = CameraAspect.FOUR_THREE,
+    cropZoom: Float = 1f,
+    cropZoomOn: Boolean = false,
+    zoomMm: Int = 0,
     onSwipe: (Int) -> Unit,
     onFocusPoint: (MeteringPoint) -> Unit = {},
 ) {
@@ -495,7 +516,9 @@ fun CameraPreviewViewfinder(
         ) {
             AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
             FilterNameFlash(flash)
-            if (aspect.crops) AspectMask(aspect.widthOverHeight)
+            // In crop-frame mode the frame's own scrim replaces the aspect mask.
+            if (aspect.crops && !cropZoomOn) AspectMask(aspect.widthOverHeight)
+            if (cropZoomOn) CropZoomFrame(aspect.widthOverHeight.takeIf { aspect.crops }, cropZoom, "${zoomMm}mm")
             if (showGrid) GridOverlay()
             FocusIndicator(position = focusPos, trigger = focusTrigger)
         }
@@ -602,6 +625,51 @@ private fun AspectMask(ratio: Float) {
         band(0f, r.bottom, w, h)
         band(0f, r.top, r.left, r.bottom)
         band(r.right, r.top, w, r.bottom)
+    }
+}
+
+/**
+ * White rounded frame on the preview marking the part that a crop-frame zoom of [cropZoom] will capture, with
+ * [mmLabel] centred above it. The frame starts from the same rect as [AspectMask] ([aspectRatio] null means the
+ * whole camera frame) and shrinks about its centre.
+ */
+@Composable
+private fun CropZoomFrame(aspectRatio: Float?, cropZoom: Float, mmLabel: String) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val labelStyle = androidx.compose.ui.text.TextStyle(
+        color = androidx.compose.ui.graphics.Color.White,
+        fontSize = 13.sp,
+        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+    )
+    androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+        val w = size.width
+        val h = size.height
+        if (w <= 0f || h <= 0f) return@Canvas
+        val ratio = aspectRatio ?: CameraAspect.FOUR_THREE.widthOverHeight
+        // Zoom the unclipped crop (what the capture keeps), then clip to the view.
+        val r = CropMath.clipTo(
+            CropMath.zoomCrop(CropMath.unclippedCrop(w, h, CameraAspect.FOUR_THREE.widthOverHeight, ratio), cropZoom),
+            w, h,
+        )
+        val topLeft = Offset(r.left, r.top)
+        val frameSize = androidx.compose.ui.geometry.Size(r.width, r.height)
+        val radius = androidx.compose.ui.geometry.CornerRadius(12.dp.toPx())
+        // Light scrim outside the frame: the frame rect is cut out of a full-size path.
+        val scrim = androidx.compose.ui.graphics.Path().apply {
+            fillType = androidx.compose.ui.graphics.PathFillType.EvenOdd
+            addRect(androidx.compose.ui.geometry.Rect(0f, 0f, w, h))
+            addRoundRect(androidx.compose.ui.geometry.RoundRect(androidx.compose.ui.geometry.Rect(topLeft, frameSize), radius))
+        }
+        drawPath(scrim, androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f))
+        drawRoundRect(
+            androidx.compose.ui.graphics.Color.White, topLeft, frameSize, radius,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx()),
+        )
+        val label = measurer.measure(mmLabel, labelStyle)
+        val lx = (r.left + r.right) / 2f - label.size.width / 2f
+        val ly = (r.top - label.size.height - 6.dp.toPx()).coerceAtLeast(0f)
+        drawText(label, topLeft = Offset(lx, ly))
     }
 }
 

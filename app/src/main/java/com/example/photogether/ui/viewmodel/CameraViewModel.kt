@@ -22,6 +22,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewModelScope
 import com.example.photogether.core.camera.CameraAdjustState
 import com.example.photogether.core.camera.CameraTool
+import com.example.photogether.core.camera.CropZoomPrefs
 import com.example.photogether.core.camera.ShutterSoundPlayer
 import com.example.photogether.core.camera.ShutterSoundPrefs
 import com.example.photogether.core.camera.EvMode
@@ -31,6 +32,7 @@ import com.example.photogether.core.camera.withCapabilities
 import com.example.photogether.core.camera.withEv
 import com.example.photogether.core.camera.withKelvin
 import com.example.photogether.core.camera.zoomFor
+import com.example.photogether.core.moments.MomentQuery
 import com.example.photogether.core.render.EditParams
 import com.example.photogether.core.render.CameraRecipe
 import com.example.photogether.core.render.FlashMode
@@ -143,6 +145,20 @@ class CameraViewModel(
     /** 35mm-equivalent focal length of the lens in use. The zoom pill multiplies it by the zoom ratio. */
     val lensMm = mutableFloatStateOf(35f)
 
+    /** True when zoom shows a crop frame on the preview instead of magnifying it. Read from [CropZoomPrefs]. */
+    private var cropZoomEnabled = CropZoomPrefs.read(application)
+
+    /** Extra zoom that is applied by cropping the capture, not by the camera. 1 means none. Effective zoom = camera ratio * this. */
+    val cropZoom = mutableFloatStateOf(1f)
+
+    /** True while crop-frame zoom is on, so the screen shows the frame at every zoom level. */
+    val cropZoomActive = mutableStateOf(cropZoomEnabled)
+
+    private fun updateCropZoom(value: Float) {
+        cropZoom.floatValue = value
+        cameraService.cropZoom = value
+    }
+
     /** Camera2 id of the lens in use. Null when the device has a single back camera. */
     private var lensId: String? = null
     private var owner: LifecycleOwner? = null
@@ -155,6 +171,7 @@ class CameraViewModel(
     ) = viewModelScope.launch(Dispatchers.Main) {
         owner = lifecycleOwner
         owningFacing = lensFacing
+        updateCropZoom(1f)
         if (lensFacing == CameraSelector.LENS_FACING_BACK && lensId == null) {
             // On a multi-camera phone, start on the physical lens for 35mm rather than the logical camera.
             val all = cameraService.findBackLenses(getApplication())
@@ -186,13 +203,45 @@ class CameraViewModel(
         val lens = pickLens(targetMm.toFloat(), cameraService.lenses) ?: return@launch
         if (lens.cameraId != lensId && cameraService.lenses.size > 1) {
             lensId = lens.cameraId
-            owner?.let { initCamera(it, owningFacing) }
-            return@launch
+            val bindOwner = owner ?: return@launch
+            initCamera(bindOwner, owningFacing).join()
+            // Without crop-frame zoom the new lens is shown as it is bound, as before.
+            if (!cropZoomEnabled) return@launch
         }
-        val cam = camera.value ?: return@launch
-        val state = cam.cameraInfo.zoomState.value ?: return@launch
-        val ratio = zoomFor(targetMm.toFloat(), lens).coerceIn(state.minZoomRatio, state.maxZoomRatio)
-        cam.cameraControl.setZoomRatio(ratio)
+        setZoomRatio(zoomFor(targetMm.toFloat(), lens))
+    }
+
+    /**
+     * Zooms to [ratio] on the lens in use. Normally the camera zooms. With crop-frame zoom the camera stays at its
+     * base ratio and the part above it becomes [cropZoom], which the preview frame shows and the capture crops to.
+     */
+    fun setZoomRatio(ratio: Float) {
+        val cam = camera.value ?: return
+        val state = cam.cameraInfo.zoomState.value ?: return
+        val target = ratio.coerceIn(state.minZoomRatio, state.maxZoomRatio)
+        if (!cropZoomEnabled) {
+            updateCropZoom(1f)
+            cam.cameraControl.setZoomRatio(target)
+            return
+        }
+        val base = 1f.coerceIn(state.minZoomRatio, state.maxZoomRatio)
+        // Below the base ratio (ultrawide logical cameras) the camera itself zooms out.
+        val camRatio = minOf(target, base)
+        if (state.zoomRatio != camRatio) cam.cameraControl.setZoomRatio(camRatio)
+        updateCropZoom((target / camRatio).coerceAtLeast(1f))
+    }
+
+    /**
+     * Re-reads the crop-frame zoom setting. When it changed, the current effective zoom is moved between the
+     * camera and the crop frame.
+     */
+    fun reloadCropZoom() {
+        val enabled = CropZoomPrefs.read(getApplication())
+        if (enabled == cropZoomEnabled) return
+        val effective = (camera.value?.cameraInfo?.zoomState?.value?.zoomRatio ?: 1f) * cropZoom.floatValue
+        cropZoomEnabled = enabled
+        cropZoomActive.value = enabled
+        setZoomRatio(effective)
     }
 
     /** Sets the live and captured filter. Does not rebind the camera. */
@@ -335,13 +384,14 @@ class CameraViewModel(
         }
     }
 
-    /** Captures a filtered JPEG and copies it into the gallery under Pictures/CameraX-Image. */
+    /** Captures a filtered JPEG and copies it into the gallery under Pictures/CameraX-Image, named for [cameraId]. */
     fun takePhotoToGallery(
+        cameraId: String,
         onSaved: (Uri) -> Unit,
         onError: (ImageCaptureException) -> Unit,
     ) {
         capture(onError, onResult = onSaved) { file ->
-            copyToGallery(file).also { file.delete() }
+            copyToGallery(file, cameraId).also { file.delete() }
         }
     }
 
@@ -398,11 +448,11 @@ class CameraViewModel(
         shutterSoundPlayer.play(cameraShutterSound, _shutterSoundEnabled.value, ringer)
     }
 
-    private fun copyToGallery(file: File): Uri {
+    private fun copyToGallery(file: File, cameraId: String): Uri {
         val app: Context = getApplication()
-        val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(System.currentTimeMillis())
+        val stamp = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(System.currentTimeMillis())
         val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+            put(MediaStore.MediaColumns.DISPLAY_NAME, MomentQuery.cameraShotName(cameraId, stamp))
             put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
                 put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CameraX-Image")
