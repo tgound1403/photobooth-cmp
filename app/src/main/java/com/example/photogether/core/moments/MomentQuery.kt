@@ -61,4 +61,19 @@ object MomentQuery {
 
     /** Header label for the grid, for example "ALL PHOTOS · 12". Negative counts are shown as 0. */
     fun countLabel(n: Int): String = "ALL PHOTOS · ${n.coerceAtLeast(0)}"
+
+    /** Display name for a camera shot: the camera id, then the time stamp, for example "classic35_2026-10-17-12-00-00-000.jpg". */
+    fun cameraShotName(cameraId: String, stamp: String): String = "${cameraId}_$stamp.jpg"
+
+    /**
+     * Camera id read from a display name made by [cameraShotName]. Null for any other name, such as
+     * "Edited_..." or "PhotoBooth_..." files, and for camera shots saved before the id was added.
+     */
+    fun cameraIdOf(displayName: String?): String? {
+        val name = displayName ?: return null
+        if (name.startsWith("Edited_") || name.startsWith("PhotoBooth_")) return null
+        val underscore = name.indexOf('_')
+        if (underscore <= 0) return null
+        return name.substring(0, underscore)
+    }
 }
