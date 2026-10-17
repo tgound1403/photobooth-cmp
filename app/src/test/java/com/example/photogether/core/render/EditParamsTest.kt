@@ -11,7 +11,7 @@ class EditParamsTest {
     fun jsonRoundTripEqualsOriginal() {
         val original =
             EditParams(
-                filterId = "golden_hour",
+                filterId = "kodak_gold",
                 filterIntensity = 0.6f,
                 exposure = 0.25f,
                 contrast = -0.3f,
@@ -35,10 +35,10 @@ class EditParamsTest {
 
     @Test
     fun unknownKeysAreIgnored() {
-        val json = """{"filterId":"kodak","someFutureField":42,"nested":{"a":1}}"""
+        val json = """{"filterId":"kodak_portra","someFutureField":42,"nested":{"a":1}}"""
         val params = EditParams.fromJson(json)
-        assertEquals("kodak", params.filterId)
-        assertEquals(EditParams(filterId = "kodak"), params)
+        assertEquals("kodak_portra", params.filterId)
+        assertEquals(EditParams(filterId = "kodak_portra"), params)
     }
 
     @Test
@@ -76,7 +76,7 @@ class EditParamsTest {
 
     @Test
     fun clampedKeepsInRangeValues() {
-        val params = EditParams(filterId = "nikon", filterIntensity = 0.5f, exposure = -0.5f)
+        val params = EditParams(filterId = "fuji_superia", filterIntensity = 0.5f, exposure = -0.5f)
         assertEquals(params, params.clamped())
     }
 
@@ -87,12 +87,12 @@ class EditParamsTest {
 
     @Test
     fun isIdentityTrueForZeroIntensityWithFilter() {
-        assertTrue(EditParams(filterId = "kodak", filterIntensity = 0f).isIdentity)
+        assertTrue(EditParams(filterId = "kodak_portra", filterIntensity = 0f).isIdentity)
     }
 
     @Test
     fun isIdentityFalseWhenFilterApplied() {
-        assertFalse(EditParams(filterId = "kodak").isIdentity)
+        assertFalse(EditParams(filterId = "kodak_portra").isIdentity)
     }
 
     @Test
@@ -116,7 +116,7 @@ class EditParamsTest {
 
     @Test
     fun legacyJsonWithoutKelvinDecodesToAuto() {
-        val params = EditParams.fromJson("""{"filterId":"kodak","temperature":0.4}""")
+        val params = EditParams.fromJson("""{"filterId":"kodak_portra","temperature":0.4}""")
         assertEquals(null, params.kelvin)
         assertEquals(0f, params.softwareEv, 0f)
     }

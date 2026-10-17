@@ -14,8 +14,8 @@ class FilterCatalogTest {
     private val filters by lazy { FilterCatalog.parse(catalogFile.readText()) }
 
     @Test
-    fun catalogHasAtLeast31EntriesAndUniqueIds() {
-        assertTrue("entries: ${filters.size}", filters.size >= 31)
+    fun catalogHasAtLeast16EntriesAndUniqueIds() {
+        assertTrue("entries: ${filters.size}", filters.size >= 16)
         assertEquals(filters.size, filters.map { it.id }.toSet().size)
     }
 
@@ -35,7 +35,7 @@ class FilterCatalogTest {
 
     @Test
     fun groupsAreKnown() {
-        val allowed = setOf("Classic", "Film", "Portrait", "Mood", "B&W")
+        val allowed = setOf("Fuji", "Kodak", "Korea", "Japan", "Vintage")
         filters.forEach { assertTrue("unknown group ${it.group}", it.group in allowed) }
     }
 

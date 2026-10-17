@@ -4,218 +4,148 @@
     {
       "id": "original",
       "name": "Original",
-      "group": "Classic",
+      "group": "Kodak",
       "lut": null,
       "premium": false
     },
     {
-      "id": "bnw",
-      "name": "BnW",
-      "group": "Classic",
-      "lut": "luts/bnw.png",
-      "premium": false
-    },
-    {
-      "id": "kodak",
-      "name": "Kodak",
-      "group": "Classic",
-      "lut": "luts/kodak.png",
-      "premium": false
-    },
-    {
-      "id": "fujifilm",
-      "name": "FujiFilm",
-      "group": "Classic",
-      "lut": "luts/fujifilm.png",
-      "premium": false
-    },
-    {
-      "id": "nikon",
-      "name": "Nikon",
-      "group": "Classic",
-      "lut": "luts/nikon.png",
-      "premium": false
-    },
-    {
-      "id": "pentax",
-      "name": "Pentax",
-      "group": "Classic",
-      "lut": "luts/pentax.png",
-      "premium": false
-    },
-    {
-      "id": "minolta",
-      "name": "Minolta",
-      "group": "Classic",
-      "lut": "luts/minolta.png",
-      "premium": false
-    },
-    {
-      "id": "golden_hour",
-      "name": "Golden Hour",
-      "group": "Film",
-      "lut": "luts/golden_hour.png",
-      "premium": false
-    },
-    {
-      "id": "faded_mint",
-      "name": "Faded Mint",
-      "group": "Film",
-      "lut": "luts/faded_mint.png",
+      "id": "fuji_velvia",
+      "name": "Fuji Velvia",
+      "group": "Fuji",
+      "lut": "luts/fuji_velvia.png",
       "premium": true
     },
     {
-      "id": "amber_roll",
-      "name": "Amber Roll",
-      "group": "Film",
-      "lut": "luts/amber_roll.png",
+      "id": "fuji_classic_chrome",
+      "name": "Fuji Classic Chrome",
+      "group": "Fuji",
+      "lut": "luts/fuji_classic_chrome.png",
       "premium": false
     },
     {
-      "id": "cool_negative",
-      "name": "Cool Negative",
-      "group": "Film",
-      "lut": "luts/cool_negative.png",
+      "id": "fuji_superia",
+      "name": "Fuji Superia",
+      "group": "Fuji",
+      "lut": "luts/fuji_superia.png",
+      "premium": false
+    },
+    {
+      "id": "fuji_classic_neg",
+      "name": "Fuji Classic Neg",
+      "group": "Fuji",
+      "lut": "luts/fuji_classic_neg.png",
+      "premium": false
+    },
+    {
+      "id": "fuji_forest",
+      "name": "Fuji Forest",
+      "group": "Fuji",
+      "lut": "luts/fuji_forest.png",
+      "premium": false
+    },
+    {
+      "id": "kodak_colorplus",
+      "name": "Kodak ColorPlus",
+      "group": "Kodak",
+      "lut": "luts/kodak_colorplus.png",
+      "premium": false
+    },
+    {
+      "id": "kodak_portra",
+      "name": "Kodak Portra",
+      "group": "Kodak",
+      "lut": "luts/kodak_portra.png",
+      "premium": false
+    },
+    {
+      "id": "kodak_gold",
+      "name": "Kodak Gold",
+      "group": "Kodak",
+      "lut": "luts/kodak_gold.png",
+      "premium": false
+    },
+    {
+      "id": "kodachrome",
+      "name": "Kodachrome",
+      "group": "Kodak",
+      "lut": "luts/kodachrome.png",
       "premium": true
     },
     {
-      "id": "sunday_film",
-      "name": "Sunday Film",
-      "group": "Film",
-      "lut": "luts/sunday_film.png",
+      "id": "vsco_faded_warm",
+      "name": "Faded Warm",
+      "group": "Vintage",
+      "lut": "luts/vsco_faded_warm.png",
       "premium": false
     },
     {
-      "id": "dusk_print",
-      "name": "Dusk Print",
-      "group": "Film",
-      "lut": "luts/dusk_print.png",
+      "id": "seoul_soft",
+      "name": "Seoul Soft",
+      "group": "Korea",
+      "lut": "luts/seoul_soft.png",
       "premium": false
     },
     {
-      "id": "soft_glow",
-      "name": "Soft Glow",
-      "group": "Portrait",
-      "lut": "luts/soft_glow.png",
+      "id": "airy_cream",
+      "name": "Airy Cream",
+      "group": "Korea",
+      "lut": "luts/airy_cream.png",
       "premium": false
     },
     {
-      "id": "rose_skin",
-      "name": "Rose Skin",
-      "group": "Portrait",
-      "lut": "luts/rose_skin.png",
+      "id": "pastel_sea",
+      "name": "Pastel Sea",
+      "group": "Korea",
+      "lut": "luts/pastel_sea.png",
+      "premium": false
+    },
+    {
+      "id": "vsco_soft_film",
+      "name": "Soft Film",
+      "group": "Vintage",
+      "lut": "luts/vsco_soft_film.png",
+      "premium": false
+    },
+    {
+      "id": "vsco_cool_fade",
+      "name": "Cool Fade",
+      "group": "Vintage",
+      "lut": "luts/vsco_cool_fade.png",
       "premium": true
     },
     {
-      "id": "honey_light",
-      "name": "Honey Light",
-      "group": "Portrait",
-      "lut": "luts/honey_light.png",
+      "id": "neon_night",
+      "name": "Neon Night",
+      "group": "Japan",
+      "lut": "luts/neon_night.png",
       "premium": false
     },
     {
-      "id": "clear_tone",
-      "name": "Clear Tone",
-      "group": "Portrait",
-      "lut": "luts/clear_tone.png",
+      "id": "tokyo_rain",
+      "name": "Tokyo Rain",
+      "group": "Japan",
+      "lut": "luts/tokyo_rain.png",
       "premium": false
     },
     {
-      "id": "peach_glow",
-      "name": "Peach Glow",
-      "group": "Portrait",
-      "lut": "luts/peach_glow.png",
+      "id": "bw_tri_x",
+      "name": "Tri-X Mono",
+      "group": "Vintage",
+      "lut": "luts/bw_tri_x.png",
+      "premium": false
+    },
+    {
+      "id": "bw_noir",
+      "name": "Noir Mono",
+      "group": "Vintage",
+      "lut": "luts/bw_noir.png",
       "premium": true
     },
     {
-      "id": "cream_matte",
-      "name": "Cream Matte",
-      "group": "Portrait",
-      "lut": "luts/cream_matte.png",
-      "premium": false
-    },
-    {
-      "id": "teal_night",
-      "name": "Teal Night",
-      "group": "Mood",
-      "lut": "luts/teal_night.png",
-      "premium": false
-    },
-    {
-      "id": "moody_blue",
-      "name": "Moody Blue",
-      "group": "Mood",
-      "lut": "luts/moody_blue.png",
-      "premium": true
-    },
-    {
-      "id": "autumn_haze",
-      "name": "Autumn Haze",
-      "group": "Mood",
-      "lut": "luts/autumn_haze.png",
-      "premium": false
-    },
-    {
-      "id": "velvet_dusk",
-      "name": "Velvet Dusk",
-      "group": "Mood",
-      "lut": "luts/velvet_dusk.png",
-      "premium": true
-    },
-    {
-      "id": "pastel_dream",
-      "name": "Pastel Dream",
-      "group": "Mood",
-      "lut": "luts/pastel_dream.png",
-      "premium": false
-    },
-    {
-      "id": "winter_fog",
-      "name": "Winter Fog",
-      "group": "Mood",
-      "lut": "luts/winter_fog.png",
-      "premium": false
-    },
-    {
-      "id": "silver_gelatin",
-      "name": "Silver Gelatin",
-      "group": "B&W",
-      "lut": "luts/silver_gelatin.png",
-      "premium": false
-    },
-    {
-      "id": "noir_contrast",
-      "name": "Noir Contrast",
-      "group": "B&W",
-      "lut": "luts/noir_contrast.png",
-      "premium": true
-    },
-    {
-      "id": "soft_mono",
+      "id": "bw_soft_mono",
       "name": "Soft Mono",
-      "group": "B&W",
-      "lut": "luts/soft_mono.png",
-      "premium": false
-    },
-    {
-      "id": "crimson_mono",
-      "name": "Crimson Mono",
-      "group": "B&W",
-      "lut": "luts/crimson_mono.png",
-      "premium": true
-    },
-    {
-      "id": "ink_wash",
-      "name": "Ink Wash",
-      "group": "B&W",
-      "lut": "luts/ink_wash.png",
-      "premium": false
-    },
-    {
-      "id": "light_mono",
-      "name": "Light Mono",
-      "group": "B&W",
-      "lut": "luts/light_mono.png",
+      "group": "Vintage",
+      "lut": "luts/bw_soft_mono.png",
       "premium": false
     }
   ]
