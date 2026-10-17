@@ -3,8 +3,10 @@ package com.example.photogether.ui.camera
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -23,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +49,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -151,8 +158,7 @@ fun CameraPickerScreen(
             )
         }
 
-        // Model name and tagline. CameraProfile has no separate tagline field, so the subtitle
-        // (the film or brand label) is used.
+        // Model name and description (the camera's look and the scenes it suits, see CameraProfile.subtitle).
         Text(
             text = selected?.name?.uppercase() ?: "",
             color = InkColors.textPrimary,
@@ -163,13 +169,13 @@ fun CameraPickerScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
         )
         Text(
-            text = selected?.subtitle?.uppercase() ?: "",
+            text = selected?.subtitle ?: "",
             color = InkColors.textSecondary,
             style = BinsooType.label,
             textAlign = TextAlign.Center,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = 4.dp),
         )
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -203,16 +209,22 @@ private fun CameraThumbnailRow(
     onSelect: (Int) -> Unit,
 ) {
     val shape = RoundedCornerShape(Radius.sm)
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+    val listState = rememberLazyListState()
+    // Keep the chosen camera on screen, including when the picker opens on one far down the list.
+    LaunchedEffect(currentPage) { listState.animateScrollToItem(currentPage) }
+    LazyRow(
+        state = listState,
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        profiles.forEachIndexed { index, profile ->
+        itemsIndexed(profiles) { index, profile ->
             val isSelected = index == currentPage
             Column(
                 modifier =
                     Modifier
-                        .weight(1f)
+                        .width(72.dp)
                         .alpha(if (isSelected) 1f else 0.5f)
                         .clickable { onSelect(index) },
                 horizontalAlignment = Alignment.CenterHorizontally,

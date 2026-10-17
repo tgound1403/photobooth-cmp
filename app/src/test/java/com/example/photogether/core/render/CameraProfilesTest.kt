@@ -38,8 +38,20 @@ class CameraProfilesTest {
     }
 
     @Test
-    fun hasFiveProfiles() {
-        assertEquals(5, CameraProfiles.ALL.size)
+    fun hasFiveHandMadeProfilesPlusOnePerJapanGroup() {
+        assertEquals(37, JAPAN_CAMERAS.size)
+        assertEquals(5 + JAPAN_CAMERAS.size, CameraProfiles.ALL.size)
+    }
+
+    @Test
+    fun everyProfileHasAShortDescriptionThatFitsTwoLines() {
+        CameraProfiles.ALL.forEach { profile ->
+            assertTrue("blank description ${profile.id}", profile.subtitle.isNotBlank())
+            assertTrue("too long ${profile.id}: ${profile.subtitle.length}", profile.subtitle.length <= 90)
+            assertTrue("placeholder ${profile.id}", !profile.subtitle.startsWith("Japan "))
+        }
+        val subtitles = CameraProfiles.ALL.map { it.subtitle }
+        assertEquals(subtitles.size, subtitles.toSet().size)
     }
 
     @Test
@@ -67,8 +79,8 @@ class CameraProfilesTest {
     }
 
     @Test
-    fun forFilterMapsKodakToClassic35() {
-        assertEquals("classic35", CameraProfiles.forFilter("kodak")?.id)
+    fun forFilterMapsKodakPortraToClassic35() {
+        assertEquals("classic35", CameraProfiles.forFilter("kodak_portra")?.id)
     }
 
     @Test
