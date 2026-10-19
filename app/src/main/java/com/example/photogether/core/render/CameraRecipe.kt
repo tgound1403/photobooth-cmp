@@ -4,12 +4,13 @@ package com.example.photogether.core.render
 enum class DateStampStyle { NONE, ORANGE_LCD, WHITE_DIGITAL }
 
 /** Crop aspect of a camera body. Drives the live-preview mask and the centre crop of a captured photo. */
-enum class CameraAspect {
-    FOUR_THREE, ONE_ONE, THREE_TWO, SIXTEEN_NINE;
+enum class CameraAspect(val label: String) {
+    FIVE_FOUR("5:4"), FOUR_THREE("4:3"), THREE_TWO("3:2"), ONE_ONE("1:1"), SIXTEEN_NINE("16:9");
 
     /** Portrait width / height. FOUR_THREE is 3/4, the full sensor frame, so it needs no crop. */
     val widthOverHeight: Float
         get() = when (this) {
+            FIVE_FOUR -> 4f / 5f
             FOUR_THREE -> 3f / 4f
             ONE_ONE -> 1f
             THREE_TWO -> 2f / 3f
@@ -21,9 +22,8 @@ enum class CameraAspect {
 }
 
 /**
- * Skin of a camera body. It is no longer drawn on the camera preview; the editor offers it as an overlay
- * ([OverlaySpec.skin]), drawn by [SkinRenderer]. The camera keeps it only for the shutter tint.
- * [RANGEFINDER_MONO] is the grey variant of [RANGEFINDER], kept separate so every camera has its own shutter tint.
+ * Skin painted on a photo. It is no longer drawn on the camera preview; the editor offers it as an overlay
+ * ([OverlaySpec.skin]), drawn by [SkinRenderer]. Cameras no longer choose one.
  * Colours are ARGB ints so this file stays free of Compose types.
  */
 enum class ViewfinderSkin(val shutterTint: Long, val shutterRing: Long) {
@@ -46,7 +46,7 @@ enum class FlashMode {
 /** Look of the screen flash shown at capture. NONE shows nothing. */
 enum class FlashStyle { NONE, HARSH, WARM }
 
-/** Shutter sound a camera body plays on capture. [asset] is the path under assets/. */
+/** Shutter sound a capture plays. [asset] is the path under assets/. */
 enum class ShutterSound(val asset: String) {
     MECH("sounds/shutter_mech.wav"),
     SOFT("sounds/shutter_soft.wav"),
@@ -67,30 +67,3 @@ fun flashPlan(mode: FlashMode, off: Int, auto: Int, on: Int): FlashPlan = when (
     FlashMode.TORCH -> FlashPlan(off, true)
 }
 
-/**
- * Film effects a camera body applies when it is chosen. The float fields mirror the same-named
- * [EditParams] fields and are applied on selection. [dateStamp] is copied into EditParams and drawn by the GPU; [aspect] masks the preview and crops the capture.
- */
-data class CameraRecipe(
-    val leak: Float = 0f,        // 0..1, light leak overlay
-    val dust: Float = 0f,        // 0..1, dust and scratch overlay
-    val halation: Float = 0f,    // 0..1, warm glow around highlights
-    val grain: Float = 0f,       // 0..1, same meaning as EditParams.grain
-    val vignette: Float = 0f,    // 0..1, same meaning as EditParams.vignette
-    val dateStamp: DateStampStyle = DateStampStyle.NONE,
-    val aspect: CameraAspect = CameraAspect.FOUR_THREE,
-    val defaultFlash: FlashMode = FlashMode.OFF,
-    val flashStyle: FlashStyle = FlashStyle.NONE,
-    val skin: ViewfinderSkin = ViewfinderSkin.NONE,
-    val shutterSound: ShutterSound = ShutterSound.MECH,
-) {
-    /** Same recipe with every float clamped to 0..1. */
-    fun clamped(): CameraRecipe =
-        copy(
-            leak = leak.coerceIn(0f, 1f),
-            dust = dust.coerceIn(0f, 1f),
-            halation = halation.coerceIn(0f, 1f),
-            grain = grain.coerceIn(0f, 1f),
-            vignette = vignette.coerceIn(0f, 1f),
-        )
-}

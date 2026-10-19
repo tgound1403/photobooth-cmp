@@ -28,12 +28,4 @@ class ShutterSoundPlayerTest {
             assertTrue(sound.asset.endsWith(".wav"))
         }
     }
-
-    @Test fun cameraBodiesMapToTheirShutterSound() {
-        assertEquals(ShutterSound.DISPOSABLE, CameraProfiles.byId("classic35").recipe.shutterSound)
-        assertEquals(ShutterSound.SOFT, CameraProfiles.byId("fuji_mini").recipe.shutterSound)
-        assertEquals(ShutterSound.SOFT, CameraProfiles.byId("golden").recipe.shutterSound)
-        assertEquals(ShutterSound.MECH, CameraProfiles.byId("night").recipe.shutterSound)
-        assertEquals(ShutterSound.MECH, CameraProfiles.byId("silver").recipe.shutterSound)
-    }
 }

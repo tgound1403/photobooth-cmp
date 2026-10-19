@@ -68,11 +68,13 @@ object MomentQuery {
     /**
      * Camera id read from a display name made by [cameraShotName]. Null for any other name, such as
      * "Edited_..." or "PhotoBooth_..." files, and for camera shots saved before the id was added.
+     * Camera ids can contain underscores ("jp_001"), so the id ends at the last underscore: the time
+     * stamp has none.
      */
     fun cameraIdOf(displayName: String?): String? {
         val name = displayName ?: return null
         if (name.startsWith("Edited_") || name.startsWith("PhotoBooth_")) return null
-        val underscore = name.indexOf('_')
+        val underscore = name.lastIndexOf('_')
         if (underscore <= 0) return null
         return name.substring(0, underscore)
     }

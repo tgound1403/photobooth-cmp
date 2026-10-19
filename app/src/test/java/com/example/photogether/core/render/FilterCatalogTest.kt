@@ -35,7 +35,7 @@ class FilterCatalogTest {
 
     @Test
     fun groupsAreKnown() {
-        val allowed = setOf("Fuji", "Kodak", "Korea", "Japan", "Vintage")
+        val allowed = setOf("Fuji", "Kodak", "Korea", "Japan Pack", "Vintage")
         filters.forEach { assertTrue("unknown group ${it.group}", it.group in allowed) }
     }
 

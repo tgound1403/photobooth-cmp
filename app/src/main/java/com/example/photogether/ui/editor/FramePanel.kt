@@ -1,5 +1,7 @@
 package com.example.photogether.ui.editor
 
+import com.tgound.photogether.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -57,7 +59,7 @@ fun FramePanel(
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             EditorChip(
-                label = "None",
+                label = stringResource(R.string.option_none),
                 selected = frame.polaroid == null && frame.themeId == null && frame.backgroundUri == null,
                 onClick = { onFrame(FrameSpec()) },
             )
@@ -81,7 +83,7 @@ fun FramePanel(
                 )
             }
             EditorChip(
-                label = "Photo",
+                label = stringResource(R.string.frame_photo),
                 selected = frame.backgroundUri != null,
                 onClick = { showPicker = true },
             )
@@ -102,7 +104,7 @@ fun FramePanel(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
                 EditorChip(
-                    label = "Date",
+                    label = stringResource(R.string.frame_date),
                     selected = frame.caption != null,
                     onClick = {
                         onFrame(frame.copy(caption = if (frame.caption == null) todayText() else null))

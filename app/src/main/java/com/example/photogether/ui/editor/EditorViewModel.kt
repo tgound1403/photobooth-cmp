@@ -1,6 +1,7 @@
 package com.example.photogether.ui.editor
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.photogether.core.render.CropMath
 import com.example.photogether.core.render.CropParams
@@ -20,11 +21,16 @@ import com.example.photogether.core.render.RecipeCode
 import com.example.photogether.core.render.RecipeCodeResult
 import com.example.photogether.data.billing.requiresPaywall
 import com.example.photogether.data.repository.RecipeRepository
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -88,6 +94,7 @@ class EditorViewModel(
     private var source: Bitmap? = null
     /** True while a finger is on the photo. The preview then renders smaller; see [setFrameInteracting]. */
     @Volatile private var interacting = false
+    private var settleJob: Job? = null
     private var density = 1f
     private var backgroundUri: String? = null
     private var background: Bitmap? = null
@@ -95,8 +102,14 @@ class EditorViewModel(
 
     // Latest-wins: many slider frames collapse into one render.
     private val renderRequests = Channel<Unit>(Channel.CONFLATED)
-    private val thumbRequests = Channel<String>(Channel.UNLIMITED)
-    private val pendingThumbs = HashSet<String>()
+    // Bounded and drop-oldest: when the strip scrolls fast, the stale requests are discarded.
+    // A dropped id is removed from pendingThumbs so it can be requested again later.
+    private val pendingThumbs: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    private val thumbRequests = Channel<String>(
+        capacity = THUMB_QUEUE_SIZE,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        onUndeliveredElement = { pendingThumbs.remove(it) },
+    )
     private val thumbCache = object : LinkedHashMap<String, Bitmap>(16, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>?): Boolean =
             size > THUMB_CACHE_SIZE
@@ -219,7 +232,7 @@ class EditorViewModel(
 
     /** Queues a small preview of [filterId] for the filter strip. Duplicates are ignored. */
     fun requestThumbnail(filterId: String) {
-        if (thumbCache.containsKey(filterId) || !pendingThumbs.add(filterId)) return
+        if (_state.value.thumbnails.containsKey(filterId) || !pendingThumbs.add(filterId)) return
         thumbRequests.trySend(filterId)
     }
 
@@ -233,10 +246,14 @@ class EditorViewModel(
         val src = source ?: return
         scope.launch {
             _state.update { it.copy(isSaving = true, error = null) }
-            val snapshot = history.present
-            val bg = backgroundFor(snapshot.frame)
-            val full = renderer.render(src, snapshot, bg, density, maxSize = null)
-            val uri = withContext(Dispatchers.IO) { io.saveJpeg(full) }
+            val uri = try {
+                exportAndSave(src)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Save failed", e)
+                null
+            }
             _state.update { it.copy(isSaving = false, error = if (uri == null) "Could not save image" else null) }
             if (uri != null) {
                 analytics.log(AnalyticsEvent.IMAGE_SAVED)
@@ -244,6 +261,22 @@ class EditorViewModel(
                 onImageSaved(uri)
             }
         }
+    }
+
+    /**
+     * Renders the current edit at the export size and writes it to the gallery. If the full-size render runs
+     * out of memory, it retries once at [EXPORT_FALLBACK_SIDE].
+     */
+    private suspend fun exportAndSave(src: Bitmap): String? {
+        val snapshot = history.present
+        val bg = backgroundFor(snapshot.frame)
+        val full = try {
+            renderer.render(src, snapshot, bg, density, io.exportMaxSide)
+        } catch (e: OutOfMemoryError) {
+            Log.w(TAG, "Export ran out of memory, retrying at $EXPORT_FALLBACK_SIDE", e)
+            renderer.render(src, snapshot, bg, density, EXPORT_FALLBACK_SIDE)
+        }
+        return withContext(Dispatchers.IO) { io.saveJpeg(full) }
     }
 
     /** Applies a recipe's edit values as one undoable step. Overlays and frame are kept. */
@@ -298,7 +331,22 @@ class EditorViewModel(
     private fun liveEdit(transform: (EditSnapshot) -> EditSnapshot) {
         history.update(transform(history.present))
         publish()
+        markSliderActive()
         requestRender()
+    }
+
+    /**
+     * Slider drags render at [INTERACT_MAX_SIDE]. Once the edits stop for [SETTLE_MS], the preview
+     * renders again at full preview size.
+     */
+    private fun markSliderActive() {
+        interacting = true
+        settleJob?.cancel()
+        settleJob = scope.launch {
+            delay(SETTLE_MS)
+            interacting = false
+            requestRender()
+        }
     }
 
     private fun commitEdit() {
@@ -331,7 +379,8 @@ class EditorViewModel(
                 val snapshot = history.present
                 val bg = backgroundFor(snapshot.frame)
                 val maxSide = if (interacting) INTERACT_MAX_SIDE else PREVIEW_MAX_SIDE
-                val out = renderer.render(src, snapshot, bg, density, maxSide)
+                // A failed render keeps the last preview; the loop must survive to render the next edit.
+                val out = renderOrNull(src, snapshot, bg, maxSide) ?: continue
                 _state.update { it.copy(preview = out) }
             }
         }
@@ -350,20 +399,30 @@ class EditorViewModel(
             for (filterId in thumbRequests) {
                 val src = source
                 if (src != null) {
-                    val thumb = renderer.render(
-                        src,
-                        EditSnapshot(params = EditParams(filterId = filterId)),
-                        null,
-                        density,
-                        THUMB_MAX_SIDE,
-                    )
-                    thumbCache[filterId] = thumb
-                    _state.update { it.copy(thumbnails = thumbCache.toMap()) }
+                    val thumb = renderOrNull(src, EditSnapshot(params = EditParams(filterId = filterId)), null, THUMB_MAX_SIDE)
+                    if (thumb != null) {
+                        thumbCache[filterId] = thumb
+                        _state.update { it.copy(thumbnails = thumbCache.toMap()) }
+                    }
                 }
                 pendingThumbs.remove(filterId)
             }
         }
     }
+
+    /** Renders one frame. A failure is logged and returns null, so the calling loop keeps running. */
+    private suspend fun renderOrNull(src: Bitmap, snapshot: EditSnapshot, bg: Bitmap?, maxSide: Int?): Bitmap? =
+        try {
+            renderer.render(src, snapshot, bg, density, maxSide)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: OutOfMemoryError) {
+            Log.w(TAG, "Preview render ran out of memory at maxSide=$maxSide", e)
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "Preview render failed", e)
+            null
+        }
 
     private suspend fun backgroundFor(frame: FrameSpec): Bitmap? {
         val uri = frame.backgroundUri ?: return null
@@ -378,8 +437,14 @@ class EditorViewModel(
         const val PREVIEW_MAX_SIDE = 1280
         /** Preview size while a finger is on the photo, so drags stay smooth. */
         const val INTERACT_MAX_SIDE = 720
+        /** Export size used when the full-size render runs out of memory. */
+        const val EXPORT_FALLBACK_SIDE = 2048
+        private const val TAG = "EditorViewModel"
         const val SOURCE_MAX_SIDE = 2560
         const val THUMB_MAX_SIDE = 160
         const val THUMB_CACHE_SIZE = 40
+        const val THUMB_QUEUE_SIZE = 24
+        /** Quiet time after the last slider edit before the preview is rendered at full size again. */
+        const val SETTLE_MS = 250L
     }
 }

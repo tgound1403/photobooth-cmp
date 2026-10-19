@@ -2,6 +2,7 @@ package com.example.photogether.core.moments
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -97,5 +98,27 @@ class MomentQueryTest {
         assertEquals("ALL PHOTOS · 0", MomentQuery.countLabel(0))
         assertEquals("ALL PHOTOS · 0", MomentQuery.countLabel(-3))
         assertEquals("ALL PHOTOS · 12", MomentQuery.countLabel(12))
+    }
+
+    @Test
+    fun cameraShotName_round_trips_through_cameraIdOf() {
+        val name = MomentQuery.cameraShotName("classic35", "2026-10-17-12-00-00-000")
+        assertEquals("classic35_2026-10-17-12-00-00-000.jpg", name)
+        assertEquals("classic35", MomentQuery.cameraIdOf(name))
+    }
+
+    @Test
+    fun cameraShotName_round_trips_for_ids_with_underscores() {
+        val name = MomentQuery.cameraShotName("jp_001", "2026-10-17-12-00-00-000")
+        assertEquals("jp_001", MomentQuery.cameraIdOf(name))
+    }
+
+    @Test
+    fun cameraIdOf_is_null_for_edits_photobooth_and_untagged_files() {
+        assertNull(MomentQuery.cameraIdOf("Edited_20261017_120000.jpg"))
+        assertNull(MomentQuery.cameraIdOf("PhotoBooth_1760000000000.jpg"))
+        assertNull(MomentQuery.cameraIdOf("2026-10-17-12-00-00-000.jpg"))
+        assertNull(MomentQuery.cameraIdOf("_leading.jpg"))
+        assertNull(MomentQuery.cameraIdOf(null))
     }
 }

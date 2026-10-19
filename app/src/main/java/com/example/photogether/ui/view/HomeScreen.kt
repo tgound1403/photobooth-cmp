@@ -1,5 +1,8 @@
 package com.example.photogether.ui.view
 
+import com.tgound.photogether.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,22 +21,22 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddPhotoAlternate
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -42,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -49,9 +53,10 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.photogether.core.moments.Moment
 import com.example.photogether.core.navigation.AppRoutes
-import com.example.photogether.core.render.FilterCatalog
-import com.example.photogether.core.render.FilterGrouping
-import com.example.photogether.core.render.FilterInfo
+import com.example.photogether.core.colors.ColorStories
+import com.example.photogether.core.colors.ColorStory
+import com.example.photogether.data.colors.ColorPhoto
+import com.example.photogether.ui.colors.ColorStoriesViewModel
 import com.example.photogether.ui.moments.CrystalFolder
 import com.example.photogether.ui.moments.MomentsViewModel
 import com.example.photogether.ui.theme.AppColors
@@ -63,25 +68,26 @@ import com.example.photogether.ui.theme.Radius
 import com.example.photogether.ui.theme.Spacing
 import com.example.photogether.ui.theme.Stroke
 import com.example.photogether.ui.viewmodel.GalleryViewModel
-import org.koin.androidx.compose.get
 import org.koin.androidx.compose.koinViewModel
+import com.example.photogether.ui.theme.AppIcons
 
 @Composable
 fun HomeScreen(
     navController: NavController,
     galleryViewModel: GalleryViewModel = koinViewModel(),
     momentsViewModel: MomentsViewModel = koinViewModel(),
-    filterCatalog: FilterCatalog = get(),
+    colorStoriesViewModel: ColorStoriesViewModel = koinViewModel(),
 ) {
-    val photoBooths by galleryViewModel.photoBooths.collectAsState()
+    val photoBooths by galleryViewModel.photoBooths.collectAsStateWithLifecycle()
     val recentImages = remember(photoBooths) {
         photoBooths
             .sortedByDescending { it.createdAt }
             .mapNotNull { it.imagePaths.firstOrNull() }
             .take(RECENT_COUNT)
     }
-    val moments by momentsViewModel.moments.collectAsState()
-    val filterGroups = remember(filterCatalog) { homeFilterGroups(filterCatalog.filters) }
+    val moments by momentsViewModel.moments.collectAsStateWithLifecycle()
+    val covers by colorStoriesViewModel.covers.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { colorStoriesViewModel.loadCovers() }
 
     // Pick an image from the device and open it straight in the editor.
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -102,40 +108,13 @@ fun HomeScreen(
         onCameraClick = { navController.navigate(AppRoutes.MAIN) },
         moments = moments,
         onMomentsClick = { navController.navigate(AppRoutes.MOMENTS) },
-        filterGroups = filterGroups,
-        onFilterGroupClick = { navController.navigate(AppRoutes.CAMERA_PICKER) },
+        stories = ColorStories.ALL,
+        covers = covers,
+        onStoryClick = { navController.navigate(AppRoutes.colorStory(it.id)) },
     )
 }
 
 private const val RECENT_COUNT = 10
-
-/** One filter group tile on Home. [count] is the number of filters in the group. */
-data class HomeFilterGroup(val name: String, val code: String, val count: Int)
-
-/**
- * Filter groups for Home, in catalog order. Names come from [FilterGrouping.chips] (ALL is dropped);
- * the count is the number of catalog filters in each group.
- */
-internal fun homeFilterGroups(filters: List<FilterInfo>): List<HomeFilterGroup> =
-    FilterGrouping.chips(filters, hasFavorites = false)
-        .filter { it.id != FilterGrouping.ALL }
-        .map { chip ->
-            HomeFilterGroup(
-                name = chip.label,
-                code = groupCode(chip.label),
-                count = filters.count { it.group == chip.label },
-            )
-        }
-
-/** Tag codes such as "#CLS". Unverified for the names not listed here. */
-private fun groupCode(name: String): String = when (name) {
-    "Classic" -> "CLS"
-    "Film" -> "FLM"
-    "Mood" -> "MOD"
-    "Portrait" -> "PRT"
-    "B&W" -> "BNW"
-    else -> name.filter { it.isLetterOrDigit() }.take(3).uppercase()
-}
 
 @Composable
 fun HomeContent(
@@ -148,8 +127,9 @@ fun HomeContent(
     onCameraClick: () -> Unit = {},
     moments: List<Moment> = emptyList(),
     onMomentsClick: () -> Unit = {},
-    filterGroups: List<HomeFilterGroup> = emptyList(),
-    onFilterGroupClick: () -> Unit = {},
+    stories: List<ColorStory> = emptyList(),
+    covers: Map<String, ColorPhoto> = emptyMap(),
+    onStoryClick: (ColorStory) -> Unit = {},
 ) {
     Scaffold(containerColor = AppColors.background) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -167,8 +147,8 @@ fun HomeContent(
                 ) {
                     IconButton(onClick = onSettingsClick) {
                         Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "Cài đặt",
+                            imageVector = AppIcons.Menu,
+                            contentDescription = stringResource(R.string.settings_title),
                             tint = AppColors.textPrimary
                         )
                     }
@@ -176,44 +156,65 @@ fun HomeContent(
 
                 Text(
                     text = "PHOTO",
-                    style = BinsooType.display,
+                    style = HOME_TITLE_STYLE,
                     color = AppColors.textPrimary
                 )
                 Text(
                     text = "GETHER",
-                    style = BinsooType.display,
+                    style = HOME_TITLE_STYLE,
                     color = AppColors.textPrimary
                 )
 
                 Spacer(modifier = Modifier.height(Spacing.xl))
 
-                filterGroups.chunked(2).forEach { pair ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.lg),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
-                    ) {
-                        pair.forEach { group ->
-                            FilterGroupTile(
-                                group = group,
-                                onClick = onFilterGroupClick,
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                        if (pair.size == 1) Spacer(modifier = Modifier.weight(1f))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "WHAT'S NEW",
+                        style = BinsooType.title,
+                        color = AppColors.textPrimary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = "${stories.size} MÀU →",
+                        style = BinsooType.micro,
+                        color = AppColors.textSecondary,
+                    )
+                }
+                Spacer(modifier = Modifier.height(Spacing.sm))
+
+                // Colour groups: two rows, scrolling sideways.
+                LazyHorizontalGrid(
+                    rows = GridCells.Fixed(2),
+                    modifier = Modifier.fillMaxWidth().height(STORY_GRID_HEIGHT),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.lg),
+                    contentPadding = PaddingValues(end = Spacing.lg),
+                ) {
+                    gridItems(stories, key = { it.id }) { story ->
+                        ColorStoryTile(
+                            story = story,
+                            cover = covers[story.id],
+                            onClick = { onStoryClick(story) },
+                        )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(Spacing.xl))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                 ) {
                     OutlinedBlockButton(
-                        label = "PHOTOBOOTH",
+                        label = stringResource(R.string.home_photobooth),
                         onClick = onPhotoBoothClick,
                         modifier = Modifier.weight(1f),
                     )
                     OutlinedBlockButton(
-                        label = "CHỈNH ẢNH",
+                        label = stringResource(R.string.home_edit_photo),
                         onClick = onEditClick,
                         modifier = Modifier.weight(1f),
                     )
@@ -230,7 +231,7 @@ fun HomeContent(
                 if (recentImages.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(Spacing.xl))
                     Text(
-                        text = "Gần đây",
+                        text = stringResource(R.string.home_recent),
                         style = BinsooType.title,
                         color = AppColors.textPrimary
                     )
@@ -258,13 +259,13 @@ fun HomeContent(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.xl),
             ) {
                 FloatingRoundButton(
-                    icon = Icons.Default.AddPhotoAlternate,
-                    contentDescription = "Chỉnh ảnh từ máy",
+                    icon = AppIcons.AddPhoto,
+                    contentDescription = stringResource(R.string.home_edit_from_device),
                     onClick = onPickImageClick,
                 )
                 FloatingRoundButton(
-                    icon = Icons.Default.CameraAlt,
-                    contentDescription = "Máy ảnh",
+                    icon = AppIcons.Camera,
+                    contentDescription = stringResource(R.string.home_camera),
                     onClick = onCameraClick,
                 )
             }
@@ -272,20 +273,24 @@ fun HomeContent(
     }
 }
 
+private val HOME_TITLE_STYLE = BinsooType.display
 private val FOLDER_HEIGHT = 176.dp
 private val FLOAT_BUTTON_SIZE = 56.dp
 private val FLOAT_CLEARANCE = 96.dp
-private val GROUP_THUMB_SIZE = 64.dp
+private val GROUP_THUMB_SIZE = 72.dp
+private val STORY_TILE_HEIGHT = 124.dp
+private val STORY_GRID_HEIGHT = STORY_TILE_HEIGHT * 2 + Spacing.lg
 
-/** Filter group entry: square thumbnail with a black VIBE label, code tag, name and count. */
+/** Colour group entry: the place's photo graded with its filter, then its name and photo count. */
 @Composable
-private fun FilterGroupTile(
-    group: HomeFilterGroup,
+private fun ColorStoryTile(
+    story: ColorStory,
+    cover: ColorPhoto?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val thumbShape = RoundedCornerShape(Radius.sm)
-    Column(modifier = modifier.clickable(onClick = onClick)) {
+    Column(modifier = modifier.width(GROUP_THUMB_SIZE).clickable(onClick = onClick)) {
         Box(
             modifier = Modifier
                 .size(GROUP_THUMB_SIZE)
@@ -293,6 +298,14 @@ private fun FilterGroupTile(
                 .padding(Stroke.border)
                 .background(AppColors.surfaceElevated),
         ) {
+            if (cover != null) {
+                AsyncImage(
+                    model = cover.path,
+                    contentDescription = story.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            }
             Box(
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -307,26 +320,14 @@ private fun FilterGroupTile(
             }
         }
         Spacer(modifier = Modifier.height(Spacing.xs))
-        Box(
-            modifier = Modifier
-                .background(AppColors.accent)
-                .padding(horizontal = Spacing.xs, vertical = 2.dp),
-        ) {
-            Text(
-                text = "#${group.code}",
-                style = BinsooType.label,
-                fontWeight = FontWeight.Bold,
-                color = AppColors.highlight,
-            )
-        }
-        Spacer(modifier = Modifier.height(Spacing.xs))
         Text(
-            text = group.name.uppercase(),
-            style = BinsooType.body.copy(fontWeight = FontWeight.Bold),
+            text = story.name.uppercase(),
+            style = BinsooType.label.copy(fontWeight = FontWeight.Bold),
             color = AppColors.textPrimary,
+            maxLines = 1,
         )
         Text(
-            text = "${group.count} MÀU | ↓",
+            text = "${ColorStories.PHOTOS_PER_STORY} ẢNH | →",
             style = BinsooType.micro,
             color = AppColors.textSecondary,
         )
@@ -396,7 +397,7 @@ private fun RecentThumbnail(path: String, onClick: () -> Unit) {
     ) {
         AsyncImage(
             model = path,
-            contentDescription = "Ảnh gần đây",
+            contentDescription = stringResource(R.string.home_recent_photo),
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
@@ -416,10 +417,7 @@ private fun HomeScreenPreview() {
             onPickImageClick = {},
             onSettingsClick = {},
             onRecentClick = {},
-            filterGroups = listOf(
-                HomeFilterGroup("Classic", "CLS", 7),
-                HomeFilterGroup("Film", "FLM", 6),
-            ),
+            stories = ColorStories.ALL,
         )
     }
 }

@@ -11,14 +11,14 @@ import com.example.photogether.core.render.sliderToKelvin
 private const val KELVIN_RULER_STEPS = 80
 private const val KELVIN_MAJOR_TICK_EVERY = 10
 
-/** Warm orange at the low end of the slider, neutral in the middle, cool blue at the high end. */
+/** Cool blue at the low end of the slider, neutral in the middle, warm orange at the high end (10000K side). */
 private val KELVIN_TRACK: Brush = Brush.horizontalGradient(
     listOf(
-        Color(0xFFFF9A3D),
-        Color(0xFFFFD2A0),
-        Color(0xFFF7F3EC),
-        Color(0xFFBFD9FF),
         Color(0xFF6E9EFF),
+        Color(0xFFBFD9FF),
+        Color(0xFFF7F3EC),
+        Color(0xFFFFD2A0),
+        Color(0xFFFF9A3D),
     ),
 )
 

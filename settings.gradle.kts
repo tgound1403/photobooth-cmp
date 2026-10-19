@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 rootProject.name = "Photogether"
 include(":app")
 include(":shared")
+include(":macrobenchmark")

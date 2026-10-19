@@ -17,7 +17,14 @@ class FilterGroupingTest {
         val chips = FilterGrouping.chips(filters, hasFavorites = false)
 
         assertEquals(
-            listOf("all", "group:Classic", "group:Film", "group:Portrait", "group:Mood", "group:B&W"),
+            listOf(
+                "all",
+                "group:Kodak",
+                "group:Fuji",
+                "group:Vintage",
+                "group:Korea",
+                "group:Japan Pack",
+            ),
             chips.map { it.id },
         )
     }
@@ -31,21 +38,21 @@ class FilterGroupingTest {
     }
 
     @Test
-    fun filmGroupHasSixFilmFiltersPlusOriginalFirst() {
-        val film = FilterGrouping.filterBy("group:Film", filters, emptySet())
+    fun fujiGroupHasFiveFujiFiltersPlusOriginalFirst() {
+        val fuji = FilterGrouping.filterBy("group:Fuji", filters, emptySet())
 
-        assertEquals(FilterCatalog.ORIGINAL_ID, film.first().id)
-        assertEquals(6, film.count { it.group == "Film" })
-        assertEquals(7, film.size)
+        assertEquals(FilterCatalog.ORIGINAL_ID, fuji.first().id)
+        assertEquals(5, fuji.count { it.group == "Fuji" })
+        assertEquals(6, fuji.size)
     }
 
     @Test
-    fun classicGroupKeepsOriginalOnlyOnce() {
-        val classic = FilterGrouping.filterBy("group:Classic", filters, emptySet())
+    fun kodakGroupKeepsOriginalOnlyOnce() {
+        val kodak = FilterGrouping.filterBy("group:Kodak", filters, emptySet())
 
-        assertEquals(FilterCatalog.ORIGINAL_ID, classic.first().id)
-        assertEquals(1, classic.count { it.id == FilterCatalog.ORIGINAL_ID })
-        assertTrue(classic.all { it.group == "Classic" })
+        assertEquals(FilterCatalog.ORIGINAL_ID, kodak.first().id)
+        assertEquals(1, kodak.count { it.id == FilterCatalog.ORIGINAL_ID })
+        assertTrue(kodak.all { it.group == "Kodak" })
     }
 
     @Test
@@ -53,10 +60,10 @@ class FilterGroupingTest {
         val result = FilterGrouping.filterBy(
             FilterGrouping.FAVORITE,
             filters,
-            favorites = setOf("ink_wash", "kodak"),
+            favorites = setOf("bw_soft_mono", "kodak_portra"),
         )
 
-        assertEquals(listOf("original", "kodak", "ink_wash"), ids(result))
+        assertEquals(listOf("original", "kodak_portra", "bw_soft_mono"), ids(result))
     }
 
     @Test
@@ -84,14 +91,14 @@ class FilterGroupingTest {
         val unknownChip = FilterGrouping.filterBy("no_such_chip", filters, emptySet())
         val unknownGroup = FilterGrouping.filterBy("group:Nope", filters, emptySet())
 
-        assertEquals(31, unknownChip.size)
+        assertEquals(filters.size, unknownChip.size)
         assertEquals(ids(filters), ids(unknownChip))
         assertEquals(ids(filters), ids(unknownGroup))
     }
 
     @Test
     fun everyNonEmptyChipListStartsWithOriginal() {
-        val favorites = setOf("kodak", "ink_wash")
+        val favorites = setOf("kodak_portra", "bw_soft_mono")
         FilterGrouping.chips(filters, hasFavorites = true).forEach { chip ->
             val result = FilterGrouping.filterBy(chip.id, filters, favorites)
             if (result.isNotEmpty()) {

@@ -204,17 +204,21 @@ float hash01(uvec2 p, uint seed) {
 vec3 shade(vec2 uv) {
     vec2 t = uTexel;
     vec3 c = texture(uSrc, uv).rgb;
-    vec3 blur =
-        (texture(uSrc, uv + t * vec2(-1.0, -1.0)).rgb
-        + 2.0 * texture(uSrc, uv + t * vec2(0.0, -1.0)).rgb
-        + texture(uSrc, uv + t * vec2(1.0, -1.0)).rgb
-        + 2.0 * texture(uSrc, uv + t * vec2(-1.0, 0.0)).rgb
-        + 4.0 * c
-        + 2.0 * texture(uSrc, uv + t * vec2(1.0, 0.0)).rgb
-        + texture(uSrc, uv + t * vec2(-1.0, 1.0)).rgb
-        + 2.0 * texture(uSrc, uv + t * vec2(0.0, 1.0)).rgb
-        + texture(uSrc, uv + t * vec2(1.0, 1.0)).rgb) / 16.0;
-    vec3 sharp = clamp(c + uSharpness * (c - blur), 0.0, 1.0);
+    // With sharpness 0 the blur taps add nothing (c + 0 * (c - blur) == c), so skip them.
+    vec3 sharp = c;
+    if (uSharpness != 0.0) {
+        vec3 blur =
+            (texture(uSrc, uv + t * vec2(-1.0, -1.0)).rgb
+            + 2.0 * texture(uSrc, uv + t * vec2(0.0, -1.0)).rgb
+            + texture(uSrc, uv + t * vec2(1.0, -1.0)).rgb
+            + 2.0 * texture(uSrc, uv + t * vec2(-1.0, 0.0)).rgb
+            + 4.0 * c
+            + 2.0 * texture(uSrc, uv + t * vec2(1.0, 0.0)).rgb
+            + texture(uSrc, uv + t * vec2(-1.0, 1.0)).rgb
+            + 2.0 * texture(uSrc, uv + t * vec2(0.0, 1.0)).rgb
+            + texture(uSrc, uv + t * vec2(1.0, 1.0)).rgb) / 16.0;
+        sharp = clamp(c + uSharpness * (c - blur), 0.0, 1.0);
+    }
     if (uUseBloom) {
         // Halation composite (screen): 1 - (1 - c) * (1 - bloom). The bloom is already tinted and scaled.
         vec3 bloom = clamp(texture(uBloom, uv).rgb, 0.0, 1.0);

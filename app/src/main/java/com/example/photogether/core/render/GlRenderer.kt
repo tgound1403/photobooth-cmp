@@ -51,11 +51,22 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
     private var quadVao = 0
     private var quadVbo = 0
     private var maxTextureSize = 0
-    private var lutTexture = 0
-    private var lutSource: Bitmap? = null
+    private val lutTextures = object : LinkedHashMap<Bitmap, Int>(LUT_TEXTURE_SLOTS, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Bitmap, Int>?): Boolean {
+            if (size <= LUT_TEXTURE_SLOTS) return false
+            eldest?.let { GLES30.glDeleteTextures(1, intArrayOf(it.value), 0) }
+            return true
+        }
+    }
     private val bloomPass = BloomPass()
     private var fxTextures: FxTextures? = null
     private var bloomTargets: BloomTargets? = null
+
+    // Source texture cache. The same source is rendered many times (slider ticks, thumbnails), so
+    // it is uploaded once and kept until the source or the mipmap flag changes. Only touched on the GL thread.
+    private var sourceTex = 0
+    private var sourceTexSource: Bitmap? = null
+    private var sourceTexMipmapped = false
 
     // Reused readback resources. Only touched on the GL thread; released in releaseGl().
     private var readBuffer: ByteBuffer? = null
@@ -137,47 +148,66 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
 
         val limit = minOf(maxSize ?: Int.MAX_VALUE, maxTextureSize)
         val (outW, outH) = scaledSize(src.width, src.height, limit)
+        // The adjust pass samples the full-size source and writes at output size: the GPU
+        // does the downscale (mipmapped linear filtering) instead of the CPU.
+        val srcTex = sourceTextureFor(src, downscale = outW < src.width || outH < src.height)
+        val lutTex = lut?.let { lutTextureFor(it) } ?: 0
+        var first: RenderTarget? = null
+        var second: RenderTarget? = null
+        try {
+            first = createTarget(outW, outH)
+            if (p.sharpness > 0f) second = createTarget(outW, outH)
+            drawAdjust(p, srcTex, lutTex, first, outW, outH)
+            val useBloom = BloomMath.bloomScale(p.halation) > 0f
+            var bloomTex = 0
+            if (useBloom) {
+                val targets = bloomTargetsFor(outW, outH)
+                bloomPass.run(first.texture, outW, outH, p.halation, targets, quadVao)
+                checkGl("bloom pass")
+                bloomTex = targets.result
+            }
+            val fx = FxValues(p, p.fxSeed)
+            val stamp = StampValues(p.dateStamp, p.dateStampMillis, stampQuarterTurns)
+            val useFx = fx.leak > 0f || fx.dust > 0f || stamp.active
+            // The present/composite pass is needed for sharpening, the bloom composite, an overlay or an editor effect.
+            if (second == null && (useBloom || useFx || !effects.isNone)) second = createTarget(outW, outH)
+            val final =
+                if (second != null) {
+                    drawSharpen(first.texture, second, p.sharpness, outW, outH, bloomTex, fx, stamp, EffectValues(effects, outW, outH))
+                    second
+                } else {
+                    first
+                }
+            return readBack(final, outW, outH, reuseOutput)
+        } finally {
+            second?.delete()
+            first?.delete()
+        }
+    }
+
+    /**
+     * Returns the GL texture for [src], uploading it only when it changed or the mipmap flag differs
+     * from the cached upload. The texture stays alive until the source changes or [releaseGl] runs.
+     */
+    private fun sourceTextureFor(src: Bitmap, downscale: Boolean): Int {
+        if (sourceTex != 0 && src === sourceTexSource && downscale == sourceTexMipmapped) return sourceTex
+        releaseSourceTexture()
         val input = prepareInput(src)
         try {
-            val srcTex = uploadBitmap(input, downscale = outW < input.width || outH < input.height)
-            val lutTex = lut?.let { lutTextureFor(it) } ?: 0
-            var first: RenderTarget? = null
-            var second: RenderTarget? = null
-            try {
-                // The adjust pass samples the full-size source and writes at output size: the GPU
-                // does the downscale (mipmapped linear filtering) instead of the CPU.
-                first = createTarget(outW, outH)
-                if (p.sharpness > 0f) second = createTarget(outW, outH)
-                drawAdjust(p, srcTex, lutTex, first, outW, outH)
-                val useBloom = BloomMath.bloomScale(p.halation) > 0f
-                var bloomTex = 0
-                if (useBloom) {
-                    val targets = bloomTargetsFor(outW, outH)
-                    bloomPass.run(first.texture, outW, outH, p.halation, targets, quadVao)
-                    checkGl("bloom pass")
-                    bloomTex = targets.result
-                }
-                val fx = FxValues(p, p.fxSeed)
-                val stamp = StampValues(p.dateStamp, p.dateStampMillis, stampQuarterTurns)
-                val useFx = fx.leak > 0f || fx.dust > 0f || stamp.active
-                // The present/composite pass is needed for sharpening, the bloom composite, an overlay or an editor effect.
-                if (second == null && (useBloom || useFx || !effects.isNone)) second = createTarget(outW, outH)
-                val final =
-                    if (second != null) {
-                        drawSharpen(first.texture, second, p.sharpness, outW, outH, bloomTex, fx, stamp, EffectValues(effects, outW, outH))
-                        second
-                    } else {
-                        first
-                    }
-                return readBack(final, outW, outH, reuseOutput)
-            } finally {
-                second?.delete()
-                first?.delete()
-                GLES30.glDeleteTextures(1, intArrayOf(srcTex), 0)
-            }
+            sourceTex = uploadBitmap(input, downscale)
         } finally {
             if (input !== src) input.recycle()
         }
+        sourceTexSource = src
+        sourceTexMipmapped = downscale
+        return sourceTex
+    }
+
+    private fun releaseSourceTexture() {
+        if (sourceTex != 0) GLES30.glDeleteTextures(1, intArrayOf(sourceTex), 0)
+        sourceTex = 0
+        sourceTexSource = null
+        sourceTexMipmapped = false
     }
 
     /**
@@ -213,17 +243,15 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         return tex
     }
 
-    /** Uploads the LUT once and reuses the texture while the same bitmap is passed in. */
+    /**
+     * Uploads each LUT once and keeps the last [LUT_TEXTURE_SLOTS] of them, keyed by bitmap identity,
+     * so switching between recently used filters does not rebuild the 3D texture. Least recently used
+     * textures are deleted. Only touched on the GL thread.
+     */
     private fun lutTextureFor(lut: Bitmap): Int {
-        if (lut === lutSource && lutTexture != 0) return lutTexture
-        if (lutTexture != 0) {
-            GLES30.glDeleteTextures(1, intArrayOf(lutTexture), 0)
-            lutTexture = 0
-        }
-        lutSource = null
+        lutTextures[lut]?.let { return it }
         val tex = GlUtil.uploadLut3D(lut)
-        lutTexture = tex
-        lutSource = lut
+        lutTextures[lut] = tex
         return tex
     }
 
@@ -398,7 +426,8 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         reusedOutput = null
         if (display != EGL14.EGL_NO_DISPLAY && eglContext != EGL14.EGL_NO_CONTEXT) {
             EGL14.eglMakeCurrent(display, eglSurface, eglSurface, eglContext)
-            if (lutTexture != 0) GLES30.glDeleteTextures(1, intArrayOf(lutTexture), 0)
+            releaseSourceTexture()
+            lutTextures.values.forEach { GLES30.glDeleteTextures(1, intArrayOf(it), 0) }
             bloomTargets?.delete()
             bloomPass.release()
             fxTextures?.release()
@@ -416,8 +445,7 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         display = EGL14.EGL_NO_DISPLAY
         eglContext = EGL14.EGL_NO_CONTEXT
         eglSurface = EGL14.EGL_NO_SURFACE
-        lutTexture = 0
-        lutSource = null
+        lutTextures.clear()
         bloomTargets = null
         fxTextures = null
         adjustProgram = 0
@@ -427,3 +455,6 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         initialized = false
     }
 }
+
+/** Number of 3D LUT textures kept on the GPU at once (each 64^3 RGBA8, about 1 MB). */
+private const val LUT_TEXTURE_SLOTS = 4

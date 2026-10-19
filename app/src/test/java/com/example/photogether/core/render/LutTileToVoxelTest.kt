@@ -15,4 +15,12 @@ class LutTileToVoxelTest {
 
     @Test
     fun blueSevenIsLastColumnFirstRow() = assertEquals(LutTexel(448, 0), lutTileToVoxel(0, 0, 7))
+
+    @Test
+    fun pixelIndexMatchesTexelForEveryVoxel() {
+        for (b in 0 until LUT_LEVELS) for (g in 0 until LUT_LEVELS) for (r in 0 until LUT_LEVELS) {
+            val t = lutTileToVoxel(r, g, b)
+            assertEquals(t.y * LUT_SIZE + t.x, lutVoxelPixelIndex(r, g, b))
+        }
+    }
 }

@@ -1,5 +1,7 @@
 package com.example.photogether.ui.components
 
+import com.tgound.photogether.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -8,8 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,6 +21,7 @@ import com.example.photogether.ui.theme.AppColors
 import com.example.photogether.ui.theme.IconSize
 import com.example.photogether.ui.theme.Spacing
 import com.example.photogether.ui.theme.PhotogetherTheme
+import com.example.photogether.ui.theme.AppIcons
 
 /**
  * Empty state component to display when there's no data
@@ -32,8 +33,8 @@ import com.example.photogether.ui.theme.PhotogetherTheme
  */
 @Composable
 fun EmptyState(
-    title: String = "Chưa có dữ liệu",
-    message: String = "Hãy thử lại sau",
+    title: String = stringResource(R.string.empty_state_title),
+    message: String = stringResource(R.string.empty_state_message),
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -46,7 +47,7 @@ fun EmptyState(
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            imageVector = Icons.Default.PhotoLibrary,
+            imageVector = AppIcons.Library,
             contentDescription = null,
             tint = AppColors.textSecondary,
             modifier = Modifier.size(IconSize.hero)
@@ -87,7 +88,7 @@ fun EmptyState(
 private fun EmptyStatePreview() {
     PhotogetherTheme {
         EmptyState(
-            title = "Chưa có ảnh nào",
+            title = stringResource(R.string.moments_empty_title),
             message = "Chụp ảnh PhotoBooth đầu tiên của bạn!",
             actionLabel = "Chụp ảnh",
             onAction = {}

@@ -7,16 +7,22 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 private val KEY_KELVIN = intPreferencesKey("wb_kelvin")
 private val KEY_EV = floatPreferencesKey("ev")
+private val KEY_CAMERA_ID = stringPreferencesKey("camera_id")
 
 class CameraSettingsRepository(private val store: DataStore<Preferences>) {
 
     val settings: Flow<CameraSettings> = store.data.map { it.toCameraSettings() }
+
+    suspend fun setCameraId(id: String) {
+        store.edit { prefs -> prefs[KEY_CAMERA_ID] = id }
+    }
 
     suspend fun setKelvin(kelvin: Int?) {
         store.edit { prefs ->
@@ -45,4 +51,5 @@ class CameraSettingsRepository(private val store: DataStore<Preferences>) {
 internal fun Preferences.toCameraSettings(): CameraSettings = CameraSettings(
     kelvin = this[KEY_KELVIN],
     ev = this[KEY_EV] ?: 0f,
+    cameraId = this[KEY_CAMERA_ID],
 )

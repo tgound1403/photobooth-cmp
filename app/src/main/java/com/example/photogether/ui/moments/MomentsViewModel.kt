@@ -26,5 +26,9 @@ class MomentsViewModel(private val repository: MomentsRepository) : ViewModel() 
 
     suspend fun delete(uri: String): DeleteResult = repository.delete(uri)
 
+    suspend fun delete(uris: List<String>): DeleteResult = repository.delete(uris)
+
     suspend fun deleteAfterConsent(uri: String): DeleteResult = repository.deleteAfterConsent(uri)
+
+    suspend fun deleteAfterConsent(pending: List<String>): DeleteResult = repository.deleteAfterConsent(pending)
 }

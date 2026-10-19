@@ -1,5 +1,7 @@
 package com.example.photogether.ui.editor
 
+import com.tgound.photogether.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -73,7 +75,7 @@ fun OverlayPanel(
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                placeholder = { Text("Type text") },
+                placeholder = { Text(stringResource(R.string.overlay_type_text)) },
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )
@@ -87,7 +89,7 @@ fun OverlayPanel(
                 },
                 modifier = Modifier.padding(start = Spacing.sm),
             ) {
-                Text("Add")
+                Text(stringResource(R.string.overlay_add))
             }
         }
 
@@ -145,7 +147,7 @@ private fun PresetRow(
         modifier = Modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        EditorChip(label = "None", selected = selected == null, onClick = { onSelect(null) })
+        EditorChip(label = stringResource(R.string.option_none), selected = selected == null, onClick = { onSelect(null) })
         presets.forEach { preset ->
             EditorChip(
                 label = preset,

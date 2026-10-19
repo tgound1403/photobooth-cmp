@@ -1,6 +1,7 @@
 package com.example.photogether.ui.editor
 
 import android.content.ContentValues
+import android.app.ActivityManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -24,9 +25,18 @@ interface EditorImageIo {
 
     /** Writes [bitmap] as a new JPEG in the gallery. Returns the new content uri, or null on failure. */
     fun saveJpeg(bitmap: Bitmap): String?
+
+    /** Longest side an export may render at, or null for the full source size. */
+    val exportMaxSide: Int? get() = null
 }
 
 class AndroidEditorImageIo(private val context: Context) : EditorImageIo {
+
+    /** Low-memory devices export at a capped size, so a full-size render does not run out of heap. */
+    override val exportMaxSide: Int? by lazy {
+        val memoryClassMb = context.getSystemService(ActivityManager::class.java)?.memoryClass ?: 0
+        if (memoryClassMb in 1..LOW_MEMORY_CLASS_MB) LOW_MEMORY_EXPORT_SIDE else null
+    }
 
     override fun decode(uri: String, maxSide: Int): Bitmap? =
         try {
@@ -107,7 +117,7 @@ class AndroidEditorImageIo(private val context: Context) : EditorImageIo {
         // Always a new file: the original is never overwritten.
         val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return null
         return try {
-            resolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it) }
+            resolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.JPEG, EXPORT_JPEG_QUALITY, it) }
                 ?: throw IOException("Failed to open output stream")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 resolver.update(uri, ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }, null, null)
@@ -119,3 +129,10 @@ class AndroidEditorImageIo(private val context: Context) : EditorImageIo {
         }
     }
 }
+
+/** Devices at or below this heap class export at [LOW_MEMORY_EXPORT_SIDE] on the longest side. */
+private const val LOW_MEMORY_CLASS_MB = 256
+private const val LOW_MEMORY_EXPORT_SIDE = 3072
+
+/** Visually lossless for photos; q100 costs file size and encode time without a visible gain. */
+private const val EXPORT_JPEG_QUALITY = 95

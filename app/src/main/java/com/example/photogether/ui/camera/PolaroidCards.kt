@@ -50,8 +50,8 @@ private const val BITMAP_H = 504
 /**
  * Photo cards that circle the body inside the 3D scene on one ring, so the body hides cards behind it
  * by depth rather than by a 2D cut-out. Each card is a front plane (photo and date) and a back plane
- * (plain paper) turned 180 degrees. Up to [MAX_CARDS] cards exist; only as many as there are photos
- * are shown.
+ * (plain paper) turned 180 degrees. There are always [MAX_CARDS] cards; a card with no photo shows a
+ * gray placeholder.
  *
  * [scale] is the ring radius in scene units, [center] is where the body sits.
  */
@@ -67,10 +67,15 @@ class PolaroidCards(
     private val cards: List<Node> =
         List(MAX_CARDS) { Node(engine).also { ring.addChildNode(it) } }
 
-    private var shown = 0
+    /** Gray placeholder front of each card. Shown while the card has no photo. */
+    private val placeholders: List<ImageNode> =
+        cards.map { card -> newFront(polaroidBitmap(null, "")).also { card.addChildNode(it) } }
 
-    private val fronts: MutableList<ImageNode> =
-        MutableList(MAX_CARDS) { index -> newFront(polaroidBitmap(null, "")).also { cards[index].addChildNode(it) } }
+    /** Uri of the photo each card shows, or null while it shows its placeholder. */
+    private val photoUris: Array<String?> = arrayOfNulls(MAX_CARDS)
+
+    /** Photo front of each card, or null. A replaced front is hidden, not destroyed (see [load]). */
+    private val photos: Array<ImageNode?> = arrayOfNulls(MAX_CARDS)
 
     private fun newFront(bitmap: Bitmap): ImageNode =
         ImageNode(
@@ -94,19 +99,28 @@ class PolaroidCards(
                 position = Position(0f, 0f, -gap)
                 rotation = Rotation(y = 180f)
             }.also { card.addChildNode(it) }
-            card.isVisible = false
         }
     }
 
     /** The nodes to add to the scene; the cards hang off the ring. */
     val roots: List<Node> get() = listOf(ring)
 
-    /** Replaces the placeholder cards with photos. Call off the render loop; reading photos takes time. */
+    /**
+     * Puts the first photos of [moments] on the cards, in order. A card with no photo left shows its
+     * placeholder. Call off the render loop; reading photos takes time.
+     */
     suspend fun load(context: Context, moments: List<Moment>) {
-        shown = moments.size.coerceAtMost(MAX_CARDS)
-        cards.forEachIndexed { index, card -> card.isVisible = index < shown }
-        for (index in 0 until shown) {
-            val moment = moments[index]
+        for (index in 0 until MAX_CARDS) {
+            val moment = moments.getOrNull(index)
+            // The card already shows this photo, or is empty and stays so.
+            if (moment?.uri == photoUris[index]) continue
+            if (moment == null) {
+                photos[index]?.isVisible = false
+                photos[index] = null
+                photoUris[index] = null
+                placeholders[index].isVisible = true
+                continue
+            }
             val request =
                 ImageRequest.Builder(context)
                     .data(moment.uri)
@@ -120,17 +134,18 @@ class PolaroidCards(
             // Setting ImageNode.bitmap on a live node did not refresh its texture, so the front plane is replaced.
             val fresh = newFront(polaroidBitmap(photo, caption))
             cards[index].addChildNode(fresh)
-            // Destroying a node the renderer may still draw aborts Filament, so the placeholder is only hidden.
-            fronts[index].isVisible = false
-            fronts[index] = fresh
+            // Destroying a node the renderer may still draw aborts Filament, so the old front is only hidden.
+            photos[index]?.isVisible = false
+            photos[index] = fresh
+            photoUris[index] = moment.uri
+            placeholders[index].isVisible = false
         }
     }
 
     /** Moves every card to its place [timeMs] into the animation, plus the user's [spin]. */
     fun update(timeMs: Long, spin: PickerSpin) {
         ring.rotation = Rotation(x = RING_ELEVATION_DEG + spin.tiltOffset)
-        val count = shown
-        if (count == 0) return
+        val count = MAX_CARDS
         val lap = (timeMs % RING_PERIOD_MS).toFloat() / RING_PERIOD_MS + spin.lapOffset
         val r = scale
         for (index in 0 until count) {

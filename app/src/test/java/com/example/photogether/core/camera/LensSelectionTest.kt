@@ -44,4 +44,40 @@ class LensSelectionTest {
     fun zoomIsTargetOverLensFocal() {
         assertEquals(35f / 26f, zoomFor(35f, lenses[1]), 0.001f)
     }
+
+    @Test
+    fun lensOptionsAreRealLensesSortedAndDistinct() {
+        val physical = listOf(Lens("tele", 70f), Lens("main", 26.2f), Lens("main2", 26.4f), Lens("ultrawide", 16f))
+        assertEquals(listOf(16f, 26f, 70f), lensOptions(physical, 26f, 4f))
+    }
+
+    @Test
+    fun lensOptionsFallBackToDigitalStopsForSingleLens() {
+        val single = listOf(Lens("0", 26f))
+        assertEquals(listOf(26f, 39f, 52f), lensOptions(single, 26f, 2f))
+    }
+
+    @Test
+    fun lensOptionsFallBackLimitedByMaxZoom() {
+        assertEquals(listOf(26f, 39f), lensOptions(emptyList(), 26f, 1.6f))
+    }
+
+    @Test
+    fun closestOptionPicksNearestMm() {
+        assertEquals(39f, closestOption(listOf(26f, 39f, 52f), 45f), 0f)
+        assertEquals(26f, closestOption(listOf(26f, 39f, 52f), 20f), 0f)
+    }
+
+    @Test
+    fun closestOptionWithoutOptionsReturnsCurrent() {
+        assertEquals(35f, closestOption(emptyList(), 35f), 0f)
+    }
+
+    @Test
+    fun ratioLabelDropsTrailingZeroAndKeepsOneDecimal() {
+        assertEquals("1x", ratioLabel(26f, 26f))
+        assertEquals("1.5x", ratioLabel(39f, 26f))
+        assertEquals("2x", ratioLabel(52f, 26f))
+        assertEquals("0.6x", ratioLabel(16f, 26f))
+    }
 }

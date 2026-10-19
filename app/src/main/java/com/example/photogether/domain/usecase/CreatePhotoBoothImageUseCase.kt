@@ -41,7 +41,10 @@ import kotlinx.coroutines.withContext
  */
 class CreatePhotoBoothImageUseCase(
         private val isPremium: StateFlow<Boolean> = MutableStateFlow(false),
+        /** Shared app catalog so the LUT cache is reused. Null builds a catalog per call (tests). */
+        private val catalog: FilterCatalog? = null,
 ) {
+    /** Renders the strip and saves it to the gallery as one JPEG. */
     suspend fun execute(
             context: Context,
             imagePaths: List<String>,
@@ -51,7 +54,36 @@ class CreatePhotoBoothImageUseCase(
             frameTheme: FrameTheme? = null,
             customText: String? = null
     ): Result<String> = runCatching {
-        withContext(Dispatchers.IO) {
+        val result =
+                compose(
+                        context,
+                        imagePaths,
+                        layout,
+                        editParams,
+                        backgroundSource,
+                        frameTheme,
+                        customText
+                )
+        try {
+            saveToGallery(context, result)
+        } finally {
+            result.recycle()
+        }
+    }
+
+    /**
+     * Renders the strip in memory without writing anything to storage. Live previews use this, so
+     * every edit does not add a new image to the gallery. The caller owns the returned bitmap.
+     */
+    suspend fun compose(
+            context: Context,
+            imagePaths: List<String>,
+            layout: PhotoBoothLayout = PhotoBoothLayout.GRID_2X2,
+            editParams: EditParams = EditParams(),
+            backgroundSource: String? = null,
+            frameTheme: FrameTheme? = null,
+            customText: String? = null
+    ): Bitmap = withContext(Dispatchers.IO) {
             val requiredCount =
                     when (layout) {
                         PhotoBoothLayout.SINGLE -> 1
@@ -188,44 +220,48 @@ class CreatePhotoBoothImageUseCase(
                 drawPhotoBoothWatermark(context, canvas, totalWidth, totalHeight, density, paddingPx, textPaint)
             }
 
-            // Lưu ảnh
-            val contentValues =
-                    ContentValues().apply {
-                        put(
-                                MediaStore.Images.Media.DISPLAY_NAME,
-                                "PhotoBooth_${System.currentTimeMillis()}.jpg"
-                        )
-                        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
-                            put(MediaStore.Images.Media.IS_PENDING, 1)
-                        }
-                    }
-
-            val resolver = context.contentResolver
-            val uri =
-                    resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-                            ?: throw IOException("Failed to create new MediaStore record.")
-
-            resolver.openOutputStream(uri)?.use { outputStream ->
-                resultBitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
-            }
-                    ?: throw IOException("Failed to open output stream.")
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                contentValues.clear()
-                contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
-                resolver.update(uri, contentValues, null, null)
-            }
-
-            // Giải phóng bộ nhớ
+            // Giải phóng bộ nhớ (ảnh kết quả do caller quản lý)
             bitmaps.forEach { it.recycle() }
             backgroundBitmap?.recycle()
-            resultBitmap.recycle()
 
-            uri.toString()
-        }
+            resultBitmap
     }
+
+    /** Writes the finished strip to the Pictures folder as a single new MediaStore entry. */
+    private suspend fun saveToGallery(context: Context, bitmap: Bitmap): String =
+            withContext(Dispatchers.IO) {
+                val contentValues =
+                        ContentValues().apply {
+                            put(
+                                    MediaStore.Images.Media.DISPLAY_NAME,
+                                    "PhotoBooth_${System.currentTimeMillis()}.jpg"
+                            )
+                            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+                                put(MediaStore.Images.Media.IS_PENDING, 1)
+                            }
+                        }
+
+                val resolver = context.contentResolver
+                val uri =
+                        resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                                ?: throw IOException("Failed to create new MediaStore record.")
+
+                resolver.openOutputStream(uri)?.use { outputStream ->
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+                }
+                        ?: throw IOException("Failed to open output stream.")
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    contentValues.clear()
+                    contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+                    resolver.update(uri, contentValues, null, null)
+                }
+
+                uri.toString()
+            }
+
 
     /** Small corner text in the bottom margin, using the date text colour at reduced opacity. */
     /** Renders each photo through the GPU filter pipeline (LUT). Source photos are recycled. */
@@ -234,7 +270,7 @@ class CreatePhotoBoothImageUseCase(
             photos: List<Bitmap>,
             params: EditParams
     ): List<Bitmap> {
-        val lut = FilterCatalog(context.applicationContext).loadLut(params.filterId)
+        val lut = (catalog ?: FilterCatalog(context.applicationContext)).loadLut(params.filterId)
         return GlRenderer().use { renderer ->
             photos.map { photo ->
                 renderer.render(photo, params, lut).also { photo.recycle() }

@@ -1,5 +1,8 @@
 package com.example.photogether.ui.moments
 
+import com.tgound.photogether.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
 import android.app.Activity
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -26,8 +29,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHost
@@ -36,7 +37,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +54,7 @@ import com.example.photogether.ui.theme.InkColors
 import com.example.photogether.ui.theme.Radius
 import com.example.photogether.ui.theme.Stroke
 import kotlinx.coroutines.launch
+import com.example.photogether.ui.theme.AppIcons
 
 /** A delete the UI has asked for. Plain class, so every request is a new key for LaunchedEffect. */
 private class PendingDelete(val uri: String, val afterConsent: Boolean)
@@ -71,7 +72,7 @@ fun MomentViewerScreen(
     onBack: () -> Unit,
     onEdit: (uri: String) -> Unit,
 ) {
-    val moments by viewModel.moments.collectAsState()
+    val moments by viewModel.moments.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
 
@@ -128,7 +129,7 @@ fun MomentViewerScreen(
     Box(modifier = Modifier.fillMaxSize().background(InkColors.background)) {
         if (moments.isEmpty()) {
             Text(
-                text = "Không còn ảnh nào",
+                text = stringResource(R.string.moments_viewer_empty),
                 style = BinsooType.body,
                 color = InkColors.textPrimary,
                 modifier = Modifier.align(Alignment.Center),
@@ -163,7 +164,7 @@ fun MomentViewerScreen(
                     .clickable(onClick = onBack),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Default.Close, contentDescription = "Đóng", tint = InkColors.textPrimary)
+                Icon(AppIcons.Close, contentDescription = stringResource(R.string.action_close), tint = InkColors.textPrimary)
             }
 
             Column(
@@ -208,13 +209,13 @@ fun MomentViewerScreen(
                         onClick = { current?.let { onEdit(it.uri) } },
                         enabled = current != null,
                     ) {
-                        Text("Chỉnh sửa", style = BinsooType.label, color = InkColors.textPrimary)
+                        Text(stringResource(R.string.action_edit), style = BinsooType.label, color = InkColors.textPrimary)
                     }
                     TextButton(
                         onClick = { current?.let { requestDelete(it.uri) } },
                         enabled = current != null,
                     ) {
-                        Text("Xóa", style = BinsooType.label, color = InkColors.danger)
+                        Text(stringResource(R.string.action_delete), style = BinsooType.label, color = InkColors.danger)
                     }
                 }
             }
@@ -232,8 +233,8 @@ fun MomentViewerScreen(
     confirmUri?.let { uri ->
         AlertDialog(
             onDismissRequest = { confirmUri = null },
-            title = { Text("Xóa ảnh này?") },
-            text = { Text("Ảnh sẽ bị xóa khỏi thiết bị.") },
+            title = { Text(stringResource(R.string.dialog_delete_photo_title)) },
+            text = { Text(stringResource(R.string.dialog_delete_photo_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -241,12 +242,12 @@ fun MomentViewerScreen(
                         deleteRequest = PendingDelete(uri, afterConsent = false)
                     },
                 ) {
-                    Text("Xóa")
+                    Text(stringResource(R.string.action_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { confirmUri = null }) {
-                    Text("Hủy")
+                    Text(stringResource(R.string.action_cancel))
                 }
             },
         )

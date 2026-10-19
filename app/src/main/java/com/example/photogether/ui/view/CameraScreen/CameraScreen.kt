@@ -1,39 +1,42 @@
 package com.example.photogether.ui.view.CameraScreen
 
+import com.tgound.photogether.R
+import androidx.compose.ui.res.stringResource
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.MeteringPoint
 import androidx.camera.core.Preview
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.FlashAuto
-import androidx.compose.material.icons.filled.FlashOff
-import androidx.compose.material.icons.filled.FlashOn
-import androidx.compose.material.icons.filled.Highlight
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.photogether.core.render.FlashMode
@@ -58,8 +61,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -76,21 +82,28 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.NavController
 import com.example.photogether.core.camera.CameraTool
+import com.example.photogether.core.camera.formatEv
+import com.example.photogether.core.camera.lensOptions
 import com.example.photogether.core.navigation.AppRoutes
 import com.example.photogether.core.render.CameraAspect
 import com.example.photogether.core.render.CameraProfiles
+import com.example.photogether.core.render.FilterCatalog
 import com.example.photogether.core.render.CropMath
-import com.example.photogether.core.render.FilterCycle
 import com.example.photogether.core.render.RecipeFilters
+import com.example.photogether.ui.components.AspectButton
+import com.example.photogether.ui.components.AspectPanel
 import com.example.photogether.ui.components.CameraAdjustPanel
+import com.example.photogether.ui.components.CameraCircleButton
 import com.example.photogether.ui.components.CameraQuickBar
-import com.example.photogether.ui.components.CameraToolButtons
 import com.example.photogether.ui.components.FilterStrip
+import com.example.photogether.ui.components.CameraToolButtons
+import com.example.photogether.ui.components.FocalPill
 import com.example.photogether.ui.components.FocusIndicator
 import com.example.photogether.ui.components.GridOverlay
+import com.example.photogether.ui.components.LensPanel
 import com.example.photogether.ui.components.ManualControls
-import com.example.photogether.ui.components.ZoomControl
-import com.example.photogether.ui.components.ZoomPill
+import com.example.photogether.ui.components.SUN_PRESET_KELVIN
+import com.example.photogether.ui.components.BULB_PRESET_KELVIN
 import com.example.photogether.ui.components.kelvinLabel
 import com.example.photogether.ui.theme.BinsooType
 import com.example.photogether.ui.theme.InkColors
@@ -98,13 +111,19 @@ import com.example.photogether.ui.theme.Motion
 import com.example.photogether.ui.theme.Radius
 import com.example.photogether.ui.theme.Spacing
 import com.example.photogether.ui.viewmodel.CameraViewModel
-import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.tooling.preview.Preview as ComposePreview
+import com.example.photogether.ui.theme.AppIcons
 
 private const val TAG = "CameraScreen"
 private const val FILTER_NAME_HOLD_MS = 900L
+
+/** Height of the panel slot under the viewfinder. Fixed, so opening a panel never resizes the viewfinder. Sized for the aspect panel. */
+private val PANEL_SLOT_HEIGHT = 120.dp
+
+/** The one panel open under the viewfinder. WB and EV also drive the view model's open tool. */
+private enum class CameraPanel { NONE, ASPECT, WB, LENS, EV }
 
 /** One screen flash at capture. A new instance per shot, so every shot replays it. */
 class FlashFx(val style: FlashStyle)
@@ -127,20 +146,63 @@ fun CameraScreen(
     }
     // The highlighted source. A recipe id is not a catalog id, so it is tracked here.
     var selectedId by rememberSaveable { mutableStateOf(cameraViewModel.editParams.value.filterId) }
-    // The chosen camera. The strip lists only its filters, and recipes built on one of them.
-    var cameraId by rememberSaveable {
-        mutableStateOf(CameraProfiles.forFilter(selectedId)?.id ?: CameraProfiles.ALL.first().id)
-    }
-    val cameraProfile = CameraProfiles.byId(cameraId)
-    val sources = remember(allSources, recipes, cameraProfile) {
-        val own = cameraProfile.filterIds.mapNotNull { id -> allSources.firstOrNull { it.id == id } }
-        own + recipes.filter { it.params.filterId in cameraProfile.filterIds }.map { RecipeFilters.toFilterInfo(it) }
+    // The camera picked last, kept in DataStore. Before any pick, the camera that owns the current filter.
+    val savedCameraId by cameraViewModel.savedCameraId.collectAsState(initial = null)
+    val cameraId = savedCameraId ?: CameraProfiles.forFilter(selectedId)?.id
+    val cameraProfile = cameraId?.let { CameraProfiles.byId(it) }
+    // The strip is the original, then the chosen camera's filters. Recipes built on one of those show too.
+    val stripIds = CameraProfiles.stripIds(cameraProfile)
+    val sources = remember(allSources, recipes, stripIds) {
+        val own = stripIds.mapNotNull { id -> allSources.firstOrNull { it.id == id } }
+        own + recipes.filter { it.params.filterId in stripIds }.map { RecipeFilters.toFilterInfo(it) }
     }
     var flash by remember { mutableStateOf<NameFlash?>(null) }
     val adjust by cameraViewModel.adjust.collectAsStateWithLifecycle()
     val camera = cameraViewModel.camera.value
-    val cameraZoom = camera?.cameraInfo?.zoomState?.observeAsState()?.value?.zoomRatio ?: 1f
+    val zoomState = camera?.cameraInfo?.zoomState?.observeAsState()?.value
+    val cameraZoom = zoomState?.zoomRatio ?: 1f
+    val maxZoom = zoomState?.maxZoomRatio ?: 1f
     val cropZoomMm = (cameraViewModel.lensMm.floatValue * cameraZoom * cameraViewModel.cropZoom.floatValue).roundToInt()
+    // The open panel under the viewfinder. Only one is open at a time.
+    var panel by rememberSaveable { mutableStateOf(CameraPanel.NONE) }
+    // The aspect in use: the one the user picked, or the full 3:4 frame.
+    val effectiveAspect = cameraViewModel.aspectOverride.value ?: CameraAspect.FOUR_THREE
+    // One PreviewView for the life of the screen, so its last frame can be captured before a ratio change.
+    val context = LocalContext.current
+    val previewView = remember {
+        PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER }
+    }
+    // Last live frame, shown while the ratio changes. The live view is paused behind it, so the layout change
+    // never shows as a stretched or stuttering preview. Null when live.
+    var frozenFrame by remember { mutableStateOf<ImageBitmap?>(null) }
+    // The viewfinder's shape glides to the new ratio; the frozen frame is dropped once it settles.
+    val viewRatio by animateFloatAsState(
+        targetValue = effectiveAspect.widthOverHeight,
+        animationSpec = tween(durationMillis = 280),
+        finishedListener = { frozenFrame = null },
+        label = "viewfinderRatio",
+    )
+    val onSelectAspect: (CameraAspect) -> Unit = { aspect ->
+        if (aspect != effectiveAspect) {
+            frozenFrame = previewView.bitmap?.asImageBitmap()
+            cameraViewModel.setAspect(aspect)
+        }
+    }
+    // Opens [target], or closes it when it is already open. WB and EV set the view model's open tool to match,
+    // because CameraAdjustPanel reads that tool to choose its ruler.
+    val openPanel: (CameraPanel) -> Unit = { target ->
+        val next = if (panel == target) CameraPanel.NONE else target
+        panel = next
+        val wanted = when (next) {
+            CameraPanel.WB -> CameraTool.WHITE_BALANCE
+            CameraPanel.EV -> CameraTool.EXPOSURE
+            else -> null
+        }
+        if (adjust.openTool != wanted) {
+            adjust.openTool?.let { cameraViewModel.toggleTool(it) }
+            wanted?.let { cameraViewModel.toggleTool(it) }
+        }
+    }
     val flashMode by cameraViewModel.flashMode.collectAsStateWithLifecycle()
     var flashFx by remember { mutableStateOf<FlashFx?>(null) }
     // The gallery iris shows the last photo taken this session. captureSeq counts shutter presses, so the
@@ -159,8 +221,10 @@ fun CameraScreen(
         selectedId = id
         flash = NameFlash(allSources.firstOrNull { it.id == id }?.name.orEmpty())
     }
-    val onSwipe: (Int) -> Unit = { delta ->
-        onSelect(FilterCycle.next(sources.map { it.id }, selectedId, delta))
+    // Vertical drag on the viewfinder sets the strength of the current filter. The fraction is of the viewfinder height.
+    val onStrength: (Float) -> Unit = { delta ->
+        val percent = (cameraViewModel.adjustFilterIntensity(delta) * 100).roundToInt()
+        flash = NameFlash("Cường độ $percent%")
     }
     val currentOnSelect by rememberUpdatedState(onSelect)
 
@@ -181,34 +245,18 @@ fun CameraScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // The same effect sets the camera's default flash, for the first camera and every change after.
+    // Runs for the first camera and every change after. A ratio picked for the previous camera does not carry over.
     LaunchedEffect(cameraProfile) {
-        cameraViewModel.setCameraAspect(cameraProfile.recipe.aspect)
-        cameraViewModel.setFlashMode(cameraProfile.recipe.defaultFlash)
-        cameraViewModel.setCameraShutterSound(cameraProfile.recipe.shutterSound)
+        cameraViewModel.aspectOverride.value = null
+        cameraViewModel.setCameraAspect(CameraAspect.FOUR_THREE)
+        cameraViewModel.setFlashMode(FlashMode.OFF)
     }
 
-    // The picker opens on the camera in use.
-    LaunchedEffect(navController, cameraId) {
-        navController.currentBackStackEntry?.savedStateHandle?.set(CameraProfiles.CURRENT_KEY, cameraId)
-    }
-
-    // The camera picker returns its chosen camera id on this screen's back-stack entry. Entries are
-    // observed, so a result is handled again after the picker pops back. Choosing a camera applies its
-    // first filter, unless the current filter already belongs to it.
-    LaunchedEffect(navController) {
-        navController.currentBackStackEntryFlow.collectLatest { entry ->
-            entry.savedStateHandle.getStateFlow<String?>(CameraProfiles.RESULT_KEY, null).collect { id ->
-                if (id != null) {
-                    val picked = CameraProfiles.byId(id)
-                    cameraId = picked.id
-                    currentOnSelect(picked.filterId)
-                    // Picking a camera resets the film-effect fields to the camera's recipe.
-                    cameraViewModel.applyCameraRecipe(picked.recipe)
-                    entry.savedStateHandle.remove<String>(CameraProfiles.RESULT_KEY)
-                }
-            }
-        }
+    // A camera saved by the picker (from Home or from here) applies its first filter, unless the current
+    // filter already belongs to it.
+    LaunchedEffect(savedCameraId) {
+        val picked = savedCameraId?.let { CameraProfiles.byId(it) } ?: return@LaunchedEffect
+        if (selectedId !in picked.filterIds) currentOnSelect(picked.filterId)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -222,113 +270,202 @@ fun CameraScreen(
             CameraTopBar(
                 onBack = { navController.popBackStack() },
                 onOpenSettings = { navController.navigate(AppRoutes.SETTINGS) },
-                flashMode = if (cameraViewModel.hasFlash.value) flashMode else null,
-                onFlashClick = { cameraViewModel.setFlashMode(flashMode.next()) },
             )
 
             // The viewfinder takes the space the rest of the screen leaves. Its bottom overlays sit inside it.
+            // Its shape follows the chosen aspect, so the live view shows the same crop as the capture.
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = Spacing.lg),
+                // Bottom-aligned so the frame sits right above the ratio row, with the spare space above it.
+                contentAlignment = Alignment.BottomCenter,
             ) {
-                CameraPreviewViewfinder(
-                    navController = navController,
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    previewUseCase = cameraViewModel.preview.value,
-                    camera = camera,
-                    flash = flash,
-                    aspect = cameraProfile.recipe.aspect,
-                    cropZoom = cameraViewModel.cropZoom.floatValue,
-                    cropZoomOn = cameraViewModel.cropZoomActive.value,
-                    zoomMm = cropZoomMm,
-                    onSwipe = onSwipe,
-                    onFocusPoint = cameraViewModel::focusAt,
-                )
-                ScreenFlash(
-                    fx = flashFx,
-                    modifier = Modifier
-                        .matchParentSize()
-                        .clip(RoundedCornerShape(Radius.viewfinder)),
-                )
-                // Overlays the bottom edge of the viewfinder. Kept outside the viewfinder's swipe box so
-                // slider drags do not also cycle filters.
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = Spacing.md),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    camera?.let { bound ->
-                        ZoomControl(
-                            cameraInfo = bound.cameraInfo,
-                            cropZoom = cameraViewModel.cropZoom.floatValue,
-                            onZoom = cameraViewModel::setZoomRatio,
+                Box(modifier = Modifier.aspectRatio(viewRatio)) {
+                    CameraPreviewViewfinder(
+                        navController = navController,
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        previewView = previewView,
+                        previewUseCase = cameraViewModel.preview.value,
+                        camera = camera,
+                        flash = flash,
+                        aspect = effectiveAspect,
+                        cropZoom = cameraViewModel.cropZoom.floatValue,
+                        cropZoomOn = cameraViewModel.cropZoomActive.value,
+                        zoomMm = cropZoomMm,
+                        onStrength = onStrength,
+                        onFocusPoint = cameraViewModel::focusAt,
+                        onPinch = cameraViewModel::pinchZoom,
+                        onPinchEnd = cameraViewModel::endPinch,
+                    )
+                    // Covers the live view while the ratio changes, so the resize is never seen.
+                    frozenFrame?.let { frame ->
+                        Image(
+                            bitmap = frame,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(Radius.viewfinder)),
                         )
                     }
-                    CameraQuickBar(
-                        state = adjust,
-                        onToolClick = cameraViewModel::toggleTool,
-                        zoomPill = {
-                            camera?.let {
-                                ZoomPill(
-                                    cameraInfo = it.cameraInfo,
-                                    lensMm = cameraViewModel.lensMm.floatValue,
-                                    cropZoom = cameraViewModel.cropZoom.floatValue,
-                                    onTap = cameraViewModel::setFocal,
-                                )
-                            }
-                        },
+                    ScreenFlash(
+                        fx = flashFx,
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clip(RoundedCornerShape(Radius.viewfinder)),
                     )
+                    // Overlays the bottom edge of the viewfinder. Kept outside the viewfinder's swipe box so
+                    // slider drags do not also cycle filters.
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = Spacing.md),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        CameraQuickBar(
+                            kelvin = adjust.kelvin,
+                            ev = adjust.ev,
+                            wbOpen = panel == CameraPanel.WB,
+                            evOpen = panel == CameraPanel.EV,
+                            onWbClick = { openPanel(CameraPanel.WB) },
+                            onEvClick = { openPanel(CameraPanel.EV) },
+                            focalPill = {
+                                camera?.let {
+                                    FocalPill(
+                                        cameraInfo = it.cameraInfo,
+                                        lensMm = cameraViewModel.lensMm.floatValue,
+                                        cropZoom = cameraViewModel.cropZoom.floatValue,
+                                        selected = panel == CameraPanel.LENS,
+                                        onClick = { openPanel(CameraPanel.LENS) },
+                                    )
+                                }
+                            },
+                        )
+                    }
                 }
             }
 
-            // Readout: the Kelvin value in mono, plus the EV reset button while the EV panel is open.
-            Row(
+            // Panel slot under the viewfinder. Its content follows [panel]. The height is fixed, so the viewfinder never resizes.
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Spacing.lg, vertical = Spacing.xs),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.sm, Alignment.CenterHorizontally),
+                    .height(PANEL_SLOT_HEIGHT)
+                    .padding(start = Spacing.lg, end = Spacing.lg, top = Spacing.md),
+                contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = kelvinLabel(adjust.kelvin).uppercase(),
-                    style = BinsooType.label,
-                    color = InkColors.textPrimary,
-                )
-                if (adjust.openTool == CameraTool.EXPOSURE) {
-                    EvResetButton(
-                        onClick = {
-                            cameraViewModel.resetEv()
-                            cameraViewModel.commitAdjust()
-                        },
+                when (panel) {
+                    CameraPanel.NONE -> Row(
+                        // Top of the slot, right under the frame; the panels below keep their centred layout.
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm, Alignment.CenterHorizontally),
+                    ) {
+                        // Flash is off on the front camera, so its button is dimmed and does nothing there.
+                        val flashAvailable = cameraViewModel.hasFlash.value
+                        CameraCircleButton(
+                            icon = flashIcon(flashMode),
+                            label = stringResource(R.string.camera_flash_fmt, flashLabel(flashMode)),
+                            onClick = { if (flashAvailable) cameraViewModel.setFlashMode(flashMode.next()) },
+                            buttonSize = 44.dp,
+                            contentColor = if (flashAvailable) InkColors.textPrimary else InkColors.textSecondary,
+                        )
+                        AspectButton(
+                            label = effectiveAspect.label,
+                            onClick = { openPanel(CameraPanel.ASPECT) },
+                        )
+                        CameraCircleButton(
+                            icon = AppIcons.SwitchCamera,
+                            label = stringResource(R.string.camera_switch),
+                            onClick = cameraViewModel::switchFacing,
+                            buttonSize = 44.dp,
+                        )
+                    }
+                    CameraPanel.ASPECT -> AspectPanel(
+                        selected = effectiveAspect,
+                        onSelect = onSelectAspect,
+                        onClose = { openPanel(CameraPanel.ASPECT) },
+                    )
+                    CameraPanel.WB -> Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = kelvinLabel(adjust.kelvin).uppercase(),
+                            style = BinsooType.label,
+                            color = InkColors.textPrimary,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                        ) {
+                            CameraAdjustPanel(
+                                state = adjust,
+                                onKelvinChange = { cameraViewModel.setKelvin(it) },
+                                onKelvinAuto = cameraViewModel::setKelvinAuto,
+                                onEvChange = cameraViewModel::setEv,
+                                onCommit = cameraViewModel::commitAdjust,
+                                modifier = Modifier.weight(1f),
+                            )
+                            CameraToolButtons(
+                                state = adjust,
+                                onAuto = {
+                                    cameraViewModel.setKelvinAuto()
+                                    cameraViewModel.commitAdjust()
+                                },
+                                onSun = {
+                                    cameraViewModel.setKelvin(SUN_PRESET_KELVIN)
+                                    cameraViewModel.commitAdjust()
+                                },
+                                onBulb = {
+                                    cameraViewModel.setKelvin(BULB_PRESET_KELVIN)
+                                    cameraViewModel.commitAdjust()
+                                },
+                            )
+                        }
+                    }
+                    CameraPanel.EV -> Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = formatEv(adjust.ev),
+                            style = BinsooType.label,
+                            color = InkColors.textPrimary,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                        ) {
+                            CameraAdjustPanel(
+                                state = adjust,
+                                onKelvinChange = { cameraViewModel.setKelvin(it) },
+                                onKelvinAuto = cameraViewModel::setKelvinAuto,
+                                onEvChange = cameraViewModel::setEv,
+                                onCommit = cameraViewModel::commitAdjust,
+                                modifier = Modifier.weight(1f),
+                            )
+                            CameraCircleButton(
+                                icon = AppIcons.Undo,
+                                label = stringResource(R.string.camera_reset_ev),
+                                onClick = {
+                                    cameraViewModel.resetEv()
+                                    cameraViewModel.commitAdjust()
+                                },
+                            )
+                        }
+                    }
+                    CameraPanel.LENS -> LensPanel(
+                        options = lensOptions(cameraViewModel.availableLenses.value, cameraViewModel.mainMm.floatValue, maxZoom),
+                        currentMm = cropZoomMm.toFloat(),
+                        mainMm = cameraViewModel.mainMm.floatValue,
+                        onSelect = { cameraViewModel.setFocal(it.roundToInt()) },
                     )
                 }
-            }
-
-            // Ruler (only while a tool is open) beside the round tool buttons.
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Spacing.lg),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-            ) {
-                CameraAdjustPanel(
-                    state = adjust,
-                    onKelvinChange = { cameraViewModel.setKelvin(it) },
-                    onKelvinAuto = cameraViewModel::setKelvinAuto,
-                    onEvChange = cameraViewModel::setEv,
-                    onCommit = cameraViewModel::commitAdjust,
-                    modifier = Modifier.weight(1f),
-                )
-                CameraToolButtons(
-                    state = adjust,
-                    onAuto = cameraViewModel::setKelvinAuto,
-                    onToolClick = cameraViewModel::toggleTool,
-                )
             }
 
             FilterStrip(
@@ -349,20 +486,26 @@ fun CameraScreen(
                     cameraViewModel.setManualExposure(exposureTime.longValue, it)
                 },
                 onClickCapture = {
-                    captureSeq++
-                    if (flashMode == FlashMode.ON && cameraViewModel.hasFlash.value) {
-                        flashFx = FlashFx(cameraProfile.recipe.flashStyle)
-                    }
-                    cameraViewModel.takePhotoToGallery(
-                        cameraId = cameraProfile.id,
+                    // Flash and iris only play when the press is accepted (a capture in progress ignores it).
+                    val accepted = cameraViewModel.takePhotoToGallery(
+                        cameraId = cameraProfile?.id ?: FilterCatalog.ORIGINAL_ID,
                         onSaved = { uri -> lastPhoto = uri },
-                        onError = { exception -> Log.e(TAG, "Capture failed", exception) },
+                        onError = { exception ->
+                            Log.e(TAG, "Capture failed", exception)
+                            Toast.makeText(context, context.getString(R.string.camera_save_failed), Toast.LENGTH_SHORT).show()
+                        },
                     )
+                    if (accepted) {
+                        if (flashMode == FlashMode.ON && cameraViewModel.hasFlash.value) {
+                            flashFx = FlashFx(FlashStyle.HARSH)
+                        }
+                        captureSeq++
+                    }
                 },
-                skin = cameraProfile.recipe.skin,
                 onOpenGallery = { navController.navigate(AppRoutes.CAMERA_GALLERY) },
                 onOpenPicker = { navController.navigate(AppRoutes.CAMERA_PICKER) },
-                pickerName = cameraProfile.name,
+                pickerName = cameraProfile?.name,
+                pickerCameraId = cameraProfile?.id,
                 lastPhoto = lastPhoto,
                 captureSeq = captureSeq,
                 modifier = Modifier.padding(bottom = Spacing.md),
@@ -371,13 +514,30 @@ fun CameraScreen(
     }
 }
 
-/** Back arrow on the left, flash and shutter-sound toggles in the middle, settings (hamburger) on the right. */
+/** Icon for the flash button: the current [FlashMode]. */
+private fun flashIcon(mode: FlashMode): ImageVector = when (mode) {
+    FlashMode.OFF -> AppIcons.FlashOff
+    FlashMode.AUTO -> AppIcons.FlashAuto
+    FlashMode.ON -> AppIcons.FlashOn
+    FlashMode.TORCH -> AppIcons.Torch
+}
+
+/** Name of the current [FlashMode], used in the button's accessibility label. */
+@Composable
+private fun flashLabel(mode: FlashMode): String = stringResource(
+    when (mode) {
+        FlashMode.OFF -> R.string.flash_off
+        FlashMode.AUTO -> R.string.flash_auto
+        FlashMode.ON -> R.string.flash_on
+        FlashMode.TORCH -> R.string.flash_torch
+    }
+)
+
+/** Back arrow on the left, settings (hamburger) on the right. */
 @Composable
 private fun CameraTopBar(
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
-    flashMode: FlashMode?,
-    onFlashClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -388,27 +548,15 @@ private fun CameraTopBar(
     ) {
         IconButton(onClick = onBack) {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Quay lại",
+                imageVector = AppIcons.Back,
+                contentDescription = stringResource(R.string.action_back),
                 tint = InkColors.textPrimary,
             )
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // Flash is hidden when the device has no flash (flashMode is null).
-            if (flashMode != null) {
-                IconButton(onClick = onFlashClick) {
-                    Icon(
-                        imageVector = flashIcon(flashMode),
-                        contentDescription = "Flash $flashMode",
-                        tint = InkColors.textPrimary,
-                    )
-                }
-            }
-        }
         IconButton(onClick = onOpenSettings) {
             Icon(
-                imageVector = Icons.Default.Menu,
-                contentDescription = "Cài đặt",
+                imageVector = AppIcons.Menu,
+                contentDescription = stringResource(R.string.settings_title),
                 tint = InkColors.textPrimary,
             )
         }
@@ -426,6 +574,7 @@ private fun CameraTopBar(
 fun CameraPreviewViewfinder(
     navController: NavController,
     modifier: Modifier,
+    previewView: PreviewView,
     previewUseCase: Preview?,
     camera: Camera?,
     flash: NameFlash?,
@@ -433,15 +582,15 @@ fun CameraPreviewViewfinder(
     cropZoom: Float = 1f,
     cropZoomOn: Boolean = false,
     zoomMm: Int = 0,
-    onSwipe: (Int) -> Unit,
+    onStrength: (delta: Float) -> Unit,
     onFocusPoint: (MeteringPoint) -> Unit = {},
+    onPinch: (factor: Float) -> Unit = {},
+    onPinchEnd: () -> Unit = {},
 ) {
-    val context = LocalContext.current
-    val previewView = remember {
-        PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER }
-    }
-    val currentOnSwipe by rememberUpdatedState(onSwipe)
+    val currentOnStrength by rememberUpdatedState(onStrength)
     val currentOnFocusPoint by rememberUpdatedState(onFocusPoint)
+    val currentOnPinch by rememberUpdatedState(onPinch)
+    val currentOnPinchEnd by rememberUpdatedState(onPinchEnd)
     // Last tap position in the viewfinder, and a counter that replays the focus ring on each tap.
     var focusPos by remember { mutableStateOf<Offset?>(null) }
     var focusTrigger by remember { mutableIntStateOf(0) }
@@ -456,17 +605,31 @@ fun CameraPreviewViewfinder(
             .clip(RoundedCornerShape(Radius.viewfinder))
             .background(InkColors.background)
             .pointerInput(Unit) {
-                val threshold = Spacing.xxl.toPx()
-                var total = 0f
-                detectHorizontalDragGestures(
-                    onDragStart = { total = 0f },
-                    onDragEnd = {
-                        if (abs(total) >= threshold) currentOnSwipe(if (total < 0f) 1 else -1)
-                    },
-                    onDragCancel = { total = 0f },
-                    onHorizontalDrag = { change, dragAmount ->
+                // Two fingers zoom. The zoom is applied on each change and the gesture ends when every finger lifts.
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    var pinching = false
+                    do {
+                        val event = awaitPointerEvent()
+                        val zoomBy = event.calculateZoom()
+                        if (zoomBy != 1f) {
+                            pinching = true
+                            event.changes.forEach { it.consume() }
+                            currentOnPinch(zoomBy)
+                        }
+                    } while (event.changes.any { it.pressed })
+                    if (pinching) currentOnPinchEnd()
+                }
+            }
+            .pointerInput(Unit) {
+                // Dragging up raises the strength, dragging down lowers it. A full-height drag covers the whole range.
+                detectVerticalDragGestures(
+                    onDragStart = {},
+                    onDragEnd = {},
+                    onDragCancel = {},
+                    onVerticalDrag = { change, dragAmount ->
                         change.consume()
-                        total += dragAmount
+                        if (size.height > 0) currentOnStrength(-dragAmount / size.height)
                     },
                 )
             }
@@ -489,7 +652,8 @@ fun CameraPreviewViewfinder(
             FilterNameFlash(flash)
             // In crop-frame mode the frame's own scrim replaces the aspect mask.
             if (aspect.crops && !cropZoomOn) AspectMask(aspect.widthOverHeight)
-            if (cropZoomOn) CropZoomFrame(aspect.widthOverHeight.takeIf { aspect.crops }, cropZoom, "${zoomMm}mm")
+            // At 1x the frame would only outline the whole view, so it shows only once the crop is zoomed in.
+            if (cropZoomOn && cropZoom > 1f) CropZoomFrame(aspect.widthOverHeight.takeIf { aspect.crops }, cropZoom, "${zoomMm}mm")
             if (showGrid) GridOverlay()
             FocusIndicator(position = focusPos, trigger = focusTrigger)
         }
@@ -499,26 +663,6 @@ fun CameraPreviewViewfinder(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(Spacing.sm),
-        )
-    }
-}
-
-/** Resets exposure compensation to 0 EV. Dark pill with a reset arrow, shown beside the Kelvin readout. */
-@Composable
-private fun EvResetButton(onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .semantics { contentDescription = "Đặt lại EV về 0" }
-            .clip(RoundedCornerShape(percent = 50))
-            .background(InkColors.surfaceElevated.copy(alpha = 0.7f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = "↺",
-            style = MaterialTheme.typography.labelMedium,
-            color = InkColors.textPrimary,
         )
     }
 }
@@ -642,13 +786,6 @@ private fun CropZoomFrame(aspectRatio: Float?, cropZoom: Float, mmLabel: String)
         val ly = (r.top - label.size.height - 6.dp.toPx()).coerceAtLeast(0f)
         drawText(label, topLeft = Offset(lx, ly))
     }
-}
-
-private fun flashIcon(mode: FlashMode): ImageVector = when (mode) {
-    FlashMode.OFF -> Icons.Default.FlashOff
-    FlashMode.AUTO -> Icons.Default.FlashAuto
-    FlashMode.ON -> Icons.Default.FlashOn
-    FlashMode.TORCH -> Icons.Default.Highlight
 }
 
 /** Short colour flash over the preview when a shot fires with flash. HARSH is white and quick, WARM is amber and slower. */

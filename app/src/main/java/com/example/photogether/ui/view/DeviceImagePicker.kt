@@ -1,5 +1,7 @@
 package com.example.photogether.ui.view
 
+import com.tgound.photogether.R
+import androidx.compose.ui.res.stringResource
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -35,7 +37,7 @@ fun DeviceImagePicker(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Chọn ảnh từ thiết bị") },
+        title = { Text(stringResource(R.string.picker_device_title)) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -61,13 +63,13 @@ fun DeviceImagePicker(
                     onClick = { imagePickerLauncher.launch("image/*") },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Chọn ảnh")
+                    Text(stringResource(R.string.picker_choose_photo))
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Đóng")
+                Text(stringResource(R.string.action_close))
             }
         }
     )

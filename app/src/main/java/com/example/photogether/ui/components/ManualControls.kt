@@ -1,6 +1,7 @@
 package com.example.photogether.ui.components
 
 import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,8 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +24,7 @@ import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.isSpecified
 import com.example.photogether.core.render.ViewfinderSkin
+import com.example.photogether.ui.camera.cameraImageRes
 import com.example.photogether.ui.view.CameraScreen.shutterColor
 import com.example.photogether.ui.view.CameraScreen.shutterRingColor
 import androidx.compose.runtime.getValue
@@ -34,7 +34,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -42,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.example.photogether.ui.theme.BinsooType
 import com.example.photogether.ui.theme.InkColors
 import com.example.photogether.ui.theme.Spacing
+import com.example.photogether.ui.theme.AppIcons
 
 /**
  * Bottom row of the camera screen: the gallery iris (left), the shutter pill (centre) and the
@@ -59,6 +62,7 @@ fun ManualControls(
     onOpenGallery: () -> Unit = {},
     onOpenPicker: () -> Unit = {},
     pickerName: String? = null,
+    pickerCameraId: String? = null,
     lastPhoto: Uri? = null,
     captureSeq: Int = 0,
     modifier: Modifier = Modifier,
@@ -102,7 +106,7 @@ fun ManualControls(
             onClick = onOpenGallery,
         )
         Shutter(onClick = onClickCapture, skin = skin)
-        PickerButton(name = pickerName, onClick = onOpenPicker)
+        PickerButton(name = pickerName, cameraId = pickerCameraId, onClick = onOpenPicker)
     }
 }
 
@@ -116,6 +120,7 @@ private fun Shutter(onClick: () -> Unit, skin: ViewfinderSkin = ViewfinderSkin.N
             .height(64.dp)
             .clip(RoundedCornerShape(percent = 50))
             .background(skin.shutterColor.takeOrElse { InkColors.accent })
+            .depth(RoundedCornerShape(percent = 50))
             .then(if (skin.shutterRingColor.isSpecified) Modifier.border(3.dp, skin.shutterRingColor, RoundedCornerShape(percent = 50)) else Modifier)
             .clickable(onClick = onClick)
             .semantics { contentDescription = "Chụp ảnh" },
@@ -139,8 +144,9 @@ private fun Shutter(onClick: () -> Unit, skin: ViewfinderSkin = ViewfinderSkin.N
 
 /** Camera selector: a camera icon with the current profile name under it. Opens the picker. */
 @Composable
-private fun PickerButton(name: String?, onClick: () -> Unit) {
+private fun PickerButton(name: String?, cameraId: String?, onClick: () -> Unit) {
     val label = name?.uppercase() ?: "CHỌN MÁY"
+    val imageRes = cameraId?.let { cameraImageRes(it) } ?: 0
     Column(
         modifier = Modifier
             .width(72.dp)
@@ -148,12 +154,22 @@ private fun PickerButton(name: String?, onClick: () -> Unit) {
             .semantics { contentDescription = "Chọn máy: $label" },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(
-            imageVector = Icons.Default.PhotoCamera,
-            contentDescription = null,
-            tint = InkColors.textPrimary,
-            modifier = Modifier.size(22.dp),
-        )
+        if (imageRes != 0) {
+            // Still of the camera body; the picker shows the same 3D model.
+            Image(
+                painter = painterResource(imageRes),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.height(26.dp).width(40.dp),
+            )
+        } else {
+            Icon(
+                imageVector = AppIcons.Capture,
+                contentDescription = null,
+                tint = InkColors.textPrimary,
+                modifier = Modifier.size(22.dp),
+            )
+        }
         Spacer(Modifier.height(Spacing.xs))
         Text(
             text = label,

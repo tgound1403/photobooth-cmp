@@ -109,3 +109,10 @@ fun lutTileToVoxel(r: Int, g: Int, b: Int): LutTexel =
         x = (b % LUT_TILES_PER_ROW) * LUT_TILE_SIZE + r,
         y = (b / LUT_TILES_PER_ROW) * LUT_TILE_SIZE + g,
     )
+
+/** Same mapping as [lutTileToVoxel], as a row-major pixel index. Avoids an allocation per voxel on the upload path. */
+fun lutVoxelPixelIndex(r: Int, g: Int, b: Int): Int {
+    val x = (b % LUT_TILES_PER_ROW) * LUT_TILE_SIZE + r
+    val y = (b / LUT_TILES_PER_ROW) * LUT_TILE_SIZE + g
+    return y * LUT_SIZE + x
+}

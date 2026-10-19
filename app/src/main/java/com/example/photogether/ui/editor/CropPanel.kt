@@ -1,5 +1,7 @@
 package com.example.photogether.ui.editor
 
+import com.tgound.photogether.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,17 +50,17 @@ fun CropPanel(
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             EditorChip(
-                label = "Rotate 90",
+                label = stringResource(R.string.crop_rotate),
                 selected = false,
                 onClick = { onCrop(crop.copy(quarterTurns = (crop.quarterTurns + 1) % 4)) },
             )
             EditorChip(
-                label = "Flip horizontal",
+                label = stringResource(R.string.crop_flip_h),
                 selected = crop.flipHorizontal,
                 onClick = { onCrop(crop.copy(flipHorizontal = !crop.flipHorizontal)) },
             )
             EditorChip(
-                label = "Flip vertical",
+                label = stringResource(R.string.crop_flip_v),
                 selected = crop.flipVertical,
                 onClick = { onCrop(crop.copy(flipVertical = !crop.flipVertical)) },
             )

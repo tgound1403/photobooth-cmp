@@ -1,5 +1,7 @@
 package com.example.photogether.ui.components
 
+import com.tgound.photogether.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,10 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
@@ -48,6 +46,7 @@ import com.example.photogether.ui.theme.IconSize
 import com.example.photogether.ui.theme.Radius
 import com.example.photogether.ui.theme.Spacing
 import com.example.photogether.ui.theme.Stroke
+import com.example.photogether.ui.theme.AppIcons
 
 /** Các đích hiển thị trên sheet. OTHER không hiện, vì đã có chooser chung. */
 private val SHARE_SHEET_TARGETS: List<ShareTarget> =
@@ -96,7 +95,7 @@ fun ShareSheet(
                 if (previewUri != null) {
                     AsyncImage(
                         model = previewUri,
-                        contentDescription = "Ảnh vừa lưu",
+                        contentDescription = stringResource(R.string.share_saved_photo),
                         contentScale = ContentScale.Crop,
                         modifier =
                             Modifier.size(72.dp)
@@ -105,7 +104,7 @@ fun ShareSheet(
                     )
                 }
                 Text(
-                    text = "ĐÃ LƯU VÀO THIẾT BỊ",
+                    text = stringResource(R.string.share_saved),
                     style = BinsooType.label,
                     color = AppColors.textSecondary,
                 )
@@ -118,7 +117,7 @@ fun ShareSheet(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "CHIA SẺ",
+                        text = stringResource(R.string.share_title),
                         style = BinsooType.title,
                         color = AppColors.textPrimary,
                         modifier = Modifier.weight(1f),
@@ -132,8 +131,8 @@ fun ShareSheet(
                                 .clickable(onClick = onDismiss),
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Đóng",
+                            imageVector = AppIcons.Close,
+                            contentDescription = stringResource(R.string.action_close),
                             tint = AppColors.textPrimary,
                             // 22dp theo spec mục 3, chưa có token icon tương ứng.
                             modifier = Modifier.size(22.dp),
@@ -162,7 +161,7 @@ fun ShareSheet(
             // Mã công thức: chỉ đọc, chọn được chữ bằng thao tác giữ.
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                 Text(
-                    text = "MÃ CÔNG THỨC",
+                    text = stringResource(R.string.share_recipe_code),
                     style = BinsooType.label,
                     color = AppColors.textSecondary,
                 )
@@ -190,13 +189,13 @@ fun ShareSheet(
                         .padding(horizontal = Spacing.lg, vertical = Spacing.md),
             ) {
                 Text(
-                    text = "CHIA SẺ CÔNG THỨC",
+                    text = stringResource(R.string.share_recipe),
                     style = BinsooType.label,
                     color = AppColors.textPrimary,
                     modifier = Modifier.align(Alignment.Center),
                 )
                 Icon(
-                    imageVector = Icons.Outlined.Description,
+                    imageVector = AppIcons.Document,
                     contentDescription = null,
                     tint = AppColors.textPrimary,
                     modifier = Modifier.align(Alignment.CenterEnd).size(IconSize.sm),
@@ -213,13 +212,13 @@ fun ShareSheet(
                         .padding(horizontal = Spacing.lg, vertical = Spacing.md),
             ) {
                 Text(
-                    text = "TẢI VỀ",
+                    text = stringResource(R.string.share_download),
                     style = BinsooType.title,
                     color = AppColors.onAccent,
                     modifier = Modifier.align(Alignment.Center),
                 )
                 Icon(
-                    imageVector = Icons.Default.Download,
+                    imageVector = AppIcons.Download,
                     contentDescription = null,
                     tint = AppColors.onAccent,
                     modifier = Modifier.align(Alignment.CenterEnd).size(IconSize.sm),

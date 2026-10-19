@@ -5,6 +5,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,6 +64,7 @@ fun CrystalFolder(
             .background(AppColors.surface)
             .border(Stroke.border, AppColors.outline, shape)
             .clickable { launching = true }
+            .semantics { contentDescription = "Moments" }
             .padding(Spacing.lg),
     ) {
         Row(

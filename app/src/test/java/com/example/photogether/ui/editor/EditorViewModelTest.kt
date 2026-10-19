@@ -138,8 +138,8 @@ class EditorViewModelTest {
     @Test
     fun applyingRecipeIsOneUndoStep() {
         val vm = newViewModel()
-        vm.applyRecipe(EditParams(filterId = "kodak", exposure = 0.3f))
-        assertEquals("kodak", vm.state.value.snapshot.params.filterId)
+        vm.applyRecipe(EditParams(filterId = "kodak_portra", exposure = 0.3f))
+        assertEquals("kodak_portra", vm.state.value.snapshot.params.filterId)
         assertTrue(vm.state.value.canUndo)
 
         vm.undo()
@@ -164,16 +164,16 @@ class EditorViewModelTest {
     @Test
     fun goodImportSavesTheRecipeWithoutApplyingIt() {
         val vm = newViewModel()
-        vm.importRecipeCode(RecipeCode.encode(EditParams(filterId = "kodak", grain = 0.2f)))
+        vm.importRecipeCode(RecipeCode.encode(EditParams(filterId = "kodak_portra", grain = 0.2f)))
 
         assertEquals(1, vm.recipes.value.size)
-        assertEquals("kodak", vm.recipes.value.single().params.filterId)
+        assertEquals("kodak_portra", vm.recipes.value.single().params.filterId)
         assertEquals(EditParams(), vm.state.value.snapshot.params)
     }
 
     private val premiumFilters = listOf(
-        FilterInfo(id = "kodak", name = "Kodak", group = "Classic", premium = false),
-        FilterInfo(id = "rose_skin", name = "Rose Skin", group = "Portrait", premium = true),
+        FilterInfo(id = "kodak_portra", name = "Kodak Portra", group = "Classic", premium = false),
+        FilterInfo(id = "vsco_cool_fade", name = "Cool Fade", group = "Portrait", premium = true),
     )
 
     private fun gatedViewModel(premium: Boolean) =
@@ -189,15 +189,15 @@ class EditorViewModelTest {
     @Test
     fun previewingPremiumFilter_isAllowedForFreeUser() {
         val vm = gatedViewModel(premium = false)
-        vm.selectFilter("rose_skin")
-        assertEquals("rose_skin", vm.state.value.snapshot.params.filterId)
+        vm.selectFilter("vsco_cool_fade")
+        assertEquals("vsco_cool_fade", vm.state.value.snapshot.params.filterId)
         assertFalse(vm.state.value.showPaywall)
     }
 
     @Test
     fun saveWithPremiumFilter_forFreeUser_opensPaywallAndDoesNotSave() {
         val vm = gatedViewModel(premium = false)
-        vm.selectFilter("rose_skin")
+        vm.selectFilter("vsco_cool_fade")
         vm.save()
         assertTrue(vm.state.value.showPaywall)
         assertFalse(vm.state.value.isSaving)
@@ -206,7 +206,7 @@ class EditorViewModelTest {
     @Test
     fun saveWithFreeFilter_neverOpensPaywall() {
         val vm = gatedViewModel(premium = false)
-        vm.selectFilter("kodak")
+        vm.selectFilter("kodak_portra")
         vm.save()
         assertFalse(vm.state.value.showPaywall)
     }
@@ -214,7 +214,7 @@ class EditorViewModelTest {
     @Test
     fun saveWithPremiumFilter_forPremiumUser_doesNotOpenPaywall() {
         val vm = gatedViewModel(premium = true)
-        vm.selectFilter("rose_skin")
+        vm.selectFilter("vsco_cool_fade")
         vm.save()
         assertFalse(vm.state.value.showPaywall)
     }
@@ -222,7 +222,7 @@ class EditorViewModelTest {
     @Test
     fun saveRecipeWithPremiumFilter_forFreeUser_opensPaywall() {
         val vm = gatedViewModel(premium = false)
-        vm.selectFilter("rose_skin")
+        vm.selectFilter("vsco_cool_fade")
         vm.saveRecipe()
         assertTrue(vm.state.value.showPaywall)
     }
@@ -230,7 +230,7 @@ class EditorViewModelTest {
     @Test
     fun dismissPaywall_closesIt() {
         val vm = gatedViewModel(premium = false)
-        vm.selectFilter("rose_skin")
+        vm.selectFilter("vsco_cool_fade")
         vm.save()
         vm.dismissPaywall()
         assertFalse(vm.state.value.showPaywall)
@@ -301,10 +301,10 @@ class EditorViewModelTest {
             onToggleFavorite = { id -> store.update { if (id in it) it - id else it + id } },
         )
 
-        vm.toggleFavorite("kodak")
-        assertEquals(setOf("kodak"), vm.state.value.favorites)
+        vm.toggleFavorite("kodak_portra")
+        assertEquals(setOf("kodak_portra"), vm.state.value.favorites)
 
-        vm.toggleFavorite("kodak")
+        vm.toggleFavorite("kodak_portra")
         assertTrue(vm.state.value.favorites.isEmpty())
     }
 }

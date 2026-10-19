@@ -35,3 +35,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+# Drop verbose and debug logging from release builds (Log.v/d calls are removed entirely by R8).
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+}

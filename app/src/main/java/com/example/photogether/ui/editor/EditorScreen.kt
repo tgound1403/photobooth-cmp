@@ -1,5 +1,8 @@
 package com.example.photogether.ui.editor
 
+import com.tgound.photogether.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,16 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Redo
-import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Collections
-import androidx.compose.material.icons.filled.Crop
-import androidx.compose.material.icons.filled.FilterVintage
-import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,7 +35,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -85,14 +77,15 @@ import com.example.photogether.ui.theme.Radius
 import com.example.photogether.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.min
+import com.example.photogether.ui.theme.AppIcons
 
 /** Bottom tabs of the editor. */
 enum class EditorTab(val label: String, val icon: ImageVector) {
-    FILTER("Filter", Icons.Default.FilterVintage),
-    ADJUST("Adjust", Icons.Default.Tune),
-    CROP("Crop", Icons.Default.Crop),
-    FRAME("Frame", Icons.Default.Collections),
-    OVERLAY("Overlay", Icons.Default.AutoAwesome),
+    FILTER("Filter", AppIcons.Filter),
+    ADJUST("Adjust", AppIcons.Adjust),
+    CROP("Crop", AppIcons.Crop),
+    FRAME("Frame", AppIcons.Frame),
+    OVERLAY("Overlay", AppIcons.Sparkle),
 }
 
 /**
@@ -105,11 +98,11 @@ fun EditorScreen(
     navController: NavController,
     viewModel: EditorViewModel = koinViewModel(),
 ) {
-    val state by viewModel.state.collectAsState()
-    val recipes by viewModel.recipes.collectAsState()
-    val isPremium by viewModel.isPremium.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val recipes by viewModel.recipes.collectAsStateWithLifecycle()
+    val isPremium by viewModel.isPremium.collectAsStateWithLifecycle()
     val billing: BillingRepository = get()
-    val prices by billing.prices.collectAsState()
+    val prices by billing.prices.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = context.findActivity()
     val density = LocalDensity.current.density
@@ -231,17 +224,17 @@ private fun EditorTopBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(AppIcons.Back, contentDescription = stringResource(R.string.action_back))
             }
             Spacer(Modifier.weight(1f))
             IconButton(onClick = onUndo, enabled = state.canUndo) {
-                Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo")
+                Icon(AppIcons.Undo, contentDescription = "Undo")
             }
             IconButton(onClick = onRedo, enabled = state.canRedo) {
-                Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = "Redo")
+                Icon(AppIcons.Redo, contentDescription = "Redo")
             }
             IconButton(onClick = onReset, enabled = state.sourceLoaded) {
-                Icon(Icons.Default.Restore, contentDescription = "Reset")
+                Icon(AppIcons.Reset, contentDescription = "Reset")
             }
             Spacer(Modifier.width(Spacing.sm))
             GlassButton(
@@ -333,7 +326,7 @@ private fun PreviewArea(
         if (state.showOriginal) {
             // Sits over the photo, so white ink on a black scrim.
             Text(
-                text = "Gốc",
+                text = stringResource(R.string.editor_original),
                 style = MaterialTheme.typography.labelMedium,
                 color = InkColors.textPrimary,
                 modifier = Modifier

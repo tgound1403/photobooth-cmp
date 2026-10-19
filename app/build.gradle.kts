@@ -6,6 +6,7 @@ plugins {
     id("com.google.devtools.ksp")
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.baselineprofile)
 }
 
 // Secrets live in the root local.properties (gitignored), never in source.
@@ -56,15 +57,21 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            if (debugAbi != null) {
-                ndk {
-                    abiFilters += debugAbi
-                }
+            ndk {
+                // x86 ABIs dropped from release: negligible device share, and their native libs add size.
+                abiFilters += debugAbi?.let { listOf(it) } ?: listOf("arm64-v8a", "armeabi-v7a")
             }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        // Release-like, signed with the debug key, so macrobenchmark can run against it.
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
         }
     }
     compileOptions {
@@ -124,15 +131,17 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     debugImplementation(libs.androidx.ui.tooling)
 
-    implementation(libs.androidx.material.icons.core)
-    implementation(libs.androidx.material.icons.extended)
+    implementation(libs.phosphor.icon)
     implementation(libs.androidx.adaptive)
 
     implementation(libs.androidx.navigation.compose)
     implementation(libs.coil.compose)
+    implementation(libs.androidx.exifinterface)
 
     implementation(libs.androidx.camera.compose)
     implementation(libs.androidx.metrics.performance)
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(project(":macrobenchmark"))
     implementation(libs.accompanist.permissions)
 
     // Room
@@ -173,5 +182,6 @@ dependencies {
 
     // 3D camera body on the picker screen (glTF/GLB, Filament). 4.x needs AGP 9.1 / compileSdk 37,
     // and 2.2+ is built with Kotlin 2.2 metadata, so 2.1.1 (Kotlin 1.9 stdlib, Filament 1.51) is used.
-    implementation("io.github.sceneview:sceneview:2.1.1")
+    // 2.3.0 pins Filament 1.56.0 (first Filament with 16 KB-aligned .so files) and stays on Kotlin 2.0.x.
+    implementation("io.github.sceneview:sceneview:2.3.0")
 }

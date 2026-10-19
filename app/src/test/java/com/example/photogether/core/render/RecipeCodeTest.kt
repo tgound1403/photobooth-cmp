@@ -11,7 +11,7 @@ class RecipeCodeTest {
 
     private val sample =
         EditParams(
-            filterId = "golden_hour",
+            filterId = "kodak_gold",
             filterIntensity = 0.6f,
             exposure = 0.25f,
             contrast = -0.3f,
@@ -86,9 +86,9 @@ class RecipeCodeTest {
     @Test
     fun legacyRecipeJsonWithMissingFieldsDecodesToDefaults() {
         // A recipe saved before most fields existed: only two keys, no crop, no grain.
-        val code = RecipeCode.PREFIX + base64Of("""{"filterId":"kodak","exposure":0.5}""")
+        val code = RecipeCode.PREFIX + base64Of("""{"filterId":"kodak_portra","exposure":0.5}""")
         assertEquals(
-            RecipeCodeResult.Ok(EditParams(filterId = "kodak", exposure = 0.5f)),
+            RecipeCodeResult.Ok(EditParams(filterId = "kodak_portra", exposure = 0.5f)),
             RecipeCode.decode(code),
         )
         assertEquals(EditParams(), EditParams.fromJson("{}"))
@@ -97,13 +97,13 @@ class RecipeCodeTest {
     @Test
     fun oldRecipeCodeDecodesWithAutoWhiteBalanceAndNoSoftwareEv() {
         // Recipe code as produced before the Kelvin and EV fields existed.
-        val code = RecipeCode.PREFIX + base64Of("""{"filterId":"kodak","temperature":0.4,"grain":0.3}""")
+        val code = RecipeCode.PREFIX + base64Of("""{"filterId":"kodak_portra","temperature":0.4,"grain":0.3}""")
         val result = RecipeCode.decode(code)
         assertTrue("expected Ok but got $result", result is RecipeCodeResult.Ok)
         val params = (result as RecipeCodeResult.Ok).params
         assertEquals(null, params.kelvin)
         assertEquals(0f, params.softwareEv, 0f)
-        assertEquals(EditParams(filterId = "kodak", temperature = 0.4f, grain = 0.3f), params)
+        assertEquals(EditParams(filterId = "kodak_portra", temperature = 0.4f, grain = 0.3f), params)
     }
 
     @Test

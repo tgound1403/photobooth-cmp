@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +41,7 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
+import com.example.photogether.ui.theme.AppIcons
 
 private const val BLADES = 6
 private const val STEP = 2 * PI / BLADES
@@ -94,6 +93,7 @@ fun ApertureGalleryButton(
             .size(width = 36.dp, height = 56.dp)
             .clip(RoundedCornerShape(Radius.md))
             .background(InkColors.surfaceElevated.copy(alpha = 0.7f))
+            .depth(RoundedCornerShape(Radius.md))
             .clickable(onClick = onClick)
             .semantics { contentDescription = "Mở thư viện" },
         contentAlignment = Alignment.Center,
@@ -117,7 +117,7 @@ fun ApertureGalleryButton(
                 }
             } else if (t > 0.5f) {
                 Icon(
-                    imageVector = Icons.Default.Photo,
+                    imageVector = AppIcons.Photo,
                     contentDescription = null,
                     tint = InkColors.textPrimary,
                     modifier = Modifier.size(14.dp),

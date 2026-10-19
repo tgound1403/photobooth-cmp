@@ -10,9 +10,9 @@ class EditParamsCropTest {
     @Test
     fun recipeWithoutCropOrChromaticStillDecodes() {
         // JSON written before crop and chromatic existed.
-        val old = """{"filterId":"kodak","exposure":0.2,"vignette":0.4}"""
+        val old = """{"filterId":"kodak_portra","exposure":0.2,"vignette":0.4}"""
         val params = EditParams.fromJson(old)
-        assertEquals("kodak", params.filterId)
+        assertEquals("kodak_portra", params.filterId)
         assertEquals(0.2f, params.exposure, 0f)
         assertEquals(CropParams(), params.crop)
         assertEquals(0f, params.chromatic, 0f)

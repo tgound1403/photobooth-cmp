@@ -1,5 +1,7 @@
 package com.example.photogether.ui.editor
 
+import com.tgound.photogether.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,9 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +49,7 @@ import com.example.photogether.ui.theme.Radius
 import com.example.photogether.ui.theme.Spacing
 import com.example.photogether.ui.theme.Stroke
 import java.io.File
+import com.example.photogether.ui.theme.AppIcons
 
 private val RECIPE_THUMB_SIZE = 64.dp
 
@@ -75,7 +75,7 @@ fun RecipePanel(
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            GlassButton(onClick = onSave, text = "Lưu recipe", enabled = canSave)
+            GlassButton(onClick = onSave, text = stringResource(R.string.recipe_save), enabled = canSave)
         }
 
         if (recipes.isEmpty()) {
@@ -113,7 +113,7 @@ fun RecipePanel(
             )
             IconButton(onClick = { clipboard.getText()?.text?.let { code = it } }) {
                 Icon(
-                    Icons.Default.ContentPaste,
+                    AppIcons.Paste,
                     contentDescription = "Paste recipe code",
                     tint = AppColors.textSecondary,
                 )
@@ -125,7 +125,7 @@ fun RecipePanel(
                 },
                 enabled = code.isNotBlank(),
             ) {
-                Text("Import")
+                Text(stringResource(R.string.recipe_import))
             }
         }
     }
@@ -173,7 +173,7 @@ private fun RecipeItem(
         )
         IconButton(onClick = onCopy, modifier = Modifier.size(IconSize.xl)) {
             Icon(
-                Icons.Default.ContentCopy,
+                AppIcons.Copy,
                 contentDescription = "Copy recipe code",
                 tint = AppColors.textSecondary,
                 modifier = Modifier.size(IconSize.sm),

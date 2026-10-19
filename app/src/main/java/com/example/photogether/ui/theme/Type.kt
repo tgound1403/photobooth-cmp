@@ -24,9 +24,12 @@ private val SpaceMonoFamily = FontFamily(
     Font(GoogleFont("Space Mono"), googleFontsProvider, FontWeight.Bold)
 )
 
-/** Archivo Black, downloaded through Google Fonts. Only a regular weight exists. */
+/**
+ * Archivo at weight 900 (Black). Same look as Archivo Black, but it includes the Vietnamese
+ * glyphs that Archivo Black is missing.
+ */
 private val ArchivoBlackFamily = FontFamily(
-    Font(GoogleFont("Archivo Black"), googleFontsProvider, FontWeight.Normal)
+    Font(GoogleFont("Archivo"), googleFontsProvider, FontWeight.Black)
 )
 
 /** The app's text styles. Use these directly where Material typography has no slot (e.g. micro). */
@@ -34,7 +37,7 @@ object BinsooType {
     /** Archivo Black 56sp. Write the text in caps yourself with .uppercase(). */
     val display = TextStyle(
         fontFamily = ArchivoBlackFamily,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Black,
         fontSize = 56.sp,
         lineHeight = 52.sp,
         letterSpacing = (-1).sp

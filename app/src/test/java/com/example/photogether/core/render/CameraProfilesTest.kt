@@ -34,13 +34,35 @@ class CameraProfilesTest {
         assertEquals(all.size, all.map { it.id }.toSet().size)
         val filters = all.flatMap { it.filterIds }
         assertEquals(filters.size, filters.toSet().size)
-        assertEquals(catalog.map { it.id }.toSet(), filters.toSet())
+        assertEquals(catalog.map { it.id }.toSet() - FilterCatalog.ORIGINAL_ID, filters.toSet())
     }
 
     @Test
-    fun hasFiveHandMadeProfilesPlusOnePerJapanGroup() {
-        assertEquals(37, JAPAN_CAMERAS.size)
-        assertEquals(5 + JAPAN_CAMERAS.size, CameraProfiles.ALL.size)
+    fun originalBelongsToNoCamera() {
+        assertNull(CameraProfiles.forFilter(FilterCatalog.ORIGINAL_ID))
+    }
+
+    @Test
+    fun noCameraShowsOnlyTheOriginal() {
+        assertEquals(listOf(FilterCatalog.ORIGINAL_ID), CameraProfiles.stripIds(null))
+    }
+
+    @Test
+    fun switchingCameraReplacesTheStripInsteadOfAppending() {
+        val first = CameraProfiles.ALL.first()
+        val second = CameraProfiles.ALL[1]
+        val before = CameraProfiles.stripIds(first)
+        val after = CameraProfiles.stripIds(second)
+
+        assertEquals(listOf(FilterCatalog.ORIGINAL_ID) + second.filterIds, after)
+        assertEquals(listOf(FilterCatalog.ORIGINAL_ID) + first.filterIds, before)
+        assertTrue(after.none { it in first.filterIds })
+    }
+
+    @Test
+    fun allCamerasAreOneListOfProfiles() {
+        // 5 hand-written cameras plus 41 from the Japan pack (Japanese Style 002 split into 5).
+        assertEquals(46, CameraProfiles.ALL.size)
     }
 
     @Test
@@ -81,6 +103,13 @@ class CameraProfilesTest {
     @Test
     fun forFilterMapsKodakPortraToClassic35() {
         assertEquals("classic35", CameraProfiles.forFilter("kodak_portra")?.id)
+    }
+
+    @Test
+    fun everyChipHasAtLeastOneCamera() {
+        CameraChip.entries.forEach { chip ->
+            assertTrue("empty chip $chip", CameraProfiles.ALL.any { chip in it.chips })
+        }
     }
 
     @Test

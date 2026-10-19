@@ -72,8 +72,7 @@ internal object GlUtil {
         bitmap.getPixels(pixels, 0, LUT_SIZE, 0, 0, LUT_SIZE, LUT_SIZE)
         val data = ByteBuffer.allocateDirect(n * n * n * 4).order(ByteOrder.nativeOrder())
         for (b in 0 until n) for (g in 0 until n) for (r in 0 until n) {
-            val t = lutTileToVoxel(r, g, b)
-            val argb = pixels[t.y * LUT_SIZE + t.x]
+            val argb = pixels[lutVoxelPixelIndex(r, g, b)]
             data.put((argb shr 16).toByte()).put((argb shr 8).toByte()).put(argb.toByte()).put(0xFF.toByte())
         }
         data.flip()

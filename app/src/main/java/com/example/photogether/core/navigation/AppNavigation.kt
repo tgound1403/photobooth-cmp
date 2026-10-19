@@ -1,17 +1,22 @@
 package com.example.photogether.core.navigation
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import com.example.photogether.data.settings.CameraSettingsRepository
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
+import org.koin.androidx.compose.get
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.photogether.core.render.CameraProfiles
+import com.example.photogether.core.colors.ColorStories
 import com.example.photogether.ui.camera.CameraPickerScreen
-import com.example.photogether.ui.moments.MomentViewerScreen
+import com.example.photogether.ui.colors.ColorStoryScreen
+import com.example.photogether.ui.colors.PhotoCreditsScreen
 import com.example.photogether.ui.moments.MomentsScreen
 import com.example.photogether.ui.moments.MomentsViewModel
 import com.example.photogether.ui.view.CameraScreen.CameraScreen
@@ -53,6 +58,13 @@ fun AppNavigation() {
         composable(AppRoutes.CAMERA_GALLERY) {
             GalleryScreen(navController, cameraOnly = true)
         }
+        // Replay of the how-to pages from Settings (the first run is handled by AppRoot).
+        composable(AppRoutes.ONBOARDING) {
+            com.example.photogether.ui.onboarding.OnboardingScreen(
+                replay = true,
+                onFinished = { navController.popBackStack() },
+            )
+        }
         composable(AppRoutes.NO_PERMISSION_GRANTED) {
             NoPermissionGrantedScreen()
         }
@@ -61,41 +73,41 @@ fun AppNavigation() {
             MomentsScreen(
                 viewModel = momentsViewModel,
                 onBack = { navController.popBackStack() },
-                onOpen = { navController.navigate(AppRoutes.momentViewer(it)) },
+                onEdit = { uri -> navController.navigate(AppRoutes.imageDetail(uri)) },
             )
         }
         composable(
-                route = AppRoutes.MOMENT_VIEWER,
-                arguments = listOf(navArgument("index") { type = NavType.IntType })
+            route = AppRoutes.COLOR_STORY,
+            arguments = listOf(navArgument("storyId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val startIndex = backStackEntry.arguments?.getInt("index") ?: 0
-            // Share the grid's ViewModel when its entry is still on the stack, so both see the same list.
-            val momentsEntry = remember(backStackEntry) {
-                runCatching { navController.getBackStackEntry(AppRoutes.MOMENTS) }.getOrNull()
+            val story = ColorStories.byId(backStackEntry.arguments?.getString("storyId").orEmpty())
+            if (story != null) {
+                ColorStoryScreen(
+                    story = story,
+                    onBack = { navController.popBackStack() },
+                    onOpenCredits = { navController.navigate(AppRoutes.PHOTO_CREDITS) },
+                    onTryNow = { navController.navigate(AppRoutes.MAIN) },
+                )
             }
-            val momentsViewModel = koinViewModel<MomentsViewModel>(
-                viewModelStoreOwner = momentsEntry ?: backStackEntry
-            )
-            MomentViewerScreen(
-                viewModel = momentsViewModel,
-                startIndex = startIndex,
-                onBack = { navController.popBackStack() },
-                onEdit = { uri -> navController.navigate(AppRoutes.imageDetail(uri)) },
-            )
+        }
+        composable(AppRoutes.PHOTO_CREDITS) {
+            PhotoCreditsScreen(onBack = { navController.popBackStack() })
         }
         composable(AppRoutes.CAMERA_PICKER) {
             InkTheme {
                 val momentsViewModel = koinViewModel<MomentsViewModel>()
-                val moments by momentsViewModel.moments.collectAsState()
-                val currentCameraId =
-                    navController.previousBackStackEntry?.savedStateHandle?.get<String>(CameraProfiles.CURRENT_KEY)
+                val moments by momentsViewModel.moments.collectAsStateWithLifecycle()
+                // The camera is stored in DataStore, so the picker shows the same choice from Home and from the camera.
+                val cameraSettings = get<CameraSettingsRepository>()
+                val currentCameraId by cameraSettings.settings
+                    .map { it.cameraId }
+                    .collectAsStateWithLifecycle(initialValue = null)
+                val scope = rememberCoroutineScope()
                 CameraPickerScreen(
                     currentCameraId = currentCameraId,
                     moments = moments,
                     onConfirm = { profile ->
-                        // CameraScreen reads this on its own back-stack entry when the picker pops.
-                        navController.previousBackStackEntry?.savedStateHandle
-                            ?.set(CameraProfiles.RESULT_KEY, profile.id)
+                        scope.launch { cameraSettings.setCameraId(profile.id) }
                         navController.popBackStack()
                     },
                     onBack = { navController.popBackStack() },
@@ -166,12 +178,12 @@ object AppRoutes {
     const val PHOTO_BOOTH_EDIT = "photoBoothEdit/{imagePaths}"
     const val IMAGE_DETAIL = "imageDetail/{imagePath}"
     const val MOMENTS = "moments"
-    const val MOMENT_VIEWER = "moment_viewer/{index}"
     const val CAMERA_PICKER = "camera_picker"
+    const val COLOR_STORY = "colorStory/{storyId}"
+    const val PHOTO_CREDITS = "photoCredits"
+    const val ONBOARDING = "onboarding"
 
-    fun momentViewer(index: Int): String {
-        return "moment_viewer/$index"
-    }
+    fun colorStory(storyId: String): String = "colorStory/$storyId"
 
     fun photoBoothResult(photoBoothId: Long): String {
         return "photoBoothResult/$photoBoothId"

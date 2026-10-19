@@ -61,23 +61,23 @@ class PremiumRulesTest {
 
     private val filters = listOf(
         FilterInfo(id = "original", name = "Original", group = "Classic", premium = false),
-        FilterInfo(id = "kodak", name = "Kodak", group = "Classic", premium = false),
-        FilterInfo(id = "rose_skin", name = "Rose Skin", group = "Portrait", premium = true),
+        FilterInfo(id = "kodak_portra", name = "Kodak Portra", group = "Classic", premium = false),
+        FilterInfo(id = "vsco_cool_fade", name = "Cool Fade", group = "Portrait", premium = true),
     )
 
     @Test
     fun save_freeFilter_neverNeedsPaywall() {
-        assertFalse(requiresPaywall("kodak", filters, isPremium = false))
+        assertFalse(requiresPaywall("kodak_portra", filters, isPremium = false))
     }
 
     @Test
     fun save_premiumFilter_needsPaywallForFreeUser() {
-        assertTrue(requiresPaywall("rose_skin", filters, isPremium = false))
+        assertTrue(requiresPaywall("vsco_cool_fade", filters, isPremium = false))
     }
 
     @Test
     fun save_premiumFilter_doesNotNeedPaywallForPremiumUser() {
-        assertFalse(requiresPaywall("rose_skin", filters, isPremium = true))
+        assertFalse(requiresPaywall("vsco_cool_fade", filters, isPremium = true))
     }
 
     @Test

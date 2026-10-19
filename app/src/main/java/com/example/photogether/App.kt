@@ -18,13 +18,13 @@ class App : Application() {
             androidContext(this@App)
             modules(appModule)
         }
-        val billing = koin.koin.get<BillingRepository>()
-        billing.connect()
-        // Premium can change outside the app (cancel, renew, refund), so re-check each time the app
-        // returns to the foreground. connect() is a no-op when already connected, and it reconnects
-        // if the Play connection dropped.
+        // Play connects on the first foreground (onStart below), so nothing billing-related runs
+        // on the Application's main-thread startup path. connect() is a no-op when already connected,
+        // and it reconnects if the Play connection dropped. Premium can change outside the app
+        // (cancel, renew, refund), so re-check each time the app returns to the foreground.
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
+                val billing = koin.koin.get<BillingRepository>()
                 billing.connect()
                 billing.refreshPurchases()
             }

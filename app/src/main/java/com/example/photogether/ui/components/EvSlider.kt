@@ -36,5 +36,6 @@ fun EvSlider(
         modifier = modifier,
         showHeader = false,
         ink = true,
+        scale = true,
     )
 }

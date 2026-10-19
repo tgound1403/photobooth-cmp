@@ -17,7 +17,7 @@ class RecipeRepositoryTest {
     @Test
     fun savedRecipeComesBackWithTheSameParams() = runBlocking {
         val repo = RecipeRepository(FakeRecipeDao(), dir)
-        val params = EditParams(filterId = "kodak", filterIntensity = 0.4f, grain = 0.2f)
+        val params = EditParams(filterId = "kodak_portra", filterIntensity = 0.4f, grain = 0.2f)
 
         val id = repo.saveRecipe("Warm", params, thumbnail = null)
         val recipes = repo.observeRecipes().first()

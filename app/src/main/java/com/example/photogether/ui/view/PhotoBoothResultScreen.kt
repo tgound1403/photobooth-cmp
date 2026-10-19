@@ -1,5 +1,8 @@
 package com.example.photogether.ui.view
 
+import com.tgound.photogether.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
@@ -18,8 +21,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,7 +38,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,6 +64,7 @@ import com.example.photogether.ui.theme.Stroke
 import com.example.photogether.ui.viewmodel.PhotoBoothViewModel
 import java.io.File
 import kotlinx.coroutines.launch
+import com.example.photogether.ui.theme.AppIcons
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,9 +73,11 @@ fun PhotoBoothResultScreen(
         navController: NavController,
         viewModel: PhotoBoothViewModel,
 ) {
-    val photoBooth by viewModel.photoBooth.collectAsState()
-    val saveState by viewModel.saveState.collectAsState()
-    val gifExportState by viewModel.gifExportState.collectAsState()
+    val photoBooth by viewModel.photoBooth.collectAsStateWithLifecycle()
+    val saveState by viewModel.saveState.collectAsStateWithLifecycle()
+    val gifExportState by viewModel.gifExportState.collectAsStateWithLifecycle()
+    val selectedImages by viewModel.selectedImages.collectAsStateWithLifecycle()
+    val requiredCount by viewModel.requiredPhotoCount.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -84,29 +87,21 @@ fun PhotoBoothResultScreen(
     LaunchedEffect(photoBoothId) { viewModel.getPhotoBoothById(photoBoothId) }
 
     LaunchedEffect(saveState) {
-        when (saveState) {
-            is PhotoBoothViewModel.SaveState.Success -> {
-                snackbarHostState.showSnackbar("Đã lưu ảnh thành công!")
-            }
-            is PhotoBoothViewModel.SaveState.Error -> {
-                snackbarHostState.showSnackbar(
-                        "Lỗi khi lưu ảnh: ${(saveState as PhotoBoothViewModel.SaveState.Error).message}"
-                )
-            }
+        when (val state = saveState) {
+            is PhotoBoothViewModel.SaveState.Success ->
+                snackbarHostState.showSnackbar(context.getString(R.string.booth_saved_toast))
+            is PhotoBoothViewModel.SaveState.Error ->
+                snackbarHostState.showSnackbar(context.getString(R.string.booth_save_error, state.message))
             else -> {}
         }
     }
 
     LaunchedEffect(gifExportState) {
-        when (gifExportState) {
-            is PhotoBoothViewModel.GifExportState.Success -> {
-                snackbarHostState.showSnackbar("Đã xuất GIF thành công!")
-            }
-            is PhotoBoothViewModel.GifExportState.Error -> {
-                snackbarHostState.showSnackbar(
-                        "Lỗi khi xuất GIF: ${(gifExportState as PhotoBoothViewModel.GifExportState.Error).message}"
-                )
-            }
+        when (val state = gifExportState) {
+            is PhotoBoothViewModel.GifExportState.Success ->
+                snackbarHostState.showSnackbar(context.getString(R.string.booth_gif_saved))
+            is PhotoBoothViewModel.GifExportState.Error ->
+                snackbarHostState.showSnackbar(context.getString(R.string.booth_gif_error, state.message))
             else -> {}
         }
     }
@@ -127,24 +122,28 @@ fun PhotoBoothResultScreen(
             isSaving = saveState is PhotoBoothViewModel.SaveState.Saving,
             isExportingGif = gifExportState is PhotoBoothViewModel.GifExportState.Exporting,
             showInstagramShare = saveState is PhotoBoothViewModel.SaveState.Success,
+            // A new background re-composes from the original shots of this session, not from the saved strip.
+            canSaveWithBackground = selectedImages.size == requiredCount,
             snackbarHostState = snackbarHostState,
             onBack = { navController.navigateUp() },
             onShare = { path ->
                 runCatching { shareImage(context, path) }.onFailure {
-                    scope.launch { snackbarHostState.showSnackbar("Không thể chia sẻ ảnh") }
+                    scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.booth_share_failed)) }
                 }
             },
             onShareInstagram = { path -> viewModel.shareToInstagramStories(context, path) },
-            onSave = {
-                photoBooth?.imagePaths?.let { imagePaths ->
-                    if (selectedDeviceImage != null) {
-                        viewModel.saveImageWithBg(context, imagePaths, selectedDeviceImage.toString())
-                    } else {
-                        viewModel.saveImages(context, imagePaths)
-                    }
+            onSaveWithBackground = {
+                selectedDeviceImage?.let { background ->
+                    viewModel.saveImageWithBg(context, selectedImages.toList(), background.toString())
                 }
             },
-            onRetake = { navController.navigate(AppRoutes.PHOTO_BOOTH) },
+            onRetake = {
+                // Start over: drop the old shots so the capture screen shows its shutter again.
+                viewModel.clearCapturedImages()
+                navController.navigate(AppRoutes.PHOTO_BOOTH) {
+                    popUpTo(AppRoutes.HOME)
+                }
+            },
             onPickBackground = { showDeviceImagePicker = true },
             onExportGif = {
                 photoBooth?.imagePaths?.let { images -> viewModel.exportGif(context, images) }
@@ -156,6 +155,9 @@ fun PhotoBoothResultScreen(
 /**
  * Stateless body of the result screen. Takes plain values and lambdas so it can be previewed
  * without Koin or a NavController. A null [imagePaths] means the result is still loading.
+ *
+ * The saved result is already composed, so it is never composed again. Only a new background
+ * (picked here) produces a new image, from the original shots.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -165,11 +167,12 @@ fun PhotoBoothResultContent(
         isSaving: Boolean,
         isExportingGif: Boolean,
         showInstagramShare: Boolean,
+        canSaveWithBackground: Boolean,
         snackbarHostState: SnackbarHostState,
         onBack: () -> Unit,
         onShare: (String) -> Unit,
         onShareInstagram: (String) -> Unit,
-        onSave: () -> Unit,
+        onSaveWithBackground: () -> Unit,
         onRetake: () -> Unit,
         onPickBackground: () -> Unit,
         onExportGif: () -> Unit
@@ -187,13 +190,13 @@ fun PhotoBoothResultContent(
             topBar = {
                 TopAppBar(
                         title = {
-                            Text("Photo Booth Result", style = MaterialTheme.typography.titleLarge)
+                            Text(stringResource(R.string.booth_result_title), style = MaterialTheme.typography.titleLarge)
                         },
                         navigationIcon = {
                             IconButton(onClick = onBack) {
                                 Icon(
-                                        Icons.Default.ArrowBack,
-                                        contentDescription = "Back",
+                                        AppIcons.Back,
+                                        contentDescription = stringResource(R.string.action_back),
                                         tint = AppColors.textPrimary
                                 )
                             }
@@ -233,47 +236,19 @@ fun PhotoBoothResultContent(
                                 modifier = Modifier.fillMaxSize(),
                                 cornerRadius = Radius.lg
                         )
-                        else -> {
-                            backgroundImage?.let { uri ->
-                                AsyncImage(
-                                        model = ImageRequest.Builder(context).data(uri).crossfade(true).build(),
-                                        contentDescription = "Device background",
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Crop
-                                )
-                            }
-                            if (imagePaths.size >= 4) {
-                                Column(
-                                        modifier = Modifier.fillMaxSize().padding(Spacing.md),
-                                        verticalArrangement = Arrangement.Center,
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Row(
-                                            modifier = Modifier.weight(1f),
-                                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
-                                    ) {
-                                        ResultImageItem(imagePaths[0], Modifier.weight(1f))
-                                        ResultImageItem(imagePaths[1], Modifier.weight(1f))
-                                    }
-                                    Spacer(modifier = Modifier.height(Spacing.sm))
-                                    Row(
-                                            modifier = Modifier.weight(1f),
-                                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
-                                    ) {
-                                        ResultImageItem(imagePaths[2], Modifier.weight(1f))
-                                        ResultImageItem(imagePaths[3], Modifier.weight(1f))
-                                    }
-                                }
-                            } else if (firstPath != null) {
-                                // Saved result: a single composed image.
-                                AsyncImage(
-                                        model = firstPath,
-                                        contentDescription = "Photo booth result",
-                                        modifier = Modifier.fillMaxSize().padding(Spacing.md),
-                                        contentScale = ContentScale.Fit
-                                )
-                            }
-                        }
+                        // A chosen background is shown on its own until it is composed on save.
+                        backgroundImage != null -> AsyncImage(
+                                model = ImageRequest.Builder(context).data(backgroundImage).crossfade(true).build(),
+                                contentDescription = stringResource(R.string.booth_background_preview),
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                        )
+                        firstPath != null -> AsyncImage(
+                                model = firstPath,
+                                contentDescription = stringResource(R.string.booth_result_image),
+                                modifier = Modifier.fillMaxSize().padding(Spacing.md),
+                                contentScale = ContentScale.Fit
+                        )
                     }
                 }
             }
@@ -283,11 +258,10 @@ fun PhotoBoothResultContent(
                     modifier = Modifier.fillMaxWidth().padding(Spacing.lg),
                     verticalArrangement = Arrangement.spacedBy(Spacing.md)
             ) {
-                // Primary action
                 GlassButton(
                         onClick = { firstPath?.let(onShare) },
                         modifier = Modifier.fillMaxWidth(),
-                        text = "Chia sẻ",
+                        text = stringResource(R.string.booth_share),
                         enabled = hasImages
                 )
 
@@ -296,61 +270,49 @@ fun PhotoBoothResultContent(
                         horizontalArrangement = Arrangement.spacedBy(Spacing.md)
                 ) {
                     SecondaryButton(
-                            onClick = onSave,
-                            modifier = Modifier.weight(1f),
-                            text = "Lưu Ảnh",
-                            enabled = hasImages && !isSaving
-                    )
-                    SecondaryButton(
                             onClick = onRetake,
                             modifier = Modifier.weight(1f),
-                            text = "Chụp Lại"
+                            text = stringResource(R.string.booth_retake)
                     )
-                }
-
-                Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.md)
-                ) {
                     SecondaryButton(
                             onClick = onPickBackground,
                             modifier = Modifier.weight(1f),
-                            text = "Nền"
-                    )
-                    SecondaryButton(
-                            onClick = onExportGif,
-                            modifier = Modifier.weight(1f),
-                            text = if (isExportingGif) "Đang xuất GIF..." else "Lưu GIF",
-                            enabled = hasImages && !isExportingGif
+                            text = stringResource(R.string.booth_background)
                     )
                 }
+
+                if (backgroundImage != null) {
+                    Text(
+                            text = stringResource(R.string.booth_background_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.textSecondary
+                    )
+                    GlassButton(
+                            onClick = onSaveWithBackground,
+                            modifier = Modifier.fillMaxWidth(),
+                            text = if (isSaving) stringResource(R.string.booth_saving)
+                                   else stringResource(R.string.booth_save_background),
+                            enabled = canSaveWithBackground && !isSaving
+                    )
+                }
+
+                SecondaryButton(
+                        onClick = onExportGif,
+                        modifier = Modifier.fillMaxWidth(),
+                        text = if (isExportingGif) stringResource(R.string.booth_gif_exporting)
+                               else stringResource(R.string.booth_gif_save),
+                        enabled = hasImages && !isExportingGif
+                )
 
                 if (showInstagramShare && firstPath != null) {
                     SecondaryButton(
                             onClick = { onShareInstagram(firstPath) },
                             modifier = Modifier.fillMaxWidth(),
-                            text = "Chia sẻ Instagram"
+                            text = stringResource(R.string.booth_share_instagram)
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun ResultImageItem(imagePath: String, modifier: Modifier) {
-    Box(
-            modifier =
-                    modifier.aspectRatio(4f / 3f)
-                            .clip(RoundedCornerShape(Radius.sm))
-                            .border(Stroke.hairline, AppColors.outline, RoundedCornerShape(Radius.sm))
-    ) {
-        AsyncImage(
-                model = imagePath,
-                contentDescription = "Photo booth image",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-        )
     }
 }
 
@@ -363,7 +325,7 @@ private fun shareImage(context: Context, imagePath: String) {
         clipData = ClipData.newRawUri("", uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    context.startActivity(Intent.createChooser(intent, "Chia sẻ ảnh"))
+    context.startActivity(Intent.createChooser(intent, context.getString(R.string.booth_share_chooser)))
 }
 
 @Preview(showBackground = true)
@@ -376,11 +338,12 @@ private fun PhotoBoothResultPreview() {
                 isSaving = false,
                 isExportingGif = false,
                 showInstagramShare = false,
+                canSaveWithBackground = false,
                 snackbarHostState = remember { SnackbarHostState() },
                 onBack = {},
                 onShare = {},
                 onShareInstagram = {},
-                onSave = {},
+                onSaveWithBackground = {},
                 onRetake = {},
                 onPickBackground = {},
                 onExportGif = {}

@@ -22,7 +22,9 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewModelScope
 import com.example.photogether.core.camera.CameraAdjustState
 import com.example.photogether.core.camera.CameraTool
+import com.example.photogether.core.colors.PendingColorLook
 import com.example.photogether.core.camera.CropZoomPrefs
+import com.example.photogether.core.camera.Lens
 import com.example.photogether.core.camera.ShutterSoundPlayer
 import com.example.photogether.core.camera.ShutterSoundPrefs
 import com.example.photogether.core.camera.EvMode
@@ -33,8 +35,9 @@ import com.example.photogether.core.camera.withEv
 import com.example.photogether.core.camera.withKelvin
 import com.example.photogether.core.camera.zoomFor
 import com.example.photogether.core.moments.MomentQuery
+import com.example.photogether.core.moments.ShotSettings
 import com.example.photogether.core.render.EditParams
-import com.example.photogether.core.render.CameraRecipe
+import com.example.photogether.core.render.CameraAspect
 import com.example.photogether.core.render.FlashMode
 import com.example.photogether.core.render.FilterCatalog
 import com.example.photogether.core.render.Recipe
@@ -47,6 +50,7 @@ import com.example.photogether.core.analytics.Analytics
 import com.example.photogether.core.analytics.AnalyticsEvent
 import com.example.photogether.core.analytics.NoOpAnalytics
 import com.example.photogether.service.ImageProcessingService
+import com.example.photogether.service.ShotSettingsStore
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -58,9 +62,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 
 /** Screen-facing state. All camera binding and capture goes through [CameraService]. */
 class CameraViewModel(
@@ -68,9 +74,10 @@ class CameraViewModel(
     private val recipeRepository: RecipeRepository,
     private val settingsRepository: CameraSettingsRepository,
     private val analytics: Analytics = NoOpAnalytics,
+    private val pendingLook: PendingColorLook = PendingColorLook(),
+    val catalog: FilterCatalog,
 ) : AndroidViewModel(application) {
     private val imageProcessingService = ImageProcessingService()
-    val catalog = FilterCatalog(application)
 
     /** Saved recipes, newest first, for the filter strip. */
     val recipes: Flow<List<Recipe>> = recipeRepository.observeRecipes()
@@ -93,11 +100,12 @@ class CameraViewModel(
     /** Whether the shutter sound plays on capture (still subject to the ringer mode). Remembered across launches. */
     val shutterSoundEnabled: StateFlow<Boolean> = _shutterSoundEnabled.asStateFlow()
 
-    private val shutterSoundPlayer = ShutterSoundPlayer(application)
+    // Created on the first shot, so the sound pool and its asset reads stay off the first frame.
+    private var shutterSoundPlayer: ShutterSoundPlayer? = null
     private val audioManager = application.getSystemService(AudioManager::class.java)
 
-    /** Shutter sound of the camera body in use. The screen sets it when the camera changes. */
-    private var cameraShutterSound = ShutterSound.MECH
+    /** Shutter sound every capture plays. Cameras no longer choose one. */
+    private val cameraShutterSound = ShutterSound.MECH
 
     /** True when the bound camera has a flash unit. */
     val hasFlash = mutableStateOf(false)
@@ -111,12 +119,17 @@ class CameraViewModel(
     /** Kelvin, EV and open panel. The filter edit itself stays in [editParams]. */
     val adjust: StateFlow<CameraAdjustState> = _adjust.asStateFlow()
 
+    /** The camera body last picked (DataStore). Null until one is picked. */
+    val savedCameraId: Flow<String?> = settingsRepository.settings.map { it.cameraId }
+
     /** Restores the saved Kelvin and EV once. [initCamera] waits for it before applying hardware settings. */
     private val restoreJob: Job
 
     private var isTakingPicture = false // use for view model
 
     init {
+        // A colour story's "Try now" hands its look over here; it replaces the default filter once.
+        pendingLook.take()?.let { editParams.value = it }
         restoreJob = viewModelScope.launch {
             val saved = try {
                 settingsRepository.settings.first()
@@ -144,6 +157,18 @@ class CameraViewModel(
 
     /** 35mm-equivalent focal length of the lens in use. The zoom pill multiplies it by the zoom ratio. */
     val lensMm = mutableFloatStateOf(35f)
+
+    /** Physical or digital lenses the focal panel offers, sorted by focal length and distinct by rounded mm. */
+    val availableLenses = mutableStateOf<List<Lens>>(emptyList())
+
+    /** 35mm-equivalent focal length of the main lens, chosen on the first bind. The focal panel shows ratios against it. */
+    val mainMm = mutableFloatStateOf(35f)
+
+    /** True once [mainMm] has been set, so later lens switches do not change the main lens. */
+    private var mainMmChosen = false
+
+    /** Aspect picked on the camera screen. Null means the camera body's own aspect. Reset when the camera changes. */
+    val aspectOverride = mutableStateOf<CameraAspect?>(null)
 
     /** True when zoom shows a crop frame on the preview instead of magnifying it. Read from [CropZoomPrefs]. */
     private var cropZoomEnabled = CropZoomPrefs.read(application)
@@ -184,6 +209,11 @@ class CameraViewModel(
             hasFlash.value = cameraService.hasFlash(bound.camera)
             cameraService.setFlashMode(bound.camera, _flashMode.value)
             lensMm.floatValue = cameraService.lenses.firstOrNull { it.cameraId == lensId }?.equivMm ?: lensMm.floatValue
+            availableLenses.value = cameraService.lenses.sortedBy { it.equivMm }.distinctBy { it.equivMm.roundToInt() }
+            if (!mainMmChosen) {
+                mainMm.floatValue = lensMm.floatValue
+                mainMmChosen = true
+            }
             restoreJob.join()
             _adjust.update { it.withCapabilities(cameraService.capabilities(bound.camera)) }
             applyHardware(bound.camera)
@@ -231,6 +261,26 @@ class CameraViewModel(
         updateCropZoom((target / camRatio).coerceAtLeast(1f))
     }
 
+    /** Zoom target of the pinch in progress. Null between pinches. */
+    private var pinchTarget: Float? = null
+
+    /**
+     * Pinch on the live view. [factor] is the pinch change for one input event. The target is kept here, not read back
+     * from the zoom state, which lags behind the fingers and would make the steps compound wrongly.
+     */
+    fun pinchZoom(factor: Float) {
+        val state = camera.value?.cameraInfo?.zoomState?.value ?: return
+        val current = pinchTarget ?: (state.zoomRatio * cropZoom.floatValue)
+        val target = (current * factor).coerceIn(state.minZoomRatio, state.maxZoomRatio)
+        pinchTarget = target
+        setZoomRatio(target)
+    }
+
+    /** Ends the pinch in progress. The next pinch starts from the zoom in use. */
+    fun endPinch() {
+        pinchTarget = null
+    }
+
     /**
      * Re-reads the crop-frame zoom setting. When it changed, the current effective zoom is moved between the
      * camera and the crop frame.
@@ -250,9 +300,29 @@ class CameraViewModel(
         pushRender()
     }
 
-    /** Selects a catalog filter by id, keeping the other edit values. */
+    /** Selects a catalog filter by id, keeping the other edit values. Strength goes back to full for the new filter. */
     fun selectFilter(filterId: String) {
-        setFilter(editParams.value.copy(filterId = filterId))
+        setFilter(editParams.value.copy(filterId = filterId, filterIntensity = 1f))
+    }
+
+    /** Moves the strength of the current filter by [delta] (fraction of 0..1) and returns the new value. */
+    fun adjustFilterIntensity(delta: Float): Float {
+        val next = (editParams.value.filterIntensity + delta).coerceIn(0f, 1f)
+        setFilter(editParams.value.copy(filterIntensity = next))
+        return next
+    }
+
+    /** Switches between the back and front camera, rebinding to the same lifecycle owner. */
+    fun switchFacing() {
+        val lifecycleOwner = owner ?: return
+        val next = if (owningFacing == CameraSelector.LENS_FACING_BACK) {
+            CameraSelector.LENS_FACING_FRONT
+        } else {
+            CameraSelector.LENS_FACING_BACK
+        }
+        // The back lens id does not exist on the front camera, so it is dropped. Back re-picks the 35mm lens.
+        lensId = null
+        initCamera(lifecycleOwner, next)
     }
 
     /** Sets the flash mode: capture flash for OFF, AUTO and ON, torch for TORCH. */
@@ -272,33 +342,17 @@ class CameraViewModel(
         _shutterSoundEnabled.value = ShutterSoundPrefs.read(getApplication())
     }
 
-    /** Sets the shutter sound that following captures play (the active camera body's). */
-    fun setCameraShutterSound(sound: ShutterSound) {
-        cameraShutterSound = sound
-    }
-
-    /** Sets the aspect that following captures are centre-cropped to (the active camera body's). */
-    fun setCameraAspect(aspect: com.example.photogether.core.render.CameraAspect) {
+    /** Sets the aspect that following captures are centre-cropped to. */
+    fun setCameraAspect(aspect: CameraAspect) {
         cameraService.cameraAspect = aspect
     }
 
-    /**
-     * Sets the five film-effect fields from a camera's [recipe]. Called when the user picks a camera,
-     * which resets these fields; other edit values are kept.
-     */
-    fun applyCameraRecipe(recipe: CameraRecipe) {
-        val r = recipe.clamped()
-        setFilter(
-            editParams.value.copy(
-                leak = r.leak,
-                dust = r.dust,
-                halation = r.halation,
-                grain = r.grain,
-                vignette = r.vignette,
-                dateStamp = r.dateStamp,
-            ),
-        )
+    /** Picks the aspect the user chose on the camera screen. The preview mask and the capture crop both follow it. */
+    fun setAspect(a: CameraAspect) {
+        aspectOverride.value = a
+        setCameraAspect(a)
     }
+
 
     /** Sets the colour temperature in Kelvin, or null for auto white balance. Live; not saved until [commitAdjust]. */
     fun setKelvin(kelvin: Int?) {
@@ -384,25 +438,47 @@ class CameraViewModel(
         }
     }
 
-    /** Captures a filtered JPEG and copies it into the gallery under Pictures/CameraX-Image, named for [cameraId]. */
+    /**
+     * Captures a filtered JPEG and copies it into the gallery under Pictures/CameraX-Image, named for [cameraId].
+     * The settings are read when the button is pressed, so a change made during the capture does not apply.
+     * Returns false when a capture is already running and this press was ignored.
+     */
     fun takePhotoToGallery(
         cameraId: String,
         onSaved: (Uri) -> Unit,
         onError: (ImageCaptureException) -> Unit,
-    ) {
-        capture(onError, onResult = onSaved) { file ->
-            copyToGallery(file, cameraId).also { file.delete() }
+    ): Boolean {
+        val settings = currentShotSettings()
+        return capture(onError, onResult = onSaved) { file ->
+            try {
+                ShotSettingsStore.write(file, settings)
+                copyToGallery(file, cameraId)
+            } finally {
+                file.delete()
+            }
         }
+    }
+
+    private fun currentShotSettings(): ShotSettings {
+        val zoom = camera.value?.cameraInfo?.zoomState?.value?.zoomRatio ?: 1f
+        return ShotSettings(
+            lutName = catalog.get(editParams.value.filterId)?.name,
+            ev = adjust.value.ev,
+            kelvin = adjust.value.kelvin,
+            focalMm = (lensMm.floatValue * zoom * cropZoom.floatValue).roundToInt(),
+            // The original has no filter to be strong or weak, so its strength is not recorded.
+            filterIntensity = editParams.value.filterIntensity.takeIf { editParams.value.filterId != FilterCatalog.ORIGINAL_ID },
+        )
     }
 
     private fun capture(
         onError: (ImageCaptureException) -> Unit,
         onResult: (Uri) -> Unit,
         transform: (File) -> Uri,
-    ) {
+    ): Boolean {
         if (isTakingPicture) {
             Log.d(TAG, "Skipping photo capture - already taking picture")
-            return
+            return false
         }
         isTakingPicture = true
         viewModelScope.launch(Dispatchers.Main) {
@@ -413,67 +489,103 @@ class CameraViewModel(
                 onError(ImageCaptureException(ImageCapture.ERROR_FILE_IO, "Cannot create file", e))
                 return@launch
             }
-            cameraService.takePhoto(
-                file = photoFile,
-                executor = executor,
-                onSaved = { saved ->
-                    playShutterSound()
-                    viewModelScope.launch(Dispatchers.Main) {
-                        val result = runCatching { withContext(Dispatchers.IO) { transform(saved) } }
+            try {
+                cameraService.takePhoto(
+                    file = photoFile,
+                    executor = executor,
+                    onSaved = { saved ->
+                        viewModelScope.launch(Dispatchers.Main) {
+                            val result = runCatching { withContext(Dispatchers.IO) { transform(saved) } }
+                            isTakingPicture = false
+                            result
+                                .onSuccess {
+                                    // Shutter sound and analytics only once the photo is really in the gallery.
+                                    playShutterSound()
+                                    analytics.log(AnalyticsEvent.PHOTO_CAPTURED)
+                                    onResult(it)
+                                }
+                                .onFailure { e ->
+                                    Log.e(TAG, "Saving photo failed: ${e.message}", e)
+                                    photoFile.delete()
+                                    onError(ImageCaptureException(ImageCapture.ERROR_FILE_IO, "Failed to save photo", e))
+                                }
+                        }
+                    },
+                    onFailure = { exception ->
+                        Log.e(TAG, "Error capturing photo: ${exception.message}", exception)
                         isTakingPicture = false
-                        result
-                            .onSuccess {
-                                analytics.log(AnalyticsEvent.PHOTO_CAPTURED)
-                                onResult(it)
-                            }
-                            .onFailure { e ->
-                                Log.e(TAG, "Saving photo failed: ${e.message}", e)
-                                onError(ImageCaptureException(ImageCapture.ERROR_FILE_IO, "Failed to save photo", e))
-                            }
-                    }
-                },
-                onFailure = { exception ->
-                    Log.e(TAG, "Error capturing photo: ${exception.message}", exception)
-                    isTakingPicture = false
-                    onError(exception)
-                },
-            )
+                        photoFile.delete()
+                        onError(exception)
+                    },
+                )
+            } catch (e: Exception) {
+                // Synchronous failure (e.g. camera unbound): release the guard so the shutter works again.
+                Log.e(TAG, "Capture could not start: ${e.message}", e)
+                isTakingPicture = false
+                photoFile.delete()
+                onError(ImageCaptureException(ImageCapture.ERROR_UNKNOWN, "Capture could not start", e))
+            }
         }
+        return true
     }
 
     /** Plays the camera's shutter sound once the capture has succeeded. Silent and vibrate modes are skipped. */
     private fun playShutterSound() {
         // Without an audio service we treat the phone as silent rather than guess.
         val ringer = audioManager?.ringerMode ?: AudioManager.RINGER_MODE_SILENT
-        shutterSoundPlayer.play(cameraShutterSound, _shutterSoundEnabled.value, ringer)
+        val player = shutterSoundPlayer ?: ShutterSoundPlayer(getApplication()).also { shutterSoundPlayer = it }
+        player.play(cameraShutterSound, _shutterSoundEnabled.value, ringer)
     }
 
     private fun copyToGallery(file: File, cameraId: String): Uri {
         val app: Context = getApplication()
         val stamp = SimpleDateFormat(FILENAME_FORMAT, Locale.US).format(System.currentTimeMillis())
+        val displayName = MomentQuery.cameraShotName(cameraId, stamp)
+        val isQOrLater = Build.VERSION.SDK_INT > Build.VERSION_CODES.P
         val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, MomentQuery.cameraShotName(cameraId, stamp))
+            put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
             put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CameraX-Image")
+            if (isQOrLater) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, GALLERY_RELATIVE_PATH)
+                // Hidden from the gallery until the bytes are fully written (cleared below).
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            } else {
+                // Pre-Q has no RELATIVE_PATH; the target file path is what MediaStore needs to store the bytes.
+                val dir = File(
+                    android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES),
+                    GALLERY_FOLDER,
+                ).apply { mkdirs() }
+                put(MediaStore.MediaColumns.DATA, File(dir, displayName).absolutePath)
             }
         }
-        val uri = app.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        val resolver = app.contentResolver
+        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
             ?: throw IOException("Cannot create gallery entry")
-        app.contentResolver.openOutputStream(uri)?.use { out ->
-            file.inputStream().use { it.copyTo(out) }
-        } ?: throw IOException("Cannot open gallery entry")
-        return uri
+        try {
+            resolver.openOutputStream(uri)?.use { out ->
+                file.inputStream().use { it.copyTo(out) }
+            } ?: throw IOException("Cannot open gallery entry")
+            if (isQOrLater) {
+                resolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
+            }
+            return uri
+        } catch (e: Exception) {
+            // Do not leave an empty or half-written row behind in the gallery.
+            runCatching { resolver.delete(uri, null, null) }
+            throw e
+        }
     }
 
     override fun onCleared() {
         cameraService.shutdown()
-        shutterSoundPlayer.release()
+        shutterSoundPlayer?.release()
         super.onCleared()
     }
 
     private companion object {
         const val TAG = "CameraViewModel"
         const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
+        const val GALLERY_FOLDER = "CameraX-Image"
+        const val GALLERY_RELATIVE_PATH = "Pictures/CameraX-Image"
     }
 }

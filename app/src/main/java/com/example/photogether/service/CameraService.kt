@@ -79,6 +79,7 @@ class CameraService(private val catalog: FilterCatalog) {
 
     /** Serializes the capture fallback: its render output bitmap is shared (reuseOutput). */
     private val fallbackMutex = Mutex()
+    private val filterMutex = Mutex()
     private val processor = FilterSurfaceProcessor(catalog.assets)
     private var renderer: GlRenderer? = null
 
@@ -341,11 +342,14 @@ class CameraService(private val catalog: FilterCatalog) {
     fun setFilter(params: EditParams) {
         requested = params
         scope.launch(Dispatchers.IO) {
-            val p = requested.clamped()
-            val bitmap = catalog.loadLut(p.filterId)
-            edit = p
-            lut = bitmap
-            processor.setEdit(p, bitmap)
+            // Serialised, and each run reads the latest request, so an older LUT load can never land last.
+            filterMutex.withLock {
+                val p = requested.clamped()
+                val bitmap = catalog.loadLut(p.filterId)
+                edit = p
+                lut = bitmap
+                processor.setEdit(p, bitmap)
+            }
         }
     }
 
@@ -379,6 +383,11 @@ class CameraService(private val catalog: FilterCatalog) {
                     scope.launch {
                         try {
                             applyEditToFile(file)
+                            withContext(Dispatchers.Main) { onSaved(file) }
+                        } catch (e: OutOfMemoryError) {
+                            // Very large sensors can run out of heap at full resolution. Keep the raw capture
+                            // (unfiltered, uncropped) rather than lose the shot.
+                            Log.w(TAG, "Fallback filter ran out of memory, kept the raw capture", e)
                             withContext(Dispatchers.Main) { onSaved(file) }
                         } catch (e: Exception) {
                             Log.e(TAG, "Fallback filter failed", e)

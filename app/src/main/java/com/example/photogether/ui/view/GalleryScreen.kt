@@ -1,5 +1,8 @@
 package com.example.photogether.ui.view
 
+import com.tgound.photogether.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,8 +20,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,7 +28,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,10 +50,11 @@ import com.example.photogether.ui.theme.PhotogetherTheme
 import com.example.photogether.ui.theme.Radius
 import com.example.photogether.ui.theme.Spacing
 import com.example.photogether.ui.viewmodel.GalleryViewModel
+import com.example.photogether.ui.theme.AppIcons
 
 @Composable
 fun GalleryScreen(navController: NavController, viewModel: GalleryViewModel) {
-    val photoBooths by viewModel.photoBooths.collectAsState()
+    val photoBooths by viewModel.photoBooths.collectAsStateWithLifecycle()
     var showDeleteDialog by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<PhotoBooth?>(null) }
 
@@ -73,8 +74,8 @@ fun GalleryScreen(navController: NavController, viewModel: GalleryViewModel) {
     if (showDeleteDialog && itemToDelete != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Xóa ảnh?", style = MaterialTheme.typography.titleLarge) },
-            text = { Text("Bạn có chắc muốn xóa ảnh này không?", style = MaterialTheme.typography.bodyMedium) },
+            title = { Text(stringResource(R.string.dialog_delete_photo_title_short), style = MaterialTheme.typography.titleLarge) },
+            text = { Text(stringResource(R.string.dialog_delete_photo_confirm), style = MaterialTheme.typography.bodyMedium) },
             containerColor = AppColors.surfaceElevated,
             titleContentColor = AppColors.textPrimary,
             textContentColor = AppColors.textSecondary,
@@ -85,11 +86,11 @@ fun GalleryScreen(navController: NavController, viewModel: GalleryViewModel) {
                         showDeleteDialog = false
                         itemToDelete = null
                     }
-                ) { Text("Xóa", color = AppColors.danger) }
+                ) { Text(stringResource(R.string.action_delete), color = AppColors.danger) }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Hủy", color = AppColors.textPrimary)
+                    Text(stringResource(R.string.action_cancel), color = AppColors.textPrimary)
                 }
             }
         )
@@ -105,7 +106,7 @@ fun GalleryContent(
     onDeleteRequest: (PhotoBooth) -> Unit
 ) {
     Scaffold(
-        topBar = { DefaultAppBar(onBack = onBack, title = "Bộ Sưu Tập") },
+        topBar = { DefaultAppBar(onBack = onBack, title = stringResource(R.string.gallery_title)) },
         containerColor = AppColors.background
     ) { padding ->
         Column(
@@ -139,7 +140,7 @@ fun GalleryContent(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
                     verticalArrangement = Arrangement.spacedBy(Spacing.lg)
                 ) {
-                    items(photoBooths) { photoBooth ->
+                    items(photoBooths, key = { it.id }) { photoBooth ->
                         PhotoBoothItem(
                             photoBooth = photoBooth,
                             onDelete = { onDeleteRequest(photoBooth) },
@@ -176,7 +177,7 @@ fun PhotoBoothItem(photoBooth: PhotoBooth, onDelete: () -> Unit, onClick: () -> 
                 .background(color = AppColors.danger.copy(alpha = 0.85f), shape = RoundedCornerShape(Radius.sm))
         ) {
             Icon(
-                Icons.Default.Delete,
+                AppIcons.Delete,
                 contentDescription = "Delete",
                 tint = InkColors.textPrimary,
                 modifier = Modifier.size(IconSize.sm)

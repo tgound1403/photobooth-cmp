@@ -6,4 +6,6 @@ data class Moment(
     val takenAt: Long,
     val width: Int,
     val height: Int,
+    /** Id of the camera that took the photo. Null for edits, photobooth results and shots taken before tagging. */
+    val cameraId: String? = null,
 )

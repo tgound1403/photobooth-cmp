@@ -1,6 +1,8 @@
 package com.example.photogether.core.render
 
 import android.graphics.Bitmap
+import android.os.Trace
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -34,6 +36,24 @@ class EditPipeline(private val catalog: FilterCatalog) : EditRenderer {
         density: Float,
         maxSize: Int?,
     ): Bitmap {
+        // Async section: the render hops between the GL, IO and Default threads, so a sync
+        // beginSection/endSection pair would land on different threads.
+        val cookie = traceCookies.incrementAndGet()
+        Trace.beginAsyncSection(TRACE_RENDER, cookie)
+        try {
+            return renderChain(source, snapshot, background, density, maxSize)
+        } finally {
+            Trace.endAsyncSection(TRACE_RENDER, cookie)
+        }
+    }
+
+    private suspend fun renderChain(
+        source: Bitmap,
+        snapshot: EditSnapshot,
+        background: Bitmap?,
+        density: Float,
+        maxSize: Int?,
+    ): Bitmap {
         val params = snapshot.params.clamped()
         val lut = withContext(Dispatchers.IO) { catalog.loadLut(params.filterId) }
         val overlays = snapshot.overlays
@@ -61,5 +81,10 @@ class EditPipeline(private val catalog: FilterCatalog) : EditRenderer {
 
     override fun close() {
         gl.close()
+    }
+
+    private companion object {
+        const val TRACE_RENDER = "EditPipeline.render"
+        val traceCookies = AtomicInteger()
     }
 }

@@ -1,5 +1,7 @@
 package com.example.photogether.ui.editor
 
+import com.tgound.photogether.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -79,12 +81,12 @@ fun PolaroidControls(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             EditorChip(
-                label = "BORDER",
+                label = stringResource(R.string.polaroid_border),
                 selected = section == PolaroidSection.BORDER,
                 onClick = { section = PolaroidSection.BORDER },
             )
             EditorChip(
-                label = "TEXT",
+                label = stringResource(R.string.polaroid_text),
                 selected = section == PolaroidSection.TEXT,
                 onClick = { section = PolaroidSection.TEXT },
             )
@@ -273,7 +275,7 @@ fun CaptionField(
             onValueChange(text.take(MAX_CAPTION_LENGTH))
         },
         placeholder = {
-            Text("Thêm chữ, để trống thì in ngày", color = AppColors.textSecondary)
+            Text(stringResource(R.string.polaroid_text_hint), color = AppColors.textSecondary)
         },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),

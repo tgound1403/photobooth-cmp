@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Camera descriptions are looked up by name at runtime (CameraProfile.subtitleText). -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@string/camera_*_subtitle" />

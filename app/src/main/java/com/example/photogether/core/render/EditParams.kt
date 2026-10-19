@@ -61,7 +61,7 @@ data class EditParams(
     val halation: Float = 0f,        // 0..1, warm-red glow around highlights (bloom pass); 0 = pass skipped
     val leak: Float = 0f,            // 0..1, light leak overlay strength; 0 = off
     val dust: Float = 0f,            // 0..1, dust and scratch overlay strength; 0 = off
-    val dateStamp: DateStampStyle = DateStampStyle.NONE, // camera date stamp style; set by the camera recipe
+    val dateStamp: DateStampStyle = DateStampStyle.NONE, // date stamp style; no camera sets it now
     val dateStampMillis: Long = 0L,  // epoch ms printed by the stamp; set at capture time, 0 = use the current time
     val fxSeed: Int = 0,             // placement seed of the overlays; set at capture time, not a UI parameter
 ) {

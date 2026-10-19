@@ -1,13 +1,13 @@
 package com.example.photogether.ui.components
 
+import com.tgound.photogether.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,6 +23,7 @@ import androidx.navigation.NavController
 import com.example.photogether.ui.theme.AppColors
 import com.example.photogether.ui.theme.IconSize
 import com.example.photogether.ui.theme.PhotogetherTheme
+import com.example.photogether.ui.theme.AppIcons
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +57,7 @@ fun DefaultAppBar(onBack: () -> Unit, title: String) {
                     .clip(CircleShape)
                     .background(color = AppColors.surfaceElevated)
             ) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = AppColors.textPrimary)
+                Icon(AppIcons.Back, contentDescription = stringResource(R.string.action_back), tint = AppColors.textPrimary)
             }
         },
         actions = {
@@ -76,6 +77,6 @@ fun DefaultAppBar(onBack: () -> Unit, title: String) {
 @Composable
 private fun DefaultAppBarPreview() {
     PhotogetherTheme {
-        DefaultAppBar(onBack = {}, title = "Chọn Khung Ảnh")
+        DefaultAppBar(onBack = {}, title = stringResource(R.string.frame_selection_title))
     }
 }

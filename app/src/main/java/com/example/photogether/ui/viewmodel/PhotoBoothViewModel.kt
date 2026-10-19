@@ -3,6 +3,7 @@ package com.example.photogether.ui.viewmodel
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
@@ -11,6 +12,10 @@ import com.example.photogether.core.analytics.Analytics
 import com.example.photogether.core.analytics.AnalyticsEvent
 import com.example.photogether.core.analytics.NoOpAnalytics
 import com.example.photogether.core.render.EditParams
+import com.example.photogether.core.render.EditPipeline
+import com.example.photogether.core.render.EditSnapshot
+import com.example.photogether.ui.editor.AndroidEditorImageIo
+import com.example.photogether.ui.editor.EditorImageIo
 import com.example.photogether.core.render.FilterCatalog
 import com.example.photogether.core.render.FilterInfo
 import com.example.photogether.core.render.Recipe
@@ -21,7 +26,12 @@ import com.example.photogether.data.repository.RecipeRepository
 import com.example.photogether.domain.usecase.CreatePhotoBoothImageUseCase
 import com.example.photogether.shared.domain.model.PhotoBooth
 import java.io.File
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,7 +49,19 @@ class PhotoBoothViewModel(
         /** Premium entitlement. Saving a premium filter while this is false opens the paywall. */
         val isPremium: StateFlow<Boolean> = MutableStateFlow(false),
         private val analytics: Analytics = NoOpAnalytics,
+        catalog: FilterCatalog,
+        /** Decodes captured shots for the selection thumbnails. */
+        private val imageIo: EditorImageIo = AndroidEditorImageIo(application),
 ) : AndroidViewModel(application) {
+
+    // Own GL pipeline for the selection thumbnails, created on first use and closed in onCleared.
+    private val thumbRendererLazy = lazy { EditPipeline(catalog) }
+    private val thumbRenderer by thumbRendererLazy
+    private val _filteredThumbs = MutableStateFlow<Map<String, Bitmap>>(emptyMap())
+    /** Captured shot path -> copy rendered with the current look. Missing keys are still rendering. */
+    val filteredThumbs: StateFlow<Map<String, Bitmap>> = _filteredThumbs.asStateFlow()
+    private var thumbParams: EditParams? = null
+    private var thumbJob: Job? = null
 
     private val _showPaywall = MutableStateFlow(false)
     /** True after a save was blocked by a premium filter. The paywall closes on purchase or dismiss. */
@@ -129,7 +151,7 @@ class PhotoBoothViewModel(
     val selectedLayout: StateFlow<com.example.photogether.shared.domain.model.PhotoBoothLayout> =
             _selectedLayout
 
-    val filters = FilterCatalog(application).filters
+    val filters = catalog.filters
 
     private val recipes: StateFlow<List<Recipe>> =
             recipeRepository
@@ -173,14 +195,62 @@ class PhotoBoothViewModel(
                 }
     }
 
+    /** How many photos the user keeps for the layout. Always less than [CAPTURE_COUNT]. */
     private val _requiredPhotoCount = MutableStateFlow(4)
     val requiredPhotoCount: StateFlow<Int> = _requiredPhotoCount
 
+    /** Shots taken per session, whatever the layout. Must stay above every layout's keep count. */
+    val captureCount: Int = CAPTURE_COUNT
+
+    /** Starts a new booth session. Drops the shots, the last saved result and any finished save/GIF state. */
     fun clearCapturedImages() {
+        thumbJob?.cancel()
+        thumbParams = null
+        _filteredThumbs.value = emptyMap()
         _capturedImages.value = emptyList()
         _selectedImages.value = emptySet()
         _backgroundImageUri.value = null
         _customText.value = null
+        _photoBooth.value = null
+        _saveState.value = SaveState.Idle
+        _gifExportState.value = GifExportState.Idle
+    }
+
+    /**
+     * Renders every captured shot with the current look so the selection grid shows the filter.
+     * Call again when the look or the shots change; only missing thumbnails are rendered.
+     */
+    fun refreshFilteredThumbs() {
+        thumbJob?.cancel()
+        val params = _editParams.value
+        if (params != thumbParams) {
+            thumbParams = params
+            _filteredThumbs.value = emptyMap()
+        }
+        val pending = _capturedImages.value.filter { it !in _filteredThumbs.value }
+        if (pending.isEmpty()) return
+        val density = application.resources.displayMetrics.density
+        thumbJob = viewModelScope.launch {
+            for (path in pending) {
+                val source = withContext(Dispatchers.IO) { imageIo.decode(path, THUMB_SOURCE_SIDE) } ?: continue
+                val thumb = try {
+                    thumbRenderer.render(source, EditSnapshot(params = params), null, density, THUMB_MAX_SIDE)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    continue
+                } finally {
+                    source.recycle()
+                }
+                _filteredThumbs.update { it + (path to thumb) }
+            }
+        }
+    }
+
+    override fun onCleared() {
+        thumbJob?.cancel()
+        if (thumbRendererLazy.isInitialized()) thumbRenderer.close()
+        super.onCleared()
     }
 
     fun updateFilter(filterId: String) {
@@ -199,6 +269,11 @@ class PhotoBoothViewModel(
             updateFilter(sourceId)
         }
         _selectedSourceId.value = sourceId
+        // Tell free users about the premium filter now, not on save. Preview stays allowed.
+        if (requiresPaywall(_editParams.value.filterId, filters, isPremium.value)) {
+            _showPaywall.value = true
+            analytics.log(AnalyticsEvent.PAYWALL_SHOWN, mapOf("trigger" to "pick"))
+        }
     }
 
     fun updateTheme(theme: com.example.photogether.data.model.FrameTheme) {
@@ -225,15 +300,17 @@ class PhotoBoothViewModel(
         val currentSelected = _selectedImages.value.toMutableSet()
         if (currentSelected.contains(imagePath)) {
             currentSelected.remove(imagePath)
-        } else if (currentSelected.size < 4) {
+        } else if (currentSelected.size < _requiredPhotoCount.value) {
             currentSelected.add(imagePath)
         }
         _selectedImages.value = currentSelected
     }
 
     fun getPhotoBoothById(id: Long) {
-        viewModelScope.launch { 
-            _photoBooth.value = repository.getPhotoBoothById(id) 
+        // Clear first so the result screen never shows the previous booth while this one loads.
+        _photoBooth.value = null
+        viewModelScope.launch {
+            _photoBooth.value = repository.getPhotoBoothById(id)
         }
     }
 
@@ -277,6 +354,10 @@ class PhotoBoothViewModel(
         }
     }
     
+    /**
+     * Renders the current strip for the edit screen without saving it. Nothing is written to the
+     * gallery; only [saveImages] / [saveImageWithBg] create the final image.
+     */
     suspend fun createPhotoBoothPreview(
         context: Context,
         imagePaths: List<String>,
@@ -284,10 +365,10 @@ class PhotoBoothViewModel(
         backgroundSource: String?,
         frameTheme: com.example.photogether.data.model.FrameTheme?,
         customText: String?
-    ): Result<String> = runCatching {
+    ): Result<Bitmap> = try {
         val themeToUse = if (backgroundSource != null) null else frameTheme
-        createPhotoBoothImageUseCase
-            .execute(
+        Result.success(
+            createPhotoBoothImageUseCase.compose(
                 context,
                 imagePaths,
                 layout,
@@ -296,7 +377,11 @@ class PhotoBoothViewModel(
                 themeToUse,
                 customText
             )
-            .getOrThrow()
+        )
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 
     fun saveImageWithBg(context: Context, imagePaths: List<String>, background: String) {
@@ -324,7 +409,9 @@ class PhotoBoothViewModel(
                                 imagePaths = listOf(resultPath),
                                 createdAt = System.currentTimeMillis()
                         )
-                repository.insertPhotoBooth(photoBooth, _editParams.value)
+                val photoBoothId = repository.insertPhotoBooth(photoBooth, _editParams.value)
+                // The result screen shows this one now, not the previous strip.
+                _photoBooth.value = repository.getPhotoBoothById(photoBoothId)
 
                 _saveState.value = SaveState.Success
             } catch (e: Exception) {
@@ -338,5 +425,13 @@ class PhotoBoothViewModel(
         object Saving : SaveState()
         object Success : SaveState()
         data class Error(val message: String) : SaveState()
+    }
+
+    companion object {
+        private const val THUMB_SOURCE_SIDE = 640
+        private const val THUMB_MAX_SIDE = 320
+
+        /** Shots per session. Layouts keep 1–4 of them, so the user always has a choice. */
+        const val CAPTURE_COUNT = 8
     }
 }

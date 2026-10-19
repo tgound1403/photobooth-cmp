@@ -1,5 +1,7 @@
 package com.example.photogether.ui.view
 
+import com.tgound.photogether.R
+import androidx.compose.ui.res.stringResource
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -66,7 +68,7 @@ fun NoPermissionContent(onOpenSettings: () -> Unit) {
             .padding(Spacing.lg)
     ) {
         Text(
-            text = "Ứng dụng cần quyền truy cập camera để chụp ảnh",
+            text = stringResource(R.string.permission_camera_rationale),
             style = MaterialTheme.typography.titleLarge,
             color = AppColors.textPrimary,
             textAlign = TextAlign.Center
@@ -74,7 +76,7 @@ fun NoPermissionContent(onOpenSettings: () -> Unit) {
         Spacer(modifier = Modifier.height(Spacing.md))
         GlassButton(
             onClick = onOpenSettings,
-            text = "Mở cài đặt",
+            text = stringResource(R.string.permission_open_settings),
             modifier = Modifier.fillMaxWidth(0.7f)
         )
     }

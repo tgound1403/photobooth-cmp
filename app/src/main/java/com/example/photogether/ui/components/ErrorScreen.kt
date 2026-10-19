@@ -1,5 +1,7 @@
 package com.example.photogether.ui.components
 
+import com.tgound.photogether.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -8,8 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,6 +21,7 @@ import com.example.photogether.ui.theme.AppColors
 import com.example.photogether.ui.theme.IconSize
 import com.example.photogether.ui.theme.PhotogetherTheme
 import com.example.photogether.ui.theme.Spacing
+import com.example.photogether.ui.theme.AppIcons
 
 /**
  * Error screen component to display error messages
@@ -42,7 +43,7 @@ fun ErrorScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            imageVector = Icons.Default.ErrorOutline,
+            imageVector = AppIcons.Error,
             contentDescription = null,
             tint = AppColors.danger,
             modifier = Modifier.size(IconSize.hero)
@@ -51,7 +52,7 @@ fun ErrorScreen(
         Spacer(modifier = Modifier.height(Spacing.lg))
 
         Text(
-            text = "Đã xảy ra lỗi",
+            text = stringResource(R.string.error_generic),
             style = MaterialTheme.typography.titleLarge,
             color = AppColors.textPrimary,
             textAlign = TextAlign.Center
@@ -70,7 +71,7 @@ fun ErrorScreen(
 
         GlassButton(
             onClick = onRetry,
-            text = "Thử lại",
+            text = stringResource(R.string.action_retry),
             modifier = Modifier.fillMaxWidth(0.7f)
         )
     }

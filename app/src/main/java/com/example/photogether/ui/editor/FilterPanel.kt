@@ -168,8 +168,8 @@ private fun FilterStripSection(
                         Text(
                             // Display text only. chip.id and the comparisons above stay as they are.
                             text = when (chip.id) {
-                                FilterGrouping.ALL -> "TẤT CẢ"
-                                FilterGrouping.FAVORITE -> "YÊU THÍCH"
+                                FilterGrouping.ALL -> stringResource(R.string.chip_all_caps)
+                                FilterGrouping.FAVORITE -> stringResource(R.string.chip_favorites_caps)
                                 else -> chip.label
                             },
                             style = MaterialTheme.typography.labelSmall,
@@ -202,7 +202,7 @@ private fun FilterStripSection(
         }
         if (params.filterId != FilterCatalog.ORIGINAL_ID) {
             RulerSlider(
-                label = "Intensity",
+                label = stringResource(R.string.filter_intensity),
                 value = params.filterIntensity,
                 valueRange = 0f..1f,
                 defaultValue = 1f,

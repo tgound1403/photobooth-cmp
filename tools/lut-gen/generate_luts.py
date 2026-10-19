@@ -26,12 +26,13 @@ import zlib
 LEVELS = 64
 GRID = 8
 SIZE = LEVELS * GRID  # 512
-MAX_TOTAL_BYTES = 3 * 1024 * 1024
+MAX_TOTAL_BYTES = 100 * 1024 * 1024
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 ASSET_DIR = os.path.join(REPO_ROOT, "app", "src", "main", "assets", "filters")
 LUT_DIR = os.path.join(ASSET_DIR, "luts")
 CATALOG_PATH = os.path.join(ASSET_DIR, "catalog.json")
+PACK_JSON = os.path.join(REPO_ROOT, "tools", "lut-gen", "japan_pack.json")
 
 # ---------------------------------------------------------------------------
 # Building blocks. Every colour op takes and returns floats in 0..1.
@@ -383,7 +384,7 @@ FILTERS = [
         op_split_tone(shadow=(-0.02, 0.0, 0.04), highlight=(0.005, 0.01, 0.015)),
         op_curve([(0, 0.0), (0.5, 0.5), (1, 0.96)]),
         op_saturation(0.78))),
-    ("neon_night", "Neon Night", "Japan", False, "Warm orange-red glow, brown-teal lifted blacks, creamy peach highlights.", lambda: compose(
+    ("neon_night", "Neon Night", "Japan Pack", False, "Warm orange-red glow, brown-teal lifted blacks, creamy peach highlights.", lambda: compose(
         op_white_balance(temp=0.09, tint=0.02),
         op_curve_rgb([(0, 0.05), (0.25, 0.26), (0.5, 0.53), (0.75, 0.80), (1, 0.985)],
                      [(0, 0.035), (0.25, 0.225), (0.5, 0.47), (0.75, 0.73), (1, 0.95)],
@@ -393,7 +394,7 @@ FILTERS = [
                 "blue": (6, 0.9, -0.05), "magenta": (-6, 1.0, 0.0)}),
         op_split_tone(shadow=(0.012, -0.004, 0.012), highlight=(0.03, 0.015, -0.025)),
         op_saturation(1.04))),
-    ("tokyo_rain", "Tokyo Rain", "Japan", False, "Cool teal-green wash, muted tones, soft contrast, warm accents stay alive.", lambda: compose(
+    ("tokyo_rain", "Tokyo Rain", "Japan Pack", False, "Cool teal-green wash, muted tones, soft contrast, warm accents stay alive.", lambda: compose(
         op_white_balance(temp=-0.06, tint=-0.1),
         op_curve_rgb([(0, 0.02), (0.25, 0.22), (0.5, 0.485), (0.75, 0.76), (1, 0.965)],
                      [(0, 0.045), (0.25, 0.26), (0.5, 0.515), (0.75, 0.775), (1, 0.98)],
@@ -416,8 +417,17 @@ FILTERS = [
         op_curve([(0, 0.06), (0.5, 0.52), (1, 0.97)]))),
 ]
 
-GROUP_ORDER = ["Fuji", "Kodak", "Korea", "Japan", "Vintage"]
+GROUP_ORDER = ["Fuji", "Kodak", "Korea", "Japan Pack", "Vintage"]
 ORIGINAL = {"id": "original", "name": "Original", "group": "Kodak", "lut": None, "premium": False}
+
+
+def load_pack_entries():
+    """Catalog entries written by import_cube_pack.py. Their PNGs come from that importer, so
+    main() keeps them and counts their size instead of regenerating them."""
+    if not os.path.exists(PACK_JSON):
+        return []
+    with open(PACK_JSON, encoding="utf-8") as f:
+        return json.load(f)["filters"]
 
 # ---------------------------------------------------------------------------
 # LUT and PNG helpers.
@@ -579,6 +589,8 @@ def main():
     for fid, name, group, premium, _desc, make in FILTERS:
         all_entries.append({"id": fid, "name": name, "group": group, "lut": f"luts/{fid}.png", "premium": premium})
         builders.append((fid, make()))
+    pack = load_pack_entries()
+    all_entries += pack
 
     ids = [e["id"] for e in all_entries]
     assert len(ids) == len(set(ids)), "duplicate filter ids"
@@ -591,6 +603,7 @@ def main():
 
     os.makedirs(LUT_DIR, exist_ok=True)
     expected_files = {f"{fid}.png" for fid, _ in builders}
+    expected_files |= {os.path.basename(e["lut"]) for e in pack}
     for stale in os.listdir(LUT_DIR):
         if stale.endswith(".png") and stale not in expected_files:
             os.remove(os.path.join(LUT_DIR, stale))
@@ -602,6 +615,8 @@ def main():
             f.write(png)
         total_bytes += len(png)
         print(f"wrote luts/{fid}.png ({len(png) / 1024:.1f} KB)")
+    for e in pack:
+        total_bytes += os.path.getsize(os.path.join(LUT_DIR, os.path.basename(e["lut"])))
 
     catalog = {"version": 1, "filters": all_entries}
     with open(CATALOG_PATH, "w", encoding="utf-8") as f:

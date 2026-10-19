@@ -99,7 +99,6 @@ def save_webp(img, path, lossless=False):
 
 def main():
     save_webp(make_leak((255, 100, 30), cx=150.0, cy=150.0), OUT_DIR / "leak_warm.webp")
-    save_webp(make_leak((60, 200, 255), cx=SIZE - 150.0, cy=SIZE - 150.0), OUT_DIR / "leak_cool.webp")
     save_webp(make_dust(), OUT_DIR / "dust.webp", lossless=True)
 
 
