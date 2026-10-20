@@ -18,6 +18,8 @@ data class ShotSettings(
     val focalMm: Int?,
     /** Strength of the filter, 0..1. Null for shots taken before it was saved. */
     val filterIntensity: Float? = null,
+    /** White balance tint, -1 (green) to +1 (magenta). Null when it was 0, so the dialog hides it. */
+    val tint: Float? = null,
 )
 
 /**
@@ -25,17 +27,18 @@ data class ShotSettings(
  */
 fun evAsRational(ev: Float): String = "${(ev * 100f).roundToInt()}/100"
 
-/** Kelvin and filter strength share EXIF's user comment as `kelvin=5500;intensity=72`. */
-data class UserCommentValues(val kelvin: Int?, val intensityPercent: Int?)
+/** Kelvin, filter strength and tint share EXIF's user comment as `kelvin=5500;intensity=72;tint=-40`. */
+data class UserCommentValues(val kelvin: Int?, val intensityPercent: Int?, val tintPercent: Int? = null)
 
 /**
- * Encodes kelvin and strength (0..100 percent) into the user comment. Null fields are left out. Returns null
- * when both are null, so the tag is not written.
+ * Encodes kelvin, strength (0..100 percent) and tint (-100..100 percent) into the user comment. Null fields are
+ * left out. Returns null when all are null, so the tag is not written.
  */
-fun encodeUserComment(kelvin: Int?, intensityPercent: Int?): String? {
+fun encodeUserComment(kelvin: Int?, intensityPercent: Int?, tintPercent: Int? = null): String? {
     val parts = buildList {
         kelvin?.let { add("kelvin=$it") }
         intensityPercent?.let { add("intensity=$it") }
+        tintPercent?.let { add("tint=$it") }
     }
     return parts.joinToString(";").ifEmpty { null }
 }
@@ -55,5 +58,6 @@ fun decodeUserComment(text: String?): UserCommentValues {
     return UserCommentValues(
         kelvin = fields["kelvin"]?.toIntOrNull(),
         intensityPercent = fields["intensity"]?.toIntOrNull()?.coerceIn(0, 100),
+        tintPercent = fields["tint"]?.toIntOrNull()?.coerceIn(-100, 100),
     )
 }

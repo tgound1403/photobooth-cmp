@@ -175,7 +175,14 @@ private fun settingRows(settings: ShotSettings?): List<Pair<String, String>> = b
     settings?.filterIntensity?.let { add("CƯỜNG ĐỘ" to "${(it * 100).roundToInt()}%") }
     settings?.ev?.let { add("EV" to "${formatEv(it)} EV") }
     settings?.kelvin?.let { add("ĐỘ K" to "${it}K") }
+    settings?.tint?.let { add("TINT" to signedPercent(it)) }
     settings?.focalMm?.let { add("TIÊU CỰ" to "$it mm") }
+}
+
+/** Tint as a signed percentage, such as "+40" (magenta), "-40" (green) or "0". */
+private fun signedPercent(tint: Float): String {
+    val n = (tint * 100f).roundToInt()
+    return if (n > 0) "+$n" else "$n"
 }
 
 /** Titled block: small caps label, then the content. */

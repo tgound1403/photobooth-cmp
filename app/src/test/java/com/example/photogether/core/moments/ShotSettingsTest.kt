@@ -53,4 +53,26 @@ class ShotSettingsTest {
     fun strength_is_clamped_to_a_percent() {
         assertEquals(UserCommentValues(null, 100), decodeUserComment("intensity=250"))
     }
+
+    @Test
+    fun user_comment_round_trips_tint_with_the_other_values() {
+        val text = encodeUserComment(kelvin = 3200, intensityPercent = 72, tintPercent = -40)
+        assertEquals("kelvin=3200;intensity=72;tint=-40", text)
+        val decoded = decodeUserComment(text)
+        assertEquals(-40, decoded.tintPercent)
+        assertEquals(3200, decoded.kelvin)
+        assertEquals(72, decoded.intensityPercent)
+    }
+
+    @Test
+    fun tint_alone_is_written_and_clamped_to_a_hundred_percent() {
+        assertEquals("tint=25", encodeUserComment(kelvin = null, intensityPercent = null, tintPercent = 25))
+        assertEquals(100, decodeUserComment("tint=250").tintPercent)
+        assertEquals(-100, decodeUserComment("tint=-250").tintPercent)
+    }
+
+    @Test
+    fun user_comment_without_tint_reads_tint_as_null() {
+        assertNull(decodeUserComment("kelvin=5500;intensity=50").tintPercent)
+    }
 }

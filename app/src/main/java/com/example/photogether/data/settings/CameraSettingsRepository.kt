@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.map
 private val KEY_KELVIN = intPreferencesKey("wb_kelvin")
 private val KEY_EV = floatPreferencesKey("ev")
 private val KEY_CAMERA_ID = stringPreferencesKey("camera_id")
+private val KEY_TINT = floatPreferencesKey("tint")
 
 class CameraSettingsRepository(private val store: DataStore<Preferences>) {
 
@@ -38,6 +39,10 @@ class CameraSettingsRepository(private val store: DataStore<Preferences>) {
         store.edit { prefs -> prefs[KEY_EV] = ev }
     }
 
+    suspend fun setTint(tint: Float) {
+        store.edit { prefs -> prefs[KEY_TINT] = tint }
+    }
+
     companion object {
         fun create(context: Context): CameraSettingsRepository =
             CameraSettingsRepository(
@@ -52,4 +57,5 @@ internal fun Preferences.toCameraSettings(): CameraSettings = CameraSettings(
     kelvin = this[KEY_KELVIN],
     ev = this[KEY_EV] ?: 0f,
     cameraId = this[KEY_CAMERA_ID],
+    tint = this[KEY_TINT] ?: 0f,
 )

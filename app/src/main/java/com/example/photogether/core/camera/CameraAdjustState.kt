@@ -23,7 +23,16 @@ data class CameraAdjustState(
     val awbLockAvailable: Boolean = false,
     val manualExposureActive: Boolean = false,
     val openTool: CameraTool? = null,
+    /** Green (-1) to magenta (+1). Applied by the shader, so it never touches the camera hardware. */
+    val tint: Float = 0f,
 )
+
+/** Largest tint magnitude the camera accepts. Matches [EditParams.tint]. */
+const val CAMERA_TINT_LIMIT = 1f
+
+/** Sets the tint, clamped to [-CAMERA_TINT_LIMIT, CAMERA_TINT_LIMIT]. */
+fun CameraAdjustState.withTint(t: Float): CameraAdjustState =
+    copy(tint = t.coerceIn(-CAMERA_TINT_LIMIT, CAMERA_TINT_LIMIT))
 
 /** Sets the colour temperature; null returns to auto white balance. Kelvin is clamped to the supported range. */
 fun CameraAdjustState.withKelvin(k: Int?): CameraAdjustState =
@@ -64,5 +73,6 @@ fun CameraAdjustState.overrides(manual: ManualExposure?): Camera2Overrides =
 fun EditParams.withCameraAdjust(s: CameraAdjustState): EditParams =
     copy(
         kelvin = s.kelvin,
+        tint = s.tint,
         softwareEv = if (s.evMode == EvMode.SOFTWARE) s.ev else 0f,
     )

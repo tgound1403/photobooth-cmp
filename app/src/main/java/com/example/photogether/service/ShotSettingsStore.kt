@@ -21,8 +21,11 @@ object ShotSettingsStore {
         val exif = ExifInterface(file)
         settings.lutName?.let { exif.setAttribute(ExifInterface.TAG_IMAGE_DESCRIPTION, it) }
         settings.ev?.let { exif.setAttribute(ExifInterface.TAG_EXPOSURE_BIAS_VALUE, evAsRational(it)) }
-        encodeUserComment(settings.kelvin, settings.filterIntensity?.let { (it * 100f).roundToInt() })
-            ?.let { exif.setAttribute(ExifInterface.TAG_USER_COMMENT, it) }
+        encodeUserComment(
+            kelvin = settings.kelvin,
+            intensityPercent = settings.filterIntensity?.let { (it * 100f).roundToInt() },
+            tintPercent = settings.tint?.let { (it * 100f).roundToInt() },
+        )?.let { exif.setAttribute(ExifInterface.TAG_USER_COMMENT, it) }
         settings.focalMm?.let { exif.setAttribute(ExifInterface.TAG_FOCAL_LENGTH_IN_35MM_FILM, it.toString()) }
         exif.saveAttributes()
     }
@@ -43,9 +46,11 @@ object ShotSettingsStore {
             kelvin = comment.kelvin,
             focalMm = exif.getAttributeInt(ExifInterface.TAG_FOCAL_LENGTH_IN_35MM_FILM, 0).takeIf { it > 0 },
             filterIntensity = comment.intensityPercent?.let { it / 100f },
+            tint = comment.tintPercent?.let { it / 100f },
         )
         return settings.takeIf {
-            it.lutName != null || it.ev != null || it.kelvin != null || it.focalMm != null || it.filterIntensity != null
+            it.lutName != null || it.ev != null || it.kelvin != null || it.focalMm != null ||
+                it.filterIntensity != null || it.tint != null
         }
     }
 }

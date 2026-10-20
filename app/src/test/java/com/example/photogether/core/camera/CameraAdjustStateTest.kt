@@ -98,4 +98,18 @@ class CameraAdjustStateTest {
         assertEquals(2_000, CameraAdjustState().withKelvin(100).kelvin)
         assertEquals(null, CameraAdjustState(kelvin = 3200).withKelvin(null).kelvin)
     }
+
+    @Test
+    fun withTintClampsToTheShaderRange() {
+        assertEquals(1f, CameraAdjustState().withTint(3f).tint, 1e-4f)
+        assertEquals(-1f, CameraAdjustState().withTint(-3f).tint, 1e-4f)
+        assertEquals(0.25f, CameraAdjustState().withTint(0.25f).tint, 1e-4f)
+    }
+
+    @Test
+    fun tintIsCopiedIntoTheRecipeWithoutAffectingKelvin() {
+        val params = EditParams().withCameraAdjust(CameraAdjustState(tint = -0.4f))
+        assertEquals(-0.4f, params.tint, 1e-4f)
+        assertEquals(null, params.kelvin)
+    }
 }
