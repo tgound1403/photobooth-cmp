@@ -67,6 +67,7 @@ object CameraProfiles {
                 chips = setOf(CameraChip.PORTRAIT, CameraChip.STREET),
             ),
             CameraProfile(
+                modelAsset = "models/kodak.glb",
                 id = "fuji_mini",
                 name = "Fuji Mini",
                 subtitle = "Xanh lá tươi, bão hòa nhẹ, rò sáng mềm. Hợp du lịch, cây cối, bạn bè",
@@ -80,6 +81,7 @@ object CameraProfiles {
                 chips = setOf(CameraChip.LANDSCAPE),
             ),
             CameraProfile(
+                modelAsset = "models/instant.glb",
                 id = "golden",
                 name = "Golden",
                 subtitle = "Nắng vàng ấm, rò sáng, nâng bóng nhẹ. Hợp hoàng hôn, picnic, chân dung ngoài trời",
@@ -97,6 +99,7 @@ object CameraProfiles {
                 id = "night",
                 name = "Night Teal",
                 subtitle = "Tông trung tính, bóng nâng nhẹ, hạt dày, flash gắt. Hợp đêm phố, đèn neon, trời mưa",
+                modelAsset = "models/slr.glb",
                 filterIds = listOf(
                     "fuji_classic_chrome",
                     "vsco_cool_fade",
@@ -111,6 +114,7 @@ object CameraProfiles {
                 id = "silver",
                 name = "Silver",
                 subtitle = "Đen trắng hạt thô, tương phản cao, khung vuông. Hợp chân dung, kiến trúc, phố",
+                modelAsset = "models/compact.glb",
                 filterIds = listOf(
                     "bw_tri_x",
                     "bw_noir",
@@ -127,7 +131,7 @@ object CameraProfiles {
                 filterIds = listOf(
                     "jp001_001",
                 ),
-                modelTint = 0xFFD97777.toInt(),
+                modelTint = 0xFFCC862D.toInt(),
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT, CameraChip.FOOD),
             ),
             CameraProfile(
@@ -171,7 +175,8 @@ object CameraProfiles {
                     "jp002_100",
                     "jp002_104",
                 ),
-                modelTint = 0xFFD98377.toInt(),
+                modelTint = 0xFF2E7ECC.toInt(),
+                modelAsset = "models/leica_m.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.STREET, CameraChip.PORTRAIT),
             ),
             CameraProfile(
@@ -196,7 +201,8 @@ object CameraProfiles {
                     "jp002_103",
                     "jp002_105",
                 ),
-                modelTint = 0xFF8BD977.toInt(),
+                modelTint = 0xFF2D9DCC.toInt(),
+                modelAsset = "models/ricoh_gr.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.LANDSCAPE),
             ),
             CameraProfile(
@@ -232,7 +238,8 @@ object CameraProfiles {
                     "jp002_099",
                     "jp002_101",
                 ),
-                modelTint = 0xFF77BBD9.toInt(),
+                modelTint = 0xFF7F91CC.toInt(),
+                modelAsset = "models/slr.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT, CameraChip.PRODUCT),
             ),
             CameraProfile(
@@ -256,7 +263,8 @@ object CameraProfiles {
                     "jp002_094",
                     "jp002_097",
                 ),
-                modelTint = 0xFF9677D9.toInt(),
+                modelTint = 0xFF2D4FCC.toInt(),
+                modelAsset = "models/compact.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.NIGHT, CameraChip.STREET),
             ),
             CameraProfile(
@@ -277,7 +285,8 @@ object CameraProfiles {
                     "jp002_079",
                     "jp002_091",
                 ),
-                modelTint = 0xFFD977B2.toInt(),
+                modelTint = 0xFF442DCC.toInt(),
+                modelAsset = "models/instant.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT, CameraChip.FOOD),
             ),
             CameraProfile(
@@ -295,7 +304,8 @@ object CameraProfiles {
                     "jp003_008",
                     "jp003_009",
                 ),
-                modelTint = 0xFFD99777.toInt(),
+                modelTint = 0xFF9DCCB6.toInt(),
+                modelAsset = "models/tlr.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT, CameraChip.PRODUCT),
             ),
             CameraProfile(
@@ -322,7 +332,8 @@ object CameraProfiles {
                     "jp004_017",
                     "jp004_018",
                 ),
-                modelTint = 0xFFD9A777.toInt(),
+                modelTint = 0xFFBBCCA0.toInt(),
+                modelAsset = "models/box.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT),
             ),
             CameraProfile(
@@ -338,7 +349,8 @@ object CameraProfiles {
                     "jp005_006",
                     "jp005_007",
                 ),
-                modelTint = 0xFFD9B677.toInt(),
+                modelTint = 0xFF5273CC.toInt(),
+                modelAsset = "models/bridge.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT),
             ),
             CameraProfile(
@@ -362,7 +374,8 @@ object CameraProfiles {
                     "jp006_014",
                     "jp006_015",
                 ),
-                modelTint = 0xFFD9C677.toInt(),
+                modelTint = 0xFFCC782D.toInt(),
+                modelAsset = "models/pocket.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.NIGHT, CameraChip.STREET),
             ),
             CameraProfile(
@@ -389,7 +402,7 @@ object CameraProfiles {
                     "jp007_017",
                     "jp007_018",
                 ),
-                modelTint = 0xFFD9D677.toInt(),
+                modelTint = 0xFFCCC1B8.toInt(),
                 chips = setOf(CameraChip.JAPAN, CameraChip.STREET),
             ),
             CameraProfile(
@@ -423,7 +436,8 @@ object CameraProfiles {
                     "jp008_024",
                     "jp008_025",
                 ),
-                modelTint = 0xFFCCD977.toInt(),
+                modelTint = 0xFFCC9049.toInt(),
+                modelAsset = "models/leica_m.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.LANDSCAPE, CameraChip.STREET),
             ),
             CameraProfile(
@@ -442,7 +456,8 @@ object CameraProfiles {
                     "jp009_009",
                     "jp009_010",
                 ),
-                modelTint = 0xFFBCD977.toInt(),
+                modelTint = 0xFFCC5B2D.toInt(),
+                modelAsset = "models/ricoh_gr.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT),
             ),
             CameraProfile(
@@ -460,7 +475,8 @@ object CameraProfiles {
                     "jp010_008",
                     "jp010_009",
                 ),
-                modelTint = 0xFFACD977.toInt(),
+                modelTint = 0xFFCC3D5D.toInt(),
+                modelAsset = "models/slr.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT),
             ),
             CameraProfile(
@@ -480,7 +496,8 @@ object CameraProfiles {
                     "jp011_010",
                     "jp011_011",
                 ),
-                modelTint = 0xFF9CD977.toInt(),
+                modelTint = 0xFFCC8180.toInt(),
+                modelAsset = "models/compact.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.LANDSCAPE),
             ),
             CameraProfile(
@@ -495,7 +512,8 @@ object CameraProfiles {
                     "jp012_005",
                     "jp012_006",
                 ),
-                modelTint = 0xFF8CD977.toInt(),
+                modelTint = 0xFF94CCB9.toInt(),
+                modelAsset = "models/instant.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.STREET),
             ),
             CameraProfile(
@@ -514,7 +532,8 @@ object CameraProfiles {
                     "jp013_009",
                     "jp013_010",
                 ),
-                modelTint = 0xFF7CD977.toInt(),
+                modelTint = 0xFFA2CCB7.toInt(),
+                modelAsset = "models/tlr.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT),
             ),
             CameraProfile(
@@ -535,7 +554,8 @@ object CameraProfiles {
                     "jp014_011",
                     "jp014_012",
                 ),
-                modelTint = 0xFF77D982.toInt(),
+                modelTint = 0xFF80CC68.toInt(),
+                modelAsset = "models/box.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT),
             ),
             CameraProfile(
@@ -549,7 +569,8 @@ object CameraProfiles {
                     "jp015_004",
                     "jp015_005",
                 ),
-                modelTint = 0xFF77D992.toInt(),
+                modelTint = 0xFF2DCCB6.toInt(),
+                modelAsset = "models/bridge.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.LANDSCAPE),
             ),
             CameraProfile(
@@ -566,7 +587,8 @@ object CameraProfiles {
                     "jp016_007",
                     "jp016_008",
                 ),
-                modelTint = 0xFF77D9A1.toInt(),
+                modelTint = 0xFFCC5A2D.toInt(),
+                modelAsset = "models/pocket.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.NIGHT),
             ),
             CameraProfile(
@@ -590,7 +612,7 @@ object CameraProfiles {
                     "jp017_014",
                     "jp017_015",
                 ),
-                modelTint = 0xFF77D9B1.toInt(),
+                modelTint = 0xFFCC6F2D.toInt(),
                 chips = setOf(CameraChip.JAPAN, CameraChip.LANDSCAPE),
             ),
             CameraProfile(
@@ -603,7 +625,8 @@ object CameraProfiles {
                     "jp018_003",
                     "jp018_004",
                 ),
-                modelTint = 0xFF77D9C1.toInt(),
+                modelTint = 0xFF8093CC.toInt(),
+                modelAsset = "models/leica_m.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PRODUCT),
             ),
             CameraProfile(
@@ -627,7 +650,8 @@ object CameraProfiles {
                     "jp019_014",
                     "jp019_015",
                 ),
-                modelTint = 0xFF77D9D1.toInt(),
+                modelTint = 0xFFB4B4CC.toInt(),
+                modelAsset = "models/ricoh_gr.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.FOOD, CameraChip.PORTRAIT),
             ),
             CameraProfile(
@@ -648,7 +672,8 @@ object CameraProfiles {
                     "jp020_011",
                     "jp020_012",
                 ),
-                modelTint = 0xFF77D1D9.toInt(),
+                modelTint = 0xFFCC2F59.toInt(),
+                modelAsset = "models/slr.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT, CameraChip.PRODUCT),
             ),
             CameraProfile(
@@ -662,7 +687,8 @@ object CameraProfiles {
                     "jp021_004",
                     "jp021_005",
                 ),
-                modelTint = 0xFF77C1D9.toInt(),
+                modelTint = 0xFFCC722D.toInt(),
+                modelAsset = "models/compact.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PRODUCT, CameraChip.FOOD),
             ),
             CameraProfile(
@@ -686,7 +712,8 @@ object CameraProfiles {
                     "jp022_014",
                     "jp022_015",
                 ),
-                modelTint = 0xFF77B1D9.toInt(),
+                modelTint = 0xFFCC692D.toInt(),
+                modelAsset = "models/instant.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT),
             ),
             CameraProfile(
@@ -702,7 +729,8 @@ object CameraProfiles {
                     "jp023_006",
                     "jp023_007",
                 ),
-                modelTint = 0xFF77A1D9.toInt(),
+                modelTint = 0xFFCCBD75.toInt(),
+                modelAsset = "models/tlr.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.STREET, CameraChip.LANDSCAPE),
             ),
             CameraProfile(
@@ -717,7 +745,8 @@ object CameraProfiles {
                     "jp024_005",
                     "jp024_006",
                 ),
-                modelTint = 0xFF7792D9.toInt(),
+                modelTint = 0xFF2D7ACC.toInt(),
+                modelAsset = "models/box.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PRODUCT, CameraChip.LANDSCAPE, CameraChip.STREET),
             ),
             CameraProfile(
@@ -732,7 +761,8 @@ object CameraProfiles {
                     "jp025_005",
                     "jp025_006",
                 ),
-                modelTint = 0xFF7782D9.toInt(),
+                modelTint = 0xFF468CCC.toInt(),
+                modelAsset = "models/bridge.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT),
             ),
             CameraProfile(
@@ -753,7 +783,8 @@ object CameraProfiles {
                     "jp026_011",
                     "jp026_012",
                 ),
-                modelTint = 0xFF7C77D9.toInt(),
+                modelTint = 0xFFC7CC8C.toInt(),
+                modelAsset = "models/pocket.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.LANDSCAPE, CameraChip.STREET),
             ),
             CameraProfile(
@@ -797,7 +828,7 @@ object CameraProfiles {
                     "jp027_034",
                     "jp027_035",
                 ),
-                modelTint = 0xFF8C77D9.toInt(),
+                modelTint = 0xFFCA93CC.toInt(),
                 chips = setOf(CameraChip.JAPAN, CameraChip.LANDSCAPE, CameraChip.STREET),
             ),
             CameraProfile(
@@ -837,7 +868,8 @@ object CameraProfiles {
                     "jp028_030",
                     "jp028_031",
                 ),
-                modelTint = 0xFF9C77D9.toInt(),
+                modelTint = 0xFFCC9E2D.toInt(),
+                modelAsset = "models/leica_m.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.NIGHT, CameraChip.STREET),
             ),
             CameraProfile(
@@ -865,7 +897,8 @@ object CameraProfiles {
                     "jp029_018",
                     "jp029_019",
                 ),
-                modelTint = 0xFFAC77D9.toInt(),
+                modelTint = 0xFFA54ACC.toInt(),
+                modelAsset = "models/ricoh_gr.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT),
             ),
             CameraProfile(
@@ -879,7 +912,8 @@ object CameraProfiles {
                     "jp030_004",
                     "jp030_005",
                 ),
-                modelTint = 0xFFBC77D9.toInt(),
+                modelTint = 0xFFCC792D.toInt(),
+                modelAsset = "models/slr.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT, CameraChip.PRODUCT),
             ),
             CameraProfile(
@@ -896,7 +930,8 @@ object CameraProfiles {
                     "jp031_007",
                     "jp031_008",
                 ),
-                modelTint = 0xFFCC77D9.toInt(),
+                modelTint = 0xFFCC8A3B.toInt(),
+                modelAsset = "models/compact.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PRODUCT),
             ),
             CameraProfile(
@@ -910,7 +945,8 @@ object CameraProfiles {
                     "jp032_004",
                     "jp032_005",
                 ),
-                modelTint = 0xFFD977D6.toInt(),
+                modelTint = 0xFFB590CC.toInt(),
+                modelAsset = "models/instant.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.LANDSCAPE),
             ),
             CameraProfile(
@@ -929,7 +965,8 @@ object CameraProfiles {
                     "jp033_009",
                     "jp033_010",
                 ),
-                modelTint = 0xFFD977C6.toInt(),
+                modelTint = 0xFFCC2F2D.toInt(),
+                modelAsset = "models/tlr.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.FOOD, CameraChip.NIGHT),
             ),
             CameraProfile(
@@ -949,7 +986,8 @@ object CameraProfiles {
                     "jp034_010",
                     "jp034_011",
                 ),
-                modelTint = 0xFFD977B6.toInt(),
+                modelTint = 0xFFCCACCA.toInt(),
+                modelAsset = "models/box.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.STREET),
             ),
             CameraProfile(
@@ -964,7 +1002,8 @@ object CameraProfiles {
                     "jp035_005",
                     "jp035_006",
                 ),
-                modelTint = 0xFFD977A7.toInt(),
+                modelTint = 0xFFCC8249.toInt(),
+                modelAsset = "models/bridge.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.PORTRAIT),
             ),
             CameraProfile(
@@ -978,7 +1017,8 @@ object CameraProfiles {
                     "jp036_004",
                     "jp036_005",
                 ),
-                modelTint = 0xFFD97797.toInt(),
+                modelTint = 0xFF2D95CC.toInt(),
+                modelAsset = "models/pocket.glb",
                 chips = setOf(CameraChip.JAPAN, CameraChip.STREET, CameraChip.LANDSCAPE),
             ),
             CameraProfile(

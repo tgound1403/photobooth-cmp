@@ -199,6 +199,16 @@ def tint_for(index, total):
     return 0xFF000000 | (round(r * 255) << 16) | (round(g * 255) << 8) | round(b * 255)
 
 
+# Cycle of 3D bodies for the Japan pack so neighbouring cameras look different. The first entry is the
+# default body (no modelAsset line). Files live in app/src/main/assets/models (see tools/glb-gen).
+JP_MODELS = [None, "leica_m", "ricoh_gr", "slr", "compact", "instant", "tlr", "box", "bridge", "pocket"]
+
+
+def model_asset_lines(index):
+    model = JP_MODELS[index % len(JP_MODELS)]
+    return [] if model is None else [f'                modelAsset = "models/{model}.glb",']
+
+
 def chips_kotlin(num):
     extra = [c.strip() for c in CAMERA_CHIPS[num].split(",")]
     return ", ".join(f"CameraChip.{c}" for c in ["JAPAN", *extra])
@@ -253,14 +263,13 @@ def main(argv):
         json.dump({"version": 1, "filters": filters}, f, ensure_ascii=False, indent=1)
         f.write("\n")
 
-    tints = [tint_for(i, len(cameras)) for i in range(len(cameras))]
-    clash = EXISTING_TINTS.intersection(tints)
-    assert not clash, f"tint clashes with existing cameras: {clash}"
-    assert len(set(tints)) == len(tints), "duplicate tints"
+    sys.path.insert(0, HERE)
+    import camera_tints
+    tints = [camera_tints.tint_for_ids(ids) for _, _, _, ids in cameras]
 
     # Entries go into CameraProfiles.ALL, between the markers, at the indent of the hand-written entries.
     block = []
-    for (num, name, folder, ids), tint in zip(cameras, tints):
+    for index, ((num, name, folder, ids), tint) in enumerate(zip(cameras, tints)):
         block += [
             "            CameraProfile(",
             f'                id = "jp_{num}",',
@@ -272,6 +281,7 @@ def main(argv):
         block += [
             "                ),",
             f"                modelTint = {kotlin_hex(tint)},",
+            *model_asset_lines(index),
             f"                chips = setOf({chips_kotlin(num)}),",
             "            ),",
         ]

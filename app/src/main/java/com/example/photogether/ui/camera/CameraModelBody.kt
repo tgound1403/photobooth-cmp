@@ -13,7 +13,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -26,10 +25,10 @@ import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
 import io.github.sceneview.node.CameraNode
 import io.github.sceneview.node.ModelNode
+import io.github.sceneview.node.Node
 import io.github.sceneview.rememberEngine
 import io.github.sceneview.rememberMaterialLoader
 import io.github.sceneview.rememberModelLoader
-import io.github.sceneview.rememberNodes
 
 private const val MODEL_SWAY_DEGREES = 25f
 
@@ -88,72 +87,71 @@ fun CameraModelBody(
     moments: List<Moment>,
     modifier: Modifier = Modifier,
 ) {
-    key(modelAsset) {
-        val engine = rememberEngine()
-        val modelLoader = rememberModelLoader(engine)
-        // SceneView 2.1.1's own camera node throws a NullPointerException when it is destroyed
-        // (CameraNode.destroy reads the camera after Node.destroy has already removed it), which
-        // crashed the app on leaving the picker. This node is destroyed by hand and the error ignored.
-        val materialLoader = rememberMaterialLoader(engine)
-        val cameraNode = remember(engine) { CameraNode(engine).apply { far = 100f } }
-        DisposableEffect(cameraNode) {
-            onDispose { runCatching { cameraNode.destroy() } }
-        }
-        val modelInstance = remember(modelLoader) { modelLoader.createModelInstance(modelAsset) }
-        val modelNode =
-            remember(modelInstance) {
-                ModelNode(
-                    modelInstance = modelInstance,
-                    autoAnimate = false,
-                    scaleToUnits = MODEL_UNITS,
-                    centerOrigin = Position(x = 0f, y = 0f, z = 0f),
-                ).apply {
-                    // The default camera looks down -Z from the origin, so the body sits 3 m ahead.
-                    position = Position(z = -SCENE_DISTANCE)
-                }
+    val engine = rememberEngine()
+    val modelLoader = rememberModelLoader(engine)
+    // SceneView 2.1.1's own camera node throws a NullPointerException when it is destroyed
+    // (CameraNode.destroy reads the camera after Node.destroy has already removed it), which
+    // crashed the app on leaving the picker. This node is destroyed by hand and the error ignored.
+    val materialLoader = rememberMaterialLoader(engine)
+    val cameraNode = remember(engine) { CameraNode(engine).apply { far = 100f } }
+    DisposableEffect(cameraNode) {
+        onDispose { runCatching { cameraNode.destroy() } }
+    }
+    // One engine for the whole picker: switching camera swaps only the model node. Recreating the
+    // engine per model (a key() around the whole block) crashed libgltfio on the second model.
+    val modelNode =
+        remember(modelAsset) {
+            ModelNode(
+                modelInstance = modelLoader.createModelInstance(modelAsset),
+                autoAnimate = false,
+                scaleToUnits = MODEL_UNITS,
+                centerOrigin = Position(x = 0f, y = 0f, z = 0f),
+            ).apply {
+                // The default camera looks down -Z from the origin, so the body sits 3 m ahead.
+                position = Position(z = -SCENE_DISTANCE)
             }
-        val cards =
-            remember(engine, materialLoader) {
-                PolaroidCards(engine, materialLoader, scale = CARD_RING_RADIUS, center = Position(z = -SCENE_DISTANCE))
-            }
-        val context = LocalContext.current
-        LaunchedEffect(cards, moments) { cards.load(context, moments) }
-        val childNodes = rememberNodes {
-            add(modelNode)
-            cards.roots.forEach { add(it) }
         }
+    DisposableEffect(modelNode) {
+        onDispose { runCatching { modelNode.destroy() } }
+    }
+    val cards =
+        remember(engine, materialLoader) {
+            PolaroidCards(engine, materialLoader, scale = CARD_RING_RADIUS, center = Position(z = -SCENE_DISTANCE))
+        }
+    val context = LocalContext.current
+    LaunchedEffect(cards, moments) { cards.load(context, moments) }
+    val childNodes = remember(modelNode, cards) { listOf<Node>(modelNode) + cards.roots }
 
-        val transition = rememberInfiniteTransition(label = "camera_model_sway")
-        val angle by transition.animateFloat(
-            initialValue = -MODEL_SWAY_DEGREES,
-            targetValue = MODEL_SWAY_DEGREES,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse,
-                ),
-            label = "camera_model_angle",
+    val transition = rememberInfiniteTransition(label = "camera_model_sway")
+    val angle by transition.animateFloat(
+        initialValue = -MODEL_SWAY_DEGREES,
+        targetValue = MODEL_SWAY_DEGREES,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 2400, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "camera_model_angle",
+    )
+    val sway = rememberUpdatedState(angle)
+    LaunchedEffect(modelNode, tint) { modelNode.applyTint(tint) }
+
+    // The scene is opaque so its surface sits under the Compose content: polaroids in front of the
+    // body draw over it. A hole is cleared in the (offscreen) screen layer so the surface shows.
+    Box(modifier = modifier.drawBehind { drawRect(Color.Transparent, blendMode = BlendMode.Clear) }) {
+        Scene(
+            modifier = Modifier.fillMaxSize(),
+            engine = engine,
+            modelLoader = modelLoader,
+            materialLoader = materialLoader,
+            isOpaque = true,
+            cameraNode = cameraNode,
+            childNodes = childNodes,
+            onFrame = { frameTimeNanos ->
+                // Set here, not in composition, so a drag turns the body on the very next frame.
+                modelNode.rotation = Rotation(x = spin.bodyPitch, y = sway.value + spin.bodyYaw)
+                cards.update(frameTimeNanos / 1_000_000L, spin)
+            },
         )
-        val sway = rememberUpdatedState(angle)
-        LaunchedEffect(modelNode, tint) { modelNode.applyTint(tint) }
-
-        // The scene is opaque so its surface sits under the Compose content: polaroids in front of the
-        // body draw over it. A hole is cleared in the (offscreen) screen layer so the surface shows.
-        Box(modifier = modifier.drawBehind { drawRect(Color.Transparent, blendMode = BlendMode.Clear) }) {
-            Scene(
-                modifier = Modifier.fillMaxSize(),
-                engine = engine,
-                modelLoader = modelLoader,
-                materialLoader = materialLoader,
-                isOpaque = true,
-                cameraNode = cameraNode,
-                childNodes = childNodes,
-                onFrame = { frameTimeNanos ->
-                    // Set here, not in composition, so a drag turns the body on the very next frame.
-                    modelNode.rotation = Rotation(x = spin.bodyPitch, y = sway.value + spin.bodyYaw)
-                    cards.update(frameTimeNanos / 1_000_000L, spin)
-                },
-            )
-        }
     }
 }

@@ -88,7 +88,9 @@ fun CameraPickerScreen(
 ) {
     val scope = rememberCoroutineScope()
     val initialPage = profiles.indexOfFirst { it.id == currentCameraId }.coerceAtLeast(0)
-    var selectedIndex by rememberSaveable { mutableIntStateOf(initialPage) }
+    // Keyed on the stored camera: the DataStore flow starts as null, so the first composition would
+    // otherwise keep page 0 after the real id arrives.
+    var selectedIndex by rememberSaveable(currentCameraId) { mutableIntStateOf(initialPage) }
     val selected = profiles.getOrNull(selectedIndex)
     // Chip over the 3D view: null shows every camera. The strip below lists only the cameras with the chip.
     var activeChip by rememberSaveable { mutableStateOf<CameraChip?>(null) }
