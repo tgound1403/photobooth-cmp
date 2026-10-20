@@ -23,6 +23,8 @@
     <string name="settings_shutter_sound">Âm chụp</string>
     <string name="settings_crop_zoom">Zoom bằng khung cắt</string>
     <string name="settings_crop_zoom_desc">Giữ nguyên khung ngắm, hiện khung ảnh sẽ chụp thay vì phóng to</string>
+    <string name="settings_grid">Hiện lưới</string>
+    <string name="settings_grid_desc">Đường lưới chia 3 phần trên khung ngắm</string>
     <string name="settings_section_general">Chung</string>
     <string name="settings_language">Ngôn ngữ</string>
     <string name="settings_language_current">Tiếng Việt</string>

@@ -23,6 +23,8 @@
     <string name="settings_shutter_sound">Shutter sound</string>
     <string name="settings_crop_zoom">Zoom with crop frame</string>
     <string name="settings_crop_zoom_desc">Keep the viewfinder as is and show the frame that will be captured instead of zooming in</string>
+    <string name="settings_grid">Show grid</string>
+    <string name="settings_grid_desc">Rule-of-thirds lines over the viewfinder</string>
     <string name="settings_section_general">General</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_current">English</string>

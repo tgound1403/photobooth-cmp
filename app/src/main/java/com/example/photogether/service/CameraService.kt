@@ -5,12 +5,16 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CaptureResult
+import android.hardware.camera2.TotalCaptureResult
 import android.os.Build
 import android.hardware.camera2.CaptureRequest
 import android.media.ExifInterface
 import android.util.Log
 import androidx.camera.camera2.interop.Camera2CameraControl
 import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.camera2.interop.CaptureRequestOptions
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraControl.OperationCanceledException
@@ -28,6 +32,8 @@ import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.example.photogether.core.camera.estimateKelvin
+import com.example.photogether.core.render.snapKelvin
 import com.example.photogether.core.camera.Camera2Overrides
 import com.example.photogether.core.camera.Camera2Setting
 import com.example.photogether.core.camera.Lens
@@ -107,6 +113,11 @@ class CameraService(private val catalog: FilterCatalog) {
     private var captureUsesEffect = false
 
     private var imageCapture: ImageCapture? = null
+
+    private val _measuredKelvin = kotlinx.coroutines.flow.MutableStateFlow<Int?>(null)
+
+    /** Colour temperature the auto white balance currently measures, or null before the first frame. Approximate. */
+    val measuredKelvin: kotlinx.coroutines.flow.StateFlow<Int?> = _measuredKelvin
 
     /**
      * Camera2 settings the user chose (manual exposure, AWB lock). Kept here so they survive a
@@ -493,9 +504,28 @@ class CameraService(private val catalog: FilterCatalog) {
     }
 
     private fun createPreview(): Preview {
-        return Preview.Builder()
-            .setResolutionSelector(defaultResolutionSelector())
-            .build()
+        val builder = Preview.Builder().setResolutionSelector(defaultResolutionSelector())
+        Camera2Interop.Extender(builder).setSessionCaptureCallback(
+            object : CameraCaptureSession.CaptureCallback() {
+                override fun onCaptureCompleted(
+                    session: CameraCaptureSession,
+                    request: android.hardware.camera2.CaptureRequest,
+                    result: TotalCaptureResult,
+                ) {
+                    recordMeasuredKelvin(result)
+                }
+            },
+        )
+        return builder.build()
+    }
+
+    /** Smooths the AWB estimate so the readout does not flicker. Skipped while white balance is locked. */
+    private fun recordMeasuredKelvin(result: TotalCaptureResult) {
+        if (result.get(CaptureResult.CONTROL_AWB_LOCK) == true) return
+        val gains = result.get(CaptureResult.COLOR_CORRECTION_GAINS) ?: return
+        val k = estimateKelvin(gains.red, gains.blue) ?: return
+        val prev = _measuredKelvin.value
+        _measuredKelvin.value = if (prev == null) k else snapKelvin(prev + (k - prev) * MEASURED_SMOOTHING)
     }
 
     private fun createImageCapture(): ImageCapture {
@@ -526,6 +556,8 @@ class CameraService(private val catalog: FilterCatalog) {
  * Largest power-of-two inSampleSize that keeps the decoded longest side >= [target]
  * (1 when the image is already within it or the bounds are unknown).
  */
+private const val MEASURED_SMOOTHING = 0.2f
+
 internal fun fallbackSampleSize(width: Int, height: Int, target: Int): Int {
     val longest = maxOf(width, height)
     if (longest <= 0 || target <= 0) return 1

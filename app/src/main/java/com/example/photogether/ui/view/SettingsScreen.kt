@@ -58,6 +58,7 @@ fun SettingsScreen(navController: NavController) {
     val context = LocalContext.current
     val shutterSoundOn by viewModel.shutterSoundEnabled.collectAsStateWithLifecycle()
     val cropZoomOn by viewModel.cropZoomEnabled.collectAsStateWithLifecycle()
+    val gridOn by viewModel.gridEnabled.collectAsStateWithLifecycle()
     val darkThemeOn by viewModel.darkThemeEnabled.collectAsStateWithLifecycle()
     val comingSoon = stringResource(R.string.settings_coming_soon)
     val soon = { Toast.makeText(context, comingSoon, Toast.LENGTH_SHORT).show() }
@@ -67,6 +68,8 @@ fun SettingsScreen(navController: NavController) {
         onShutterSoundChange = viewModel::setShutterSoundEnabled,
         cropZoomOn = cropZoomOn,
         onCropZoomChange = viewModel::setCropZoomEnabled,
+        gridOn = gridOn,
+        onGridChange = viewModel::setGridEnabled,
         darkThemeOn = darkThemeOn,
         onDarkThemeChange = viewModel::setDarkThemeEnabled,
         versionName = BuildConfig.VERSION_NAME,
@@ -88,6 +91,8 @@ fun SettingsContent(
     onShutterSoundChange: (Boolean) -> Unit = {},
     cropZoomOn: Boolean = false,
     onCropZoomChange: (Boolean) -> Unit = {},
+    gridOn: Boolean = false,
+    onGridChange: (Boolean) -> Unit = {},
     darkThemeOn: Boolean = false,
     onDarkThemeChange: (Boolean) -> Unit = {},
     versionName: String = "1.0",
@@ -187,6 +192,24 @@ fun SettingsContent(
                     )
                 }
                 Switch(checked = cropZoomOn, onCheckedChange = onCropZoomChange)
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+
+            SettingsCard {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_grid),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AppColors.textPrimary,
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_grid_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.textSecondary,
+                    )
+                }
+                Switch(checked = gridOn, onCheckedChange = onGridChange)
             }
 
             SectionTitle(stringResource(R.string.settings_section_general), topPadding = Spacing.xl)

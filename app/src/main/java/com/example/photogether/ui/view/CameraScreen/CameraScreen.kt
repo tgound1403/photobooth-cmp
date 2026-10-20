@@ -85,6 +85,7 @@ import com.example.photogether.core.camera.CameraTool
 import com.example.photogether.core.camera.formatEv
 import com.example.photogether.core.camera.lensOptions
 import com.example.photogether.core.navigation.AppRoutes
+import com.example.photogether.core.camera.GridPrefs
 import com.example.photogether.core.render.CameraAspect
 import com.example.photogether.core.render.CameraProfiles
 import com.example.photogether.core.render.FilterCatalog
@@ -150,14 +151,15 @@ fun CameraScreen(
     val savedCameraId by cameraViewModel.savedCameraId.collectAsState(initial = null)
     val cameraId = savedCameraId ?: CameraProfiles.forFilter(selectedId)?.id
     val cameraProfile = cameraId?.let { CameraProfiles.byId(it) }
-    // The strip is the original, then the chosen camera's filters. Recipes built on one of those show too.
+    // The strip is the original, then the chosen camera's filters. The recipes camera also lists every saved recipe.
     val stripIds = CameraProfiles.stripIds(cameraProfile)
-    val sources = remember(allSources, recipes, stripIds) {
+    val sources = remember(allSources, recipes, stripIds, cameraProfile) {
         val own = stripIds.mapNotNull { id -> allSources.firstOrNull { it.id == id } }
-        own + recipes.filter { it.params.filterId in stripIds }.map { RecipeFilters.toFilterInfo(it) }
+        own + if (cameraProfile?.showsRecipes == true) recipes.map { RecipeFilters.toFilterInfo(it) } else emptyList()
     }
     var flash by remember { mutableStateOf<NameFlash?>(null) }
     val adjust by cameraViewModel.adjust.collectAsStateWithLifecycle()
+    val measuredKelvin by cameraViewModel.measuredKelvin.collectAsStateWithLifecycle()
     val camera = cameraViewModel.camera.value
     val zoomState = camera?.cameraInfo?.zoomState?.observeAsState()?.value
     val cameraZoom = zoomState?.zoomRatio ?: 1f
@@ -234,11 +236,14 @@ fun CameraScreen(
 
     // Captures crop to the active camera's aspect.
     // The shutter sound is set on the Settings screen. Re-read it whenever this screen resumes, so a change made there applies.
+    // The grid is set on the Settings screen. Read it on resume so a change made there applies.
+    var showGrid by remember { mutableStateOf(GridPrefs.read(context)) }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 cameraViewModel.reloadShutterSound()
                 cameraViewModel.reloadCropZoom()
+                showGrid = GridPrefs.read(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -256,7 +261,7 @@ fun CameraScreen(
     // filter already belongs to it.
     LaunchedEffect(savedCameraId) {
         val picked = savedCameraId?.let { CameraProfiles.byId(it) } ?: return@LaunchedEffect
-        if (selectedId !in picked.filterIds) currentOnSelect(picked.filterId)
+        if (!picked.offers(selectedId)) currentOnSelect(picked.filterId)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -279,8 +284,8 @@ fun CameraScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = Spacing.lg),
-                // Bottom-aligned so the frame sits right above the ratio row, with the spare space above it.
-                contentAlignment = Alignment.BottomCenter,
+                // Centred so the frame has the same space above and below it.
+                contentAlignment = Alignment.Center,
             ) {
                 Box(modifier = Modifier.aspectRatio(viewRatio)) {
                     CameraPreviewViewfinder(
@@ -291,6 +296,7 @@ fun CameraScreen(
                         previewUseCase = cameraViewModel.preview.value,
                         camera = camera,
                         flash = flash,
+                        showGrid = showGrid,
                         aspect = effectiveAspect,
                         cropZoom = cameraViewModel.cropZoom.floatValue,
                         cropZoomOn = cameraViewModel.cropZoomActive.value,
@@ -326,7 +332,8 @@ fun CameraScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         CameraQuickBar(
-                            kelvin = adjust.kelvin,
+                            kelvin = adjust.kelvin ?: measuredKelvin,
+                            kelvinMeasured = adjust.kelvin == null,
                             ev = adjust.ev,
                             wbOpen = panel == CameraPanel.WB,
                             evOpen = panel == CameraPanel.EV,
@@ -393,7 +400,9 @@ fun CameraScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            text = kelvinLabel(adjust.kelvin).uppercase(),
+                            text = (adjust.kelvin?.let { kelvinLabel(it) }
+                                ?: measuredKelvin?.let { "AUTO · ~${it}K" }
+                                ?: kelvinLabel(null)).uppercase(),
                             style = BinsooType.label,
                             color = InkColors.textPrimary,
                         )
@@ -404,9 +413,11 @@ fun CameraScreen(
                         ) {
                             CameraAdjustPanel(
                                 state = adjust,
+                                measuredKelvin = measuredKelvin,
                                 onKelvinChange = { cameraViewModel.setKelvin(it) },
                                 onKelvinAuto = cameraViewModel::setKelvinAuto,
                                 onEvChange = cameraViewModel::setEv,
+                                onTintChange = cameraViewModel::setTint,
                                 onCommit = cameraViewModel::commitAdjust,
                                 modifier = Modifier.weight(1f),
                             )
@@ -446,6 +457,7 @@ fun CameraScreen(
                                 onKelvinChange = { cameraViewModel.setKelvin(it) },
                                 onKelvinAuto = cameraViewModel::setKelvinAuto,
                                 onEvChange = cameraViewModel::setEv,
+                                onTintChange = cameraViewModel::setTint,
                                 onCommit = cameraViewModel::commitAdjust,
                                 modifier = Modifier.weight(1f),
                             )
@@ -564,8 +576,7 @@ private fun CameraTopBar(
 }
 
 /**
- * The rounded viewfinder (28dp corners): the preview, the filter-name flash, the grid, the focus ring
- * and the grid toggle. The zoom and tool pills are drawn by [CameraScreen] over its bottom edge.
+ * The rounded viewfinder (28dp corners): the preview, the filter-name flash, the grid, and the focus ring. The zoom and tool pills are drawn by [CameraScreen] over its bottom edge.
  *
  * [navController] and [camera] are kept so the public signature does not change. They are not used
  * here now that the gallery and picker buttons sit in the bottom row and the zoom is drawn by the screen.
@@ -578,6 +589,7 @@ fun CameraPreviewViewfinder(
     previewUseCase: Preview?,
     camera: Camera?,
     flash: NameFlash?,
+    showGrid: Boolean = false,
     aspect: CameraAspect = CameraAspect.FOUR_THREE,
     cropZoom: Float = 1f,
     cropZoomOn: Boolean = false,
@@ -594,7 +606,6 @@ fun CameraPreviewViewfinder(
     // Last tap position in the viewfinder, and a counter that replays the focus ring on each tap.
     var focusPos by remember { mutableStateOf<Offset?>(null) }
     var focusTrigger by remember { mutableIntStateOf(0) }
-    var showGrid by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(previewUseCase) {
         previewUseCase?.setSurfaceProvider(previewView.surfaceProvider)
@@ -656,40 +667,6 @@ fun CameraPreviewViewfinder(
             if (cropZoomOn && cropZoom > 1f) CropZoomFrame(aspect.widthOverHeight.takeIf { aspect.crops }, cropZoom, "${zoomMm}mm")
             if (showGrid) GridOverlay()
             FocusIndicator(position = focusPos, trigger = focusTrigger)
-        }
-        GridToggle(
-            on = showGrid,
-            onToggle = { showGrid = !showGrid },
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(Spacing.sm),
-        )
-    }
-}
-
-/** Grid on/off button. Draws a small 3x3 grid icon; the tint and fill change when the grid is on. */
-@Composable
-private fun GridToggle(on: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .semantics { contentDescription = if (on) "Tắt lưới" else "Bật lưới" }
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(
-                if (on) InkColors.accent else InkColors.surfaceElevated.copy(alpha = 0.7f)
-            )
-            .clickable(onClick = onToggle),
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(modifier = Modifier.size(20.dp)) {
-            val tint = if (on) InkColors.onAccent else InkColors.textPrimary
-            val stroke = 1.dp.toPx()
-            for (i in 1..2) {
-                val x = size.width * i / 3f
-                drawLine(tint, Offset(x, 0f), Offset(x, size.height), strokeWidth = stroke)
-                val y = size.height * i / 3f
-                drawLine(tint, Offset(0f, y), Offset(size.width, y), strokeWidth = stroke)
-            }
         }
     }
 }

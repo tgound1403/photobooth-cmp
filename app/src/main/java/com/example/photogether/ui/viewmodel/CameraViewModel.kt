@@ -33,6 +33,7 @@ import com.example.photogether.core.camera.withCameraAdjust
 import com.example.photogether.core.camera.withCapabilities
 import com.example.photogether.core.camera.withEv
 import com.example.photogether.core.camera.withKelvin
+import com.example.photogether.core.camera.withTint
 import com.example.photogether.core.camera.zoomFor
 import com.example.photogether.core.moments.MomentQuery
 import com.example.photogether.core.moments.ShotSettings
@@ -119,6 +120,9 @@ class CameraViewModel(
     /** Kelvin, EV and open panel. The filter edit itself stays in [editParams]. */
     val adjust: StateFlow<CameraAdjustState> = _adjust.asStateFlow()
 
+    /** Kelvin the auto white balance measures right now. Approximate; null before the first frame. */
+    val measuredKelvin: StateFlow<Int?> get() = cameraService.measuredKelvin
+
     /** The camera body last picked (DataStore). Null until one is picked. */
     val savedCameraId: Flow<String?> = settingsRepository.settings.map { it.cameraId }
 
@@ -137,7 +141,7 @@ class CameraViewModel(
                 Log.w(TAG, "Cannot read camera settings, using defaults: ${e.message}", e)
                 CameraSettings()
             }
-            _adjust.update { it.withKelvin(saved.kelvin).withEv(saved.ev) }
+            _adjust.update { it.withKelvin(saved.kelvin).withEv(saved.ev).withTint(saved.tint) }
             pushRender()
         }
     }
@@ -374,6 +378,12 @@ class CameraViewModel(
     /** Returns exposure compensation to 0 EV. */
     fun resetEv() = setEv(0f)
 
+    /** Sets the tint (-1 green .. +1 magenta). Live; saved on [commitAdjust]. Shader only, no hardware change. */
+    fun setTint(tint: Float) {
+        _adjust.update { it.withTint(tint) }
+        pushRender()
+    }
+
     /** Opens [tool]'s panel, or closes it if it is already open. */
     fun toggleTool(tool: CameraTool) {
         _adjust.update { it.copy(openTool = if (it.openTool == tool) null else tool) }
@@ -386,6 +396,7 @@ class CameraViewModel(
             try {
                 settingsRepository.setKelvin(current.kelvin)
                 settingsRepository.setEv(current.ev)
+                settingsRepository.setTint(current.tint)
             } catch (e: IOException) {
                 Log.e(TAG, "Saving camera settings failed: ${e.message}", e)
             }
@@ -465,6 +476,8 @@ class CameraViewModel(
             lutName = catalog.get(editParams.value.filterId)?.name,
             ev = adjust.value.ev,
             kelvin = adjust.value.kelvin,
+            // Tint is recorded only when it moved, so untinted shots keep the same EXIF as before.
+            tint = adjust.value.tint.takeIf { it != 0f },
             focalMm = (lensMm.floatValue * zoom * cropZoom.floatValue).roundToInt(),
             // The original has no filter to be strong or weak, so its strength is not recorded.
             filterIntensity = editParams.value.filterIntensity.takeIf { editParams.value.filterId != FilterCatalog.ORIGINAL_ID },

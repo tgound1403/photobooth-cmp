@@ -3,6 +3,7 @@ package com.example.photogether.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.example.photogether.core.camera.CropZoomPrefs
+import com.example.photogether.core.camera.GridPrefs
 import com.example.photogether.core.camera.ShutterSoundPrefs
 import com.example.photogether.data.prefs.ThemeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,5 +42,16 @@ class SettingsViewModel(
     fun setCropZoomEnabled(enabled: Boolean) {
         _cropZoomEnabled.value = enabled
         CropZoomPrefs.write(getApplication(), enabled)
+    }
+
+    private val _gridEnabled = MutableStateFlow(GridPrefs.read(application))
+
+    /** Whether the rule-of-thirds grid shows over the viewfinder. */
+    val gridEnabled: StateFlow<Boolean> = _gridEnabled.asStateFlow()
+
+    /** Saves the grid setting. The camera re-reads it when its screen resumes. */
+    fun setGridEnabled(enabled: Boolean) {
+        _gridEnabled.value = enabled
+        GridPrefs.write(getApplication(), enabled)
     }
 }

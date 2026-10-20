@@ -65,6 +65,7 @@ fun CameraQuickBar(
     onWbClick: () -> Unit,
     onEvClick: () -> Unit,
     modifier: Modifier = Modifier,
+    kelvinMeasured: Boolean = false,
     focalPill: @Composable () -> Unit = {},
 ) {
     Row(
@@ -76,9 +77,9 @@ fun CameraQuickBar(
             CloseChevron(label = "Đóng cân bằng trắng", onClick = onWbClick)
         } else {
             CameraPill(
-                text = kelvin?.toString(),
+                text = kelvin?.let { if (kelvinMeasured) "~$it" else it.toString() },
                 icon = AppIcons.Temperature,
-                selected = kelvin != null,
+                selected = kelvin != null && !kelvinMeasured,
                 label = "Cân bằng trắng",
                 onClick = onWbClick,
             )
@@ -108,9 +109,11 @@ fun CameraQuickBar(
 @Composable
 fun CameraAdjustPanel(
     state: CameraAdjustState,
+    measuredKelvin: Int? = null,
     onKelvinChange: (Int) -> Unit,
     onKelvinAuto: () -> Unit,
     onEvChange: (Float) -> Unit,
+    onTintChange: (Float) -> Unit,
     onCommit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -126,9 +129,12 @@ fun CameraAdjustPanel(
         when (lastTool) {
             CameraTool.WHITE_BALANCE -> KelvinSlider(
                 kelvin = state.kelvin,
+                measuredKelvin = measuredKelvin,
                 onKelvinChange = onKelvinChange,
                 onAuto = onKelvinAuto,
                 onChangeFinished = onCommit,
+                tint = state.tint,
+                onTintChange = onTintChange,
             )
             CameraTool.EXPOSURE -> EvSlider(
                 ev = state.ev,
