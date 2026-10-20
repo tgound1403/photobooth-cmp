@@ -415,6 +415,30 @@ FILTERS = [
         op_channel_mix((0.33, 0.5, 0.17)),
         op_fade(0.06),
         op_curve([(0, 0.06), (0.5, 0.52), (1, 0.97)]))),
+    ("matte_meadow", "Matte Meadow", "Vintage", False, "Milky lifted blacks, soft yellow-green meadow, warm cream highlights, muted and airy.", lambda: compose(
+        op_curve_rgb([(0, 0.10), (0.25, 0.33), (0.5, 0.60), (0.75, 0.84), (1, 0.98)],
+                     [(0, 0.11), (0.25, 0.34), (0.5, 0.60), (0.75, 0.84), (1, 0.98)],
+                     [(0, 0.12), (0.25, 0.33), (0.5, 0.60), (0.75, 0.84), (1, 0.98)]),
+        op_hsl({"blue": (-1, 1.7, -0.05), "aqua": (2, 1.5, -0.03), "green": (14, 0.9, 0.02),
+                "yellow": (0, 0.9, 0.10), "orange": (-2, 0.9, 0.05)}),
+        op_split_tone(shadow=(-0.01, 0.0, 0.03), highlight=(0.012, 0.008, -0.01)),
+        op_saturation(0.95))),
+    ("sunlit_ruins", "Sunlit Ruins", "Vintage", False, "Deep cyan-blue sky, muted olive greens, cool blue-tinted shadows and a contrasty film finish.", lambda: compose(
+        op_curve_rgb([(0, 0.045), (0.25, 0.21), (0.5, 0.45), (0.75, 0.71), (1, 0.95)],
+                     [(0, 0.045), (0.25, 0.22), (0.5, 0.46), (0.75, 0.72), (1, 0.95)],
+                     [(0, 0.055), (0.25, 0.23), (0.5, 0.46), (0.75, 0.70), (1, 0.92)]),
+        op_hsl({"blue": (-3, 1.8, -0.2), "aqua": (0, 1.4, -0.12), "green": (10, 0.5, 0.02),
+                "yellow": (6, 0.65, 0.07), "orange": (0, 0.9, 0.0)}),
+        op_split_tone(shadow=(-0.003, -0.006, 0.02), highlight=(0.02, 0.01, -0.01)),
+        op_saturation(1.0))),
+    ("clear_alpine", "Clear Alpine", "Vintage", False, "Clean deep-blue sky, muted olive greens, warm earth tones and rich blacks with natural contrast.", lambda: compose(
+        op_curve_rgb([(0, 0.0), (0.25, 0.20), (0.5, 0.48), (0.75, 0.77), (1, 0.99)],
+                     [(0, 0.0), (0.25, 0.21), (0.5, 0.48), (0.75, 0.77), (1, 0.99)],
+                     [(0, 0.01), (0.25, 0.22), (0.5, 0.48), (0.75, 0.76), (1, 0.98)]),
+        op_hsl({"blue": (-3, 1.45, -0.10), "aqua": (-2, 1.35, -0.07), "green": (10, 0.45, 0.0),
+                "yellow": (2, 0.65, -0.02), "orange": (-1, 0.9, -0.02)}),
+        op_split_tone(shadow=(-0.01, 0.0, 0.02), highlight=(0.01, 0.0, -0.005)),
+        op_saturation(0.97))),
 ]
 
 GROUP_ORDER = ["Fuji", "Kodak", "Korea", "Japan Pack", "Vintage"]

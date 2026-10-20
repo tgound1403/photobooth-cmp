@@ -3717,6 +3717,27 @@
       "group": "Japan Pack",
       "lut": "luts/jp037_009.png",
       "premium": false
+    },
+    {
+      "id": "matte_meadow",
+      "name": "Matte Meadow",
+      "group": "Vintage",
+      "lut": "luts/matte_meadow.png",
+      "premium": false
+    },
+    {
+      "id": "sunlit_ruins",
+      "name": "Sunlit Ruins",
+      "group": "Vintage",
+      "lut": "luts/sunlit_ruins.png",
+      "premium": false
+    },
+    {
+      "id": "clear_alpine",
+      "name": "Clear Alpine",
+      "group": "Vintage",
+      "lut": "luts/clear_alpine.png",
+      "premium": false
     }
   ]
 }

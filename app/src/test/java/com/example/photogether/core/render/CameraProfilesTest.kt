@@ -61,8 +61,25 @@ class CameraProfilesTest {
 
     @Test
     fun allCamerasAreOneListOfProfiles() {
-        // 5 hand-written cameras plus 41 from the Japan pack (Japanese Style 002 split into 5).
-        assertEquals(46, CameraProfiles.ALL.size)
+        // 7 hand-written cameras plus 41 from the Japan pack (Japanese Style 002 split into 5).
+        assertEquals(48, CameraProfiles.ALL.size)
+    }
+
+    @Test
+    fun recipesCameraOffersEverySavedRecipeAndNoCatalogLook() {
+        val recipes = CameraProfiles.byId("recipes")
+        assertTrue(recipes.showsRecipes)
+        assertTrue(recipes.offers("recipe:7"))
+        assertTrue(!recipes.offers("kodak_portra"))
+        assertEquals("recipes", CameraProfiles.forFilter("recipe:7")?.id)
+        assertEquals(FilterCatalog.ORIGINAL_ID, recipes.filterId)
+        assertEquals(listOf(FilterCatalog.ORIGINAL_ID), CameraProfiles.stripIds(recipes))
+    }
+
+    @Test
+    fun sunlitCameraHoldsTheMeadowRuinsAndAlpineLooks() {
+        assertEquals(listOf("matte_meadow", "sunlit_ruins", "clear_alpine"), CameraProfiles.byId("sunlit").filterIds)
+        assertEquals("sunlit", CameraProfiles.forFilter("clear_alpine")?.id)
     }
 
     @Test
