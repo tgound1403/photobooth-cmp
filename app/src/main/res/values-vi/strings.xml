@@ -4,7 +4,6 @@
     <string name="start_capture">Bắt đầu chụp</string>
     <string name="stop_capture">Dừng chụp</string>
     <string name="watermark_text">Làm bằng Photogether</string>
-    <string name="pro_badge">PRO</string>
     <string name="paywall_title">Mở khóa bộ lọc Premium</string>
     <string name="paywall_body">Giữ nguyên màu bạn vừa chọn. Premium còn gỡ watermark khỏi ảnh photobooth.</string>
     <string name="paywall_before">Trước</string>
@@ -20,7 +19,7 @@
     <string name="settings_title">Cài đặt</string>
     <string name="settings_section_appearance">Giao diện</string>
     <string name="settings_dark_theme">Chủ đề tối</string>
-    <string name="settings_dark_theme_desc">Sắp có. Hiện ứng dụng luôn dùng giao diện sáng</string>
+    <string name="settings_dark_theme_desc">Nền tối cho Trang chủ, Thư viện, Photo booth và Chỉnh sửa</string>
     <string name="settings_shutter_sound">Âm chụp</string>
     <string name="settings_crop_zoom">Zoom bằng khung cắt</string>
     <string name="settings_crop_zoom_desc">Giữ nguyên khung ngắm, hiện khung ảnh sẽ chụp thay vì phóng to</string>
@@ -150,6 +149,8 @@
     <!-- Camera descriptions, resolved by id in CameraProfile.subtitleText -->
     <string name="camera_classic35_subtitle">Màu film ấm, hạt nhẹ, khung ngày cam. Hợp chân dung, đường phố, kỷ niệm</string>
     <string name="camera_fuji_mini_subtitle">Xanh lá tươi, bão hòa nhẹ, rò sáng mềm. Hợp du lịch, cây cối, bạn bè</string>
+    <string name="camera_leica_m_subtitle">Rangefinder đen chrome. Màu Leica chuẩn, sống động, tự nhiên và đen trắng</string>
+    <string name="camera_ricoh_gr_subtitle">Compact đường phố tương phản gắt. Positive, negative, bleach bypass, cross process</string>
     <string name="camera_golden_subtitle">Nắng vàng ấm, rò sáng, nâng bóng nhẹ. Hợp hoàng hôn, picnic, chân dung ngoài trời</string>
     <string name="camera_night_subtitle">Tông trung tính, bóng nâng nhẹ, hạt dày, flash gắt. Hợp đêm phố, đèn neon, trời mưa</string>
     <string name="camera_silver_subtitle">Đen trắng hạt thô, tương phản cao, khung vuông. Hợp chân dung, kiến trúc, phố</string>

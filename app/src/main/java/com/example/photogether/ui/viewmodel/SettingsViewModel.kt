@@ -4,12 +4,22 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.example.photogether.core.camera.CropZoomPrefs
 import com.example.photogether.core.camera.ShutterSoundPrefs
+import com.example.photogether.data.prefs.ThemeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /** Settings screen state. The shutter sound value is saved through [ShutterSoundPrefs], which the camera reads. */
-class SettingsViewModel(application: Application) : AndroidViewModel(application) {
+class SettingsViewModel(
+    application: Application,
+    private val themeRepository: ThemeRepository,
+) : AndroidViewModel(application) {
+
+    /** Whether the paper screens use the dark palette. */
+    val darkThemeEnabled: StateFlow<Boolean> = themeRepository.darkTheme
+
+    /** Saves the dark theme setting. Every paper screen follows it at once. */
+    fun setDarkThemeEnabled(enabled: Boolean) = themeRepository.setDarkTheme(enabled)
 
     private val _shutterSoundEnabled = MutableStateFlow(ShutterSoundPrefs.read(application))
 

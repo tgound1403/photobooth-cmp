@@ -4,7 +4,6 @@
     <string name="start_capture">Start Capture</string>
     <string name="stop_capture">Stop Capture</string>
     <string name="watermark_text">Made with Photogether</string>
-    <string name="pro_badge">PRO</string>
     <string name="paywall_title">Unlock Premium filters</string>
     <string name="paywall_body">Keep the look you just chose. Premium also removes the watermark from photobooth images.</string>
     <string name="paywall_before">Before</string>
@@ -20,7 +19,7 @@
     <string name="settings_title">Settings</string>
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_dark_theme">Dark theme</string>
-    <string name="settings_dark_theme_desc">Coming soon. The app currently uses the light theme</string>
+    <string name="settings_dark_theme_desc">Dark background for Home, Gallery, Photo booth and Editor</string>
     <string name="settings_shutter_sound">Shutter sound</string>
     <string name="settings_crop_zoom">Zoom with crop frame</string>
     <string name="settings_crop_zoom_desc">Keep the viewfinder as is and show the frame that will be captured instead of zooming in</string>
@@ -150,6 +149,8 @@
     <!-- Camera descriptions, resolved by id in CameraProfile.subtitleText -->
     <string name="camera_classic35_subtitle">Warm film color, light grain, orange date stamp. Great for portraits, street, keepsakes</string>
     <string name="camera_fuji_mini_subtitle">Fresh greens, gentle saturation, soft light leaks. Great for travel, plants, friends</string>
+    <string name="camera_leica_m_subtitle">Black-chrome rangefinder. Classic Leica colour, vivid, natural and mono</string>
+    <string name="camera_ricoh_gr_subtitle">Gritty street compact. Positive, negative, bleach bypass, cross process</string>
     <string name="camera_golden_subtitle">Warm golden sun, light leaks, slightly lifted shadows. Great for sunsets, picnics, outdoor portraits</string>
     <string name="camera_night_subtitle">Neutral tones, lifted shadows, heavy grain, harsh flash. Great for night streets, neon, rainy days</string>
     <string name="camera_silver_subtitle">Coarse-grain black and white, high contrast, square frame. Great for portraits, architecture, streets</string>

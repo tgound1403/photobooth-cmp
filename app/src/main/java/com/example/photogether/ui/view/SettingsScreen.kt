@@ -58,6 +58,7 @@ fun SettingsScreen(navController: NavController) {
     val context = LocalContext.current
     val shutterSoundOn by viewModel.shutterSoundEnabled.collectAsStateWithLifecycle()
     val cropZoomOn by viewModel.cropZoomEnabled.collectAsStateWithLifecycle()
+    val darkThemeOn by viewModel.darkThemeEnabled.collectAsStateWithLifecycle()
     val comingSoon = stringResource(R.string.settings_coming_soon)
     val soon = { Toast.makeText(context, comingSoon, Toast.LENGTH_SHORT).show() }
     SettingsContent(
@@ -66,6 +67,8 @@ fun SettingsScreen(navController: NavController) {
         onShutterSoundChange = viewModel::setShutterSoundEnabled,
         cropZoomOn = cropZoomOn,
         onCropZoomChange = viewModel::setCropZoomEnabled,
+        darkThemeOn = darkThemeOn,
+        onDarkThemeChange = viewModel::setDarkThemeEnabled,
         versionName = BuildConfig.VERSION_NAME,
         onReplayTutorial = { navController.navigate(AppRoutes.ONBOARDING) },
         onTerms = soon,
@@ -77,7 +80,7 @@ fun SettingsScreen(navController: NavController) {
     )
 }
 
-/** Stateless settings body. The app uses a single dark theme, so the appearance row is informational. */
+/** Stateless settings body. */
 @Composable
 fun SettingsContent(
     onBack: () -> Unit,
@@ -85,6 +88,8 @@ fun SettingsContent(
     onShutterSoundChange: (Boolean) -> Unit = {},
     cropZoomOn: Boolean = false,
     onCropZoomChange: (Boolean) -> Unit = {},
+    darkThemeOn: Boolean = false,
+    onDarkThemeChange: (Boolean) -> Unit = {},
     versionName: String = "1.0",
     onReplayTutorial: () -> Unit = {},
     onTerms: () -> Unit = {},
@@ -151,6 +156,7 @@ fun SettingsContent(
                         color = AppColors.textSecondary
                     )
                 }
+                Switch(checked = darkThemeOn, onCheckedChange = onDarkThemeChange)
             }
 
             Spacer(modifier = Modifier.height(Spacing.md))

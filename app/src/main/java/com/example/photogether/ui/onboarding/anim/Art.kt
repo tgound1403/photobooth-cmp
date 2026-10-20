@@ -9,17 +9,18 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.withTransform
-import com.example.photogether.ui.theme.AppColors
+import com.example.photogether.ui.theme.LightPaper
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
 /** Shared drawing primitives for the onboarding line-art. Ink on paper, yellow for emphasis. */
 internal object Art {
+    // Illustrations are fixed artwork on paper, so they keep the light palette in dark mode.
     val ink = Color(0xFF0B0B0B)
-    val paper get() = AppColors.background
-    val card get() = AppColors.surface
-    val yellow get() = AppColors.highlight
+    val paper get() = LightPaper.background
+    val card get() = LightPaper.surface
+    val yellow get() = LightPaper.highlight
     val darkGlass = Color(0xFF111111)
 
     /** Film-stock tints used for the "photos" in the illustrations. */

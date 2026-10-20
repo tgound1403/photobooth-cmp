@@ -4,7 +4,7 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +33,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -50,6 +52,12 @@ import kotlin.math.roundToInt
 
 private val TICK_SPACING = 10.dp
 private val RULER_HEIGHT = 40.dp
+
+/** Taller pill for the two-axis pad (temperature across, tint up and down). */
+private val PAD_HEIGHT = 56.dp
+
+/** Knob travel of the pad, so the dot follows the finger on the tint axis. */
+private val PAD_VERTICAL_SPAN = 36.dp
 private val SCALE_HEIGHT = 76.dp
 private val SCALE_UNIT = 56.dp
 private val SCALE_LABEL_SIZE = 15.sp
@@ -64,6 +72,12 @@ private val INK_SHEEN_BRUSH = Brush.verticalGradient(listOf(Color.White.copy(alp
 private val INK_RIM_BRUSH = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.28f), Color.White.copy(alpha = 0.04f)))
 private const val MAJOR_TICK_EVERY = 5
 private const val DISABLED_ALPHA = 0.4f
+/** Vertical drag that spans the whole [verticalRange]. */
+private val RULER_VERTICAL_SPAN = 120.dp
+/** Distance a drag must travel before its direction picks an axis. */
+private val AXIS_LOCK_DISTANCE = 8.dp
+
+private enum class DragAxis { HORIZONTAL, VERTICAL }
 
 /**
  * Horizontal ruler for a continuous value. Drag to move the ruler under a fixed centre
@@ -78,6 +92,9 @@ private const val DISABLED_ALPHA = 0.4f
  * [scale] = true (with [ink]) is the camera scale: a black pill with numbered major ticks that scroll
  * under a red centre line, so the labels show how far the value has moved. One unit of value is
  * [SCALE_UNIT] wide.
+ * [onVerticalValueChange] adds a second value on the vertical axis, driven by [verticalValue] over
+ * [verticalRange]. Dragging up raises it. The drag locks to whichever axis it moves along first.
+ * Double-tap also resets it to 0. [onValueChangeFinished] runs once when the gesture ends, for both axes.
  */
 @Composable
 fun RulerSlider(
@@ -93,9 +110,14 @@ fun RulerSlider(
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
     track: Brush? = null,
+    colorPad: Boolean = false,
     showHeader: Boolean = true,
     ink: Boolean = false,
     scale: Boolean = false,
+    verticalRange: ClosedFloatingPointRange<Float>? = null,
+    verticalValue: Float = 0f,
+    verticalStep: Float = 0.05f,
+    onVerticalValueChange: ((Float) -> Unit)? = null,
 ) {
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -108,7 +130,12 @@ fun RulerSlider(
     val latestValue by rememberUpdatedState(value)
     val latestOnChange by rememberUpdatedState(onValueChange)
     val latestOnFinished by rememberUpdatedState(onValueChangeFinished)
+    val latestVertical by rememberUpdatedState(verticalValue)
+    val latestOnVertical by rememberUpdatedState(onVerticalValueChange)
+    val verticalSpanPx = with(density) { (if (colorPad) PAD_VERTICAL_SPAN else RULER_VERTICAL_SPAN).toPx() }
+    val axisLockPx = with(density) { AXIS_LOCK_DISTANCE.toPx() }
     val lastStep = remember { mutableIntStateOf(stepIndex(value, valueRange.start, step)) }
+    val lastVerticalStep = remember { mutableIntStateOf(stepIndex(verticalValue, verticalRange?.start ?: 0f, verticalStep)) }
     // Width of the ink pill, so a drag can turn finger distance into value distance.
     val widthState = remember { mutableFloatStateOf(0f) }
     val knobEdgePx = with(density) { RULER_HEIGHT.toPx() * 0.36f }
@@ -125,6 +152,9 @@ fun RulerSlider(
     val labelColor = if (ink) InkColors.textSecondary else AppColors.textSecondary
     val valueColor = if (ink) InkColors.textPrimary else AppColors.textPrimary
     val dotColor = if (ink) InkColors.highlight else AppColors.accent
+    // Read here because the paper ruler is drawn in a non-composable DrawScope.
+    val rulerTickColor = AppColors.textSecondary
+    val rulerCentreColor = AppColors.accent
 
     Column(
         modifier = modifier.fillMaxWidth().alpha(if (enabled) 1f else DISABLED_ALPHA),
@@ -150,32 +180,69 @@ fun RulerSlider(
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (scale) SCALE_HEIGHT else RULER_HEIGHT)
+                .height(if (scale) SCALE_HEIGHT else if (colorPad) PAD_HEIGHT else RULER_HEIGHT)
                 .onSizeChanged { widthState.floatValue = it.width.toFloat() }
-                .pointerInput(enabled, valueRange, step, tickPx) {
+                .pointerInput(enabled, valueRange, step, tickPx, verticalRange, colorPad) {
                     if (!enabled) return@pointerInput
                     var dragValue = 0f
-                    detectHorizontalDragGestures(
-                        onDragStart = { dragValue = latestValue },
+                    var dragVertical = 0f
+                    var travelX = 0f
+                    var travelY = 0f
+                    var axis: DragAxis? = null
+                    detectDragGestures(
+                        onDragStart = {
+                            dragValue = latestValue
+                            dragVertical = latestVertical
+                            travelX = 0f
+                            travelY = 0f
+                            // Without a vertical value there is nothing to lock against, so horizontal starts at once.
+                            // The colour pad moves both axes at once, so it never locks to one.
+                            axis = if (verticalRange == null || colorPad) DragAxis.HORIZONTAL else null
+                        },
                         onDragEnd = { latestOnFinished() },
                         onDragCancel = { latestOnFinished() },
-                        onHorizontalDrag = { change, dragAmount ->
+                        onDrag = { change, dragAmount ->
                             change.consume()
-                            // Dragging right moves the ruler right, so the value goes down.
-                            dragValue = if (ink && !scale) {
-                                // The knob follows the finger across the pill, so dragging right raises the value.
-                                val usable = (widthState.floatValue - 2 * knobEdgePx).coerceAtLeast(1f)
-                                (dragValue + dragAmount * (valueRange.endInclusive - valueRange.start) / usable)
-                                    .coerceIn(valueRange)
-                            } else {
-                                (dragValue - dragAmount / latestPx * step).coerceIn(valueRange)
+                            if (axis == null) {
+                                travelX += dragAmount.x
+                                travelY += dragAmount.y
+                                if (abs(travelX) + abs(travelY) >= axisLockPx) {
+                                    axis = if (verticalRange != null && abs(travelY) > abs(travelX)) {
+                                        DragAxis.VERTICAL
+                                    } else {
+                                        DragAxis.HORIZONTAL
+                                    }
+                                }
                             }
-                            val index = stepIndex(dragValue, valueRange.start, step)
-                            if (index != lastStep.intValue) {
-                                lastStep.intValue = index
-                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            val vRange = verticalRange
+                            if (vRange != null && (axis == DragAxis.VERTICAL || colorPad)) {
+                                // Dragging up is a negative dy, so it raises the value.
+                                dragVertical = (dragVertical - dragAmount.y * (vRange.endInclusive - vRange.start) / verticalSpanPx)
+                                    .coerceIn(vRange)
+                                val index = stepIndex(dragVertical, vRange.start, verticalStep)
+                                if (index != lastVerticalStep.intValue) {
+                                    lastVerticalStep.intValue = index
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                }
+                                latestOnVertical?.invoke(dragVertical)
                             }
-                            latestOnChange(dragValue)
+                            if (axis == DragAxis.HORIZONTAL) {
+                                // Dragging right moves the ruler right, so the value goes down.
+                                dragValue = if (ink && !scale) {
+                                    // The knob follows the finger across the pill, so dragging right raises the value.
+                                    val usable = (widthState.floatValue - 2 * knobEdgePx).coerceAtLeast(1f)
+                                    (dragValue + dragAmount.x * (valueRange.endInclusive - valueRange.start) / usable)
+                                        .coerceIn(valueRange)
+                                } else {
+                                    (dragValue - dragAmount.x / latestPx * step).coerceIn(valueRange)
+                                }
+                                val index = stepIndex(dragValue, valueRange.start, step)
+                                if (index != lastStep.intValue) {
+                                    lastStep.intValue = index
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                }
+                                latestOnChange(dragValue)
+                            }
                         },
                     )
                 }
@@ -185,6 +252,7 @@ fun RulerSlider(
                         onDoubleTap = {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             latestOnChange(defaultValue)
+                            latestOnVertical?.invoke(0f)
                             latestOnFinished()
                         },
                     )
@@ -201,9 +269,9 @@ fun RulerSlider(
                     labelSizePx = scaleLabelPx,
                 )
             } else if (ink) {
-                drawInkRuler(latestValue, valueRange, step, majorTickEvery, track)
+                drawInkRuler(latestValue, valueRange, step, majorTickEvery, track, colorPad, latestVertical, verticalRange?.endInclusive ?: 0f)
             } else {
-                drawPaperRuler(latestValue, valueRange, step, tickPx, majorTickEvery)
+                drawPaperRuler(latestValue, valueRange, step, tickPx, majorTickEvery, rulerTickColor, rulerCentreColor)
             }
         }
     }
@@ -216,6 +284,8 @@ private fun DrawScope.drawPaperRuler(
     step: Float,
     tickPx: Float,
     majorTickEvery: Int,
+    tickColor: Color,
+    centreColor: Color,
 ) {
     val centre = size.width / 2f
     val fraction = (value - range.start) / step
@@ -231,18 +301,33 @@ private fun DrawScope.drawPaperRuler(
         val isMajor = i % majorTickEvery == 0
         val length = if (isMajor) major else minor
         drawLine(
-            color = AppColors.textSecondary.copy(alpha = if (isMajor) 0.9f else 0.5f),
+            color = tickColor.copy(alpha = if (isMajor) 0.9f else 0.5f),
             start = Offset(x, size.height - length),
             end = Offset(x, size.height),
             strokeWidth = tickWidth,
         )
     }
     drawLine(
-        color = AppColors.accent,
+        color = centreColor,
         start = Offset(centre, 0f),
         end = Offset(centre, size.height),
         strokeWidth = 2.dp.toPx(),
     )
+}
+
+/**
+ * Temperature and tint pad colours sampled from the reference design. Columns run cool to warm
+ * (periwinkle to amber), rows run from violet and coral at the top to teal and lime at the bottom.
+ */
+private val COLOR_PAD: androidx.compose.ui.graphics.ImageBitmap by lazy {
+    val pixels = intArrayOf(
+        0xFFC77CDD.toInt(), 0xFFDB88A2.toInt(), 0xFFEA8A62.toInt(),
+        0xFFA6A6EE.toInt(), 0xFFF8F3F9.toInt(), 0xFFEEC272.toInt(),
+        0xFF6FD2D6.toInt(), 0xFFAAE0AF.toInt(), 0xFFD4E870.toInt(),
+    )
+    android.graphics.Bitmap
+        .createBitmap(pixels, 3, 3, android.graphics.Bitmap.Config.ARGB_8888)
+        .asImageBitmap()
 }
 
 /** Camera ruler: a pill, ticks centred vertically, and a white knob at the centre. */
@@ -252,31 +337,46 @@ private fun DrawScope.drawInkRuler(
     step: Float,
     majorTickEvery: Int,
     track: Brush?,
+    pad: Boolean,
+    tint: Float,
+    tintLimit: Float,
 ) {
     val h = size.height
     // The ticks stay put across the pill and the knob moves to the value, so the knob's travel shows the change.
-    val edge = h * 0.36f
+    val edge = RULER_HEIGHT.toPx() * 0.36f
     val usable = size.width - 2 * edge
     val fraction = ((value - range.start) / (range.endInclusive - range.start)).coerceIn(0f, 1f)
     val lastIndex = ((range.endInclusive - range.start) / step).roundToInt().coerceAtLeast(1)
     val minor = h * 0.3f
     val major = h * 0.5f
     val tickWidth = 1.dp.toPx()
-    val knobRadius = h * 0.36f
+    val knobRadius = if (pad) h * 0.17f else h * 0.36f
     val corner = CornerRadius(h / 2f)
 
     // The pill. White balance gets its gradient; exposure gets a dark translucent pill.
-    if (track != null) {
+    if (pad) {
+        // Colour pad: a 3x3 grid of reference colours, smoothed by bilinear scaling and clipped to the pill.
+        val pill = androidx.compose.ui.graphics.Path().apply {
+            addRoundRect(androidx.compose.ui.geometry.RoundRect(0f, 0f, size.width, h, corner))
+        }
+        clipPath(pill) {
+            drawImage(
+                image = COLOR_PAD,
+                dstSize = androidx.compose.ui.unit.IntSize(size.width.roundToInt(), h.roundToInt()),
+                filterQuality = androidx.compose.ui.graphics.FilterQuality.Low,
+            )
+        }
+    } else if (track != null) {
         drawRoundRect(brush = track, cornerRadius = corner)
     } else {
         drawRoundRect(color = InkColors.surfaceElevated.copy(alpha = 0.7f), cornerRadius = corner)
     }
-    // Same depth as the scale: a light sheen from above, a darker base and a thin lit rim.
-    drawRoundRect(brush = INK_SHEEN_BRUSH, cornerRadius = corner)
+    // Same depth as the scale: a light sheen from above, a darker base and a thin lit rim. The pad stays flat.
+    if (!pad) drawRoundRect(brush = INK_SHEEN_BRUSH, cornerRadius = corner)
     drawRoundRect(brush = INK_RIM_BRUSH, cornerRadius = corner, style = Stroke(width = 1.dp.toPx()))
 
     val tickColor = if (track != null) Color.Black else Color.White
-    for (i in 0..lastIndex) {
+    for (i in 0..(if (pad) -1 else lastIndex)) {
         val x = edge + usable * i / lastIndex
         val isMajor = i % majorTickEvery == 0
         val length = if (isMajor) major else minor
@@ -289,15 +389,28 @@ private fun DrawScope.drawInkRuler(
     }
 
     // Fixed knob at the centre: white, with a faint ring so it reads on the gradient.
-    val knobCentre = Offset(edge + usable * fraction, h / 2f)
+    val knobY = if (pad && tintLimit > 0f) {
+        // Positive tint (magenta) sits at the top of the pill, negative (green) at the bottom.
+        h / 2f - (tint / tintLimit).coerceIn(-1f, 1f) * (h / 2f - knobRadius - 2.dp.toPx())
+    } else {
+        h / 2f
+    }
+    val knobCentre = Offset(edge + usable * fraction, knobY)
+    if (pad) {
+        // Dashed crosshair through the knob, as on the reference pad.
+        val dash = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx()))
+        val guide = Color.Black.copy(alpha = 0.35f)
+        drawLine(guide, Offset(size.width / 2f, h * 0.12f), Offset(size.width / 2f, h * 0.88f), strokeWidth = 1.dp.toPx(), pathEffect = dash)
+        drawLine(guide, Offset(h * 0.3f, knobCentre.y), Offset(size.width - h * 0.3f, knobCentre.y), strokeWidth = 1.dp.toPx(), pathEffect = dash)
+    }
     // Soft shadow under the knob lifts it off the pill.
     drawCircle(color = Color.Black.copy(alpha = 0.35f), radius = knobRadius, center = knobCentre + Offset(0f, 2.dp.toPx()))
     drawCircle(color = Color.White, radius = knobRadius, center = knobCentre)
     drawCircle(
-        color = Color.Black.copy(alpha = 0.25f),
+        color = Color.Black.copy(alpha = if (pad) 0.9f else 0.25f),
         radius = knobRadius,
         center = knobCentre,
-        style = Stroke(width = 1.dp.toPx()),
+        style = Stroke(width = if (pad) 2.dp.toPx() else 1.dp.toPx()),
     )
 }
 

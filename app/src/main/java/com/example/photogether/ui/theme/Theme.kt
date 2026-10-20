@@ -11,38 +11,49 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-/** Paper scheme: cream background, black ink. Default for Home, Gallery, Share, Settings, Editor. */
-private val PaperColorScheme: ColorScheme = lightColorScheme(
-    primary = AppColors.accent,
-    onPrimary = AppColors.onAccent,
-    primaryContainer = AppColors.surfaceElevated,
-    onPrimaryContainer = AppColors.textPrimary,
-    secondary = AppColors.textSecondary,
-    onSecondary = AppColors.background,
-    secondaryContainer = AppColors.surfaceElevated,
-    onSecondaryContainer = AppColors.textPrimary,
-    tertiary = AppColors.accent,
-    onTertiary = AppColors.onAccent,
-    background = AppColors.background,
-    onBackground = AppColors.textPrimary,
-    surface = AppColors.surface,
-    onSurface = AppColors.textPrimary,
-    surfaceVariant = AppColors.surfaceElevated,
-    onSurfaceVariant = AppColors.textSecondary,
-    surfaceContainerLow = AppColors.background,
-    surfaceContainer = AppColors.surface,
-    surfaceContainerHigh = AppColors.surfaceElevated,
-    surfaceContainerHighest = AppColors.surfaceElevated,
-    outline = AppColors.outline,
-    outlineVariant = AppColors.outline,
-    error = AppColors.danger,
-    onError = AppColors.background
-)
+/** Whether the paper screens use [DarkPaper]. Provided once at the root from the dark theme setting. */
+val LocalDarkThemeEnabled = staticCompositionLocalOf { false }
+
+/**
+ * Paper scheme for Home, Gallery, Share, Settings and Editor. [dark] picks the Material base
+ * (light or dark) and [palette] supplies the values, so both modes share one mapping.
+ */
+private fun paperColorScheme(palette: PaperPalette, dark: Boolean): ColorScheme {
+    val base = if (dark) darkColorScheme() else lightColorScheme()
+    return base.copy(
+        primary = palette.accent,
+        onPrimary = palette.onAccent,
+        primaryContainer = palette.surfaceElevated,
+        onPrimaryContainer = palette.textPrimary,
+        secondary = palette.textSecondary,
+        onSecondary = palette.background,
+        secondaryContainer = palette.surfaceElevated,
+        onSecondaryContainer = palette.textPrimary,
+        tertiary = palette.accent,
+        onTertiary = palette.onAccent,
+        background = palette.background,
+        onBackground = palette.textPrimary,
+        surface = palette.surface,
+        onSurface = palette.textPrimary,
+        surfaceVariant = palette.surfaceElevated,
+        onSurfaceVariant = palette.textSecondary,
+        surfaceContainerLow = palette.background,
+        surfaceContainer = palette.surface,
+        surfaceContainerHigh = palette.surfaceElevated,
+        surfaceContainerHighest = palette.surfaceElevated,
+        outline = palette.outline,
+        outlineVariant = palette.outline,
+        error = palette.danger,
+        onError = palette.background
+    )
+}
 
 /** Ink scheme: black background, white ink. Used by the camera and the camera picker. */
 private val InkColorScheme: ColorScheme = darkColorScheme(
@@ -81,6 +92,9 @@ private val BinsooShapes = Shapes(
 /** Number of Ink screens currently in the composition (camera, camera picker). Main thread only. */
 private var inkScreenCount = 0
 
+/** Whether the most recently composed paper screen is dark. Main thread only. */
+private var paperDark = false
+
 private tailrec fun Context.findActivity(): Activity? =
     when (this) {
         is Activity -> this
@@ -90,13 +104,13 @@ private tailrec fun Context.findActivity(): Activity? =
 
 /**
  * Applies the system bar icon appearance for the window that hosts [view].
- * Icons are dark (light bar appearance) unless at least one Ink screen is composed.
+ * Icons are dark (light bar appearance) only on a light paper screen with no Ink screen composed.
  * With targetSdk 35 the window is edge-to-edge, so statusBarColor is ignored; only the icons matter.
  */
 private fun applySystemBarIcons(view: View) {
     val window = view.context.findActivity()?.window ?: return
     val controller = WindowCompat.getInsetsController(window, view)
-    val lightBars = inkScreenCount == 0
+    val lightBars = inkScreenCount == 0 && !paperDark
     controller.isAppearanceLightStatusBars = lightBars
     controller.isAppearanceLightNavigationBars = lightBars
 }
@@ -109,7 +123,7 @@ private fun applySystemBarIcons(view: View) {
  * theme restores the paper state when it leaves.
  */
 @Composable
-private fun ApplyStatusBar(ink: Boolean) {
+private fun ApplyStatusBar(ink: Boolean, dark: Boolean) {
     val view = LocalView.current
     if (view.isInEditMode) return
     DisposableEffect(view, ink) {
@@ -120,31 +134,47 @@ private fun ApplyStatusBar(ink: Boolean) {
             applySystemBarIcons(view)
         }
     }
-    SideEffect { applySystemBarIcons(view) }
+    SideEffect {
+        if (!ink) paperDark = dark
+        applySystemBarIcons(view)
+    }
 }
 
-/** The default app theme: paper (cream) scheme with dark status bar icons. */
+/**
+ * The default app theme: paper scheme. Cream by default, warm dark when [LocalDarkThemeEnabled]
+ * is set. Status bar icons follow the palette.
+ */
 @Composable
 fun PhotogetherTheme(content: @Composable () -> Unit) {
-    ApplyStatusBar(ink = false)
+    val dark = LocalDarkThemeEnabled.current
+    val palette = if (dark) DarkPaper else LightPaper
+    ApplyStatusBar(ink = false, dark = dark)
 
-    MaterialTheme(
-        colorScheme = PaperColorScheme,
-        typography = AppTypography,
-        shapes = BinsooShapes,
-        content = content
-    )
+    CompositionLocalProvider(LocalPaperPalette provides palette) {
+        MaterialTheme(
+            colorScheme = paperColorScheme(palette, dark),
+            typography = AppTypography,
+            shapes = BinsooShapes,
+            content = content
+        )
+    }
 }
 
-/** Ink theme for the camera and the camera picker: black background, white status bar icons. */
+/**
+ * Ink theme for the camera, the camera picker and the photo booth capture and edit screens:
+ * black background, white status bar icons. Always dark, whatever the dark theme setting is.
+ */
 @Composable
 fun InkTheme(content: @Composable () -> Unit) {
-    ApplyStatusBar(ink = true)
+    ApplyStatusBar(ink = true, dark = true)
 
-    MaterialTheme(
-        colorScheme = InkColorScheme,
-        typography = AppTypography,
-        shapes = BinsooShapes,
-        content = content
-    )
+    // Shared components read AppColors; Ink screens keep the cream palette they were built with.
+    CompositionLocalProvider(LocalPaperPalette provides LightPaper) {
+        MaterialTheme(
+            colorScheme = InkColorScheme,
+            typography = AppTypography,
+            shapes = BinsooShapes,
+            content = content
+        )
+    }
 }

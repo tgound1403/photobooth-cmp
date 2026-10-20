@@ -24,6 +24,7 @@ val appModule = module {
     single { CameraSettingsRepository.create(androidContext()) }
     single { com.example.photogether.data.prefs.FavoriteFiltersRepository.create(androidContext()) }
     single { com.example.photogether.data.prefs.OnboardingRepository.create(androidContext()) }
+    single { com.example.photogether.data.prefs.ThemeRepository.create(androidContext()) }
     single<com.example.photogether.data.prefs.OnboardingStatus> { get<com.example.photogether.data.prefs.OnboardingRepository>() }
     viewModel { com.example.photogether.ui.onboarding.OnboardingViewModel(get()) }
     single { com.example.photogether.data.moments.MomentsRepository(androidContext().contentResolver) }
@@ -53,7 +54,7 @@ val appModule = module {
         )
     }
     viewModel { com.example.photogether.ui.viewmodel.GalleryViewModel(get()) }
-    viewModel { com.example.photogether.ui.viewmodel.SettingsViewModel(androidApplication()) }
+    viewModel { com.example.photogether.ui.viewmodel.SettingsViewModel(androidApplication(), get()) }
     single { com.example.photogether.core.render.FilterCatalog(androidContext()) }
     single {
         com.example.photogether.data.colors.ColorStoryRepository(
