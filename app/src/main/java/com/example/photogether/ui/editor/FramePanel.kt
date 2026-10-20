@@ -2,15 +2,22 @@ package com.example.photogether.ui.editor
 
 import com.tgound.photogether.R
 import androidx.compose.ui.res.stringResource
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
+import androidx.compose.ui.unit.dp
+import com.example.photogether.ui.theme.Spacing
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,8 +27,10 @@ import androidx.compose.ui.Modifier
 import com.example.photogether.core.render.FrameSpec
 import com.example.photogether.core.render.PolaroidMode
 import com.example.photogether.core.render.PolaroidPlacement
+import com.example.photogether.core.render.PosterTextMode
+import com.example.photogether.core.render.PosterTitle
 import com.example.photogether.data.model.FrameThemes
-import com.example.photogether.ui.theme.Spacing
+import com.example.photogether.ui.components.RulerSlider
 import com.example.photogether.ui.view.DeviceImagePicker
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -56,16 +65,18 @@ fun FramePanel(
             modifier = Modifier
                 .padding(horizontal = Spacing.lg)
                 .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
-            EditorChip(
+            FrameStyleTile(
                 label = stringResource(R.string.option_none),
-                selected = frame.polaroid == null && frame.themeId == null && frame.backgroundUri == null,
+                glyph = FrameGlyph.NONE,
+                selected = frame.polaroid == null && frame.poster == null && frame.themeId == null && frame.backgroundUri == null,
                 onClick = { onFrame(FrameSpec()) },
             )
             PolaroidMode.values().forEach { mode ->
-                EditorChip(
+                FrameStyleTile(
                     label = if (mode == PolaroidMode.FIT) "Polaroid fit" else "Polaroid fill",
+                    glyph = FrameGlyph.POLAROID,
                     selected = frame.polaroid == mode,
                     onClick = {
                         if (frame.polaroid != mode) {
@@ -82,8 +93,28 @@ fun FramePanel(
                     },
                 )
             }
-            EditorChip(
+            PosterTextMode.values().forEach { mode ->
+                FrameStyleTile(
+                    label = if (mode == PosterTextMode.SOLID) "Poster" else "Cutout",
+                    glyph = if (mode == PosterTextMode.SOLID) FrameGlyph.POSTER else FrameGlyph.CUTOUT,
+                    selected = frame.poster == mode,
+                    onClick = {
+                        if (frame.poster != mode) {
+                            // Switching mode keeps the title and colour.
+                            onFrame(
+                                if (frame.poster == null) {
+                                    FrameSpec(poster = mode, borderColor = POSTER_PAPER, caption = frame.caption)
+                                } else {
+                                    frame.copy(poster = mode)
+                                },
+                            )
+                        }
+                    },
+                )
+            }
+            FrameStyleTile(
                 label = stringResource(R.string.frame_photo),
+                glyph = FrameGlyph.PHOTO,
                 selected = frame.backgroundUri != null,
                 onClick = { showPicker = true },
             )
@@ -98,7 +129,33 @@ fun FramePanel(
             )
         }
 
-        if (frame.polaroid == null) {
+        if (frame.poster != null) {
+            Column(
+                modifier = Modifier.padding(horizontal = Spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                CaptionField(
+                    value = frame.caption.orEmpty(),
+                    onValueChange = { text -> onFrameLive(frame.copy(caption = text.ifBlank { null })) },
+                    onDone = onCommit,
+                )
+                BorderColorDots(
+                    selected = frame.borderColor,
+                    onSelect = { color -> onFrame(frame.copy(borderColor = color)) },
+                )
+                RulerSlider(
+                    label = "Title size",
+                    value = frame.titleScale,
+                    valueRange = PosterTitle.MIN_SCALE..1f,
+                    defaultValue = 1f,
+                    step = 0.05f,
+                    onValueChange = { v -> onFrameLive(frame.copy(titleScale = v)) },
+                    onValueChangeFinished = onCommit,
+                )
+            }
+        }
+
+        if (frame.polaroid == null && frame.poster == null) {
             Row(
                 modifier = Modifier.padding(horizontal = Spacing.lg),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
@@ -137,4 +194,43 @@ fun FramePanel(
     }
 }
 
+/** Cream paper colour of a new poster frame; one of the border palette colours. */
+private const val POSTER_PAPER = 0xFFF6F0E1.toInt()
+
 private fun todayText(): String = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date())
+
+private enum class FrameGlyph { NONE, POLAROID, POSTER, CUTOUT, PHOTO }
+
+/** Thumbnail tile for one frame style, drawn on the shared [StyleTile]. */
+@Composable
+private fun FrameStyleTile(
+    label: String,
+    glyph: FrameGlyph,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    StyleTile(label = label, selected = selected, onClick = onClick) { ink ->
+        Canvas(modifier = Modifier.matchParentSize()) {
+            val w = size.width
+            val h = size.height
+            val pad = w * 0.14f
+            val photo = Size(w - 2 * pad, h * 0.55f)
+            when (glyph) {
+                FrameGlyph.NONE -> drawRect(ink, Offset(pad, pad), Size(w - 2 * pad, h - 2 * pad), style = DrawStroke(1.dp.toPx()))
+                FrameGlyph.POLAROID -> {
+                    drawRect(ink, Offset(pad, pad), Size(w - 2 * pad, h - 2 * pad), style = DrawStroke(1.dp.toPx()))
+                    drawRect(ink, Offset(pad, h - pad - h * 0.14f), Size(w - 2 * pad, h * 0.14f))
+                }
+                FrameGlyph.POSTER -> {
+                    drawRect(ink, Offset(pad, pad), Size(w - 2 * pad, h * 0.12f))
+                    drawRect(ink, Offset(pad, pad + h * 0.2f), photo, style = DrawStroke(1.dp.toPx()))
+                }
+                FrameGlyph.CUTOUT -> {
+                    drawRect(ink, Offset(pad, pad), Size(w - 2 * pad, h * 0.22f))
+                    drawRect(ink, Offset(pad, pad + h * 0.22f), Size(w - 2 * pad, h * 0.3f))
+                }
+                FrameGlyph.PHOTO -> drawRect(ink, Offset(pad, pad), Size(w - 2 * pad, h - 2 * pad), style = DrawStroke(1.dp.toPx()))
+            }
+        }
+    }
+}

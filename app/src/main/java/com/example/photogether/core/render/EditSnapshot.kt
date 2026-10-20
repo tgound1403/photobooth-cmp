@@ -42,7 +42,15 @@ data class FrameSpec(
     val borderColor: Int = 0xFFFFFFFF.toInt(),
     /** Pan and zoom of the photo inside a [PolaroidMode.FILL] frame. */
     val placement: PolaroidPlacement = PolaroidPlacement(),
+    /** Poster frame (title above the photo). Null means no poster; [caption] is the title. */
+    val poster: PosterTextMode? = null,
+    /** Poster title size as a fraction of the full photo width, from [PosterTitle.MIN_SCALE] to 1. */
+    val titleScale: Float = 1f,
 )
+
+object PosterTitle {
+    const val MIN_SCALE = 0.3f
+}
 
 /**
  * Everything the editor can change. This is the unit that undo/redo stores.
