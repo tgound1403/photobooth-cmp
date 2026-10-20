@@ -51,6 +51,16 @@ PLACE_NAMES = [
 ]
 
 
+# Cycle of 3D bodies for the Japan pack so neighbouring cameras look different. The first entry is the
+# default body (no modelAsset line). Files live in app/src/main/assets/models (see tools/glb-gen).
+JP_MODELS = [None, "leica_m", "ricoh_gr", "slr", "compact", "instant", "tlr", "box", "bridge", "pocket"]
+
+
+def model_asset_lines(index):
+    model = JP_MODELS[index % len(JP_MODELS)]
+    return [] if model is None else [f'                modelAsset = "models/{model}.glb",']
+
+
 def look_name(index):
     """Vietnamese name of the look at [index] (0-based, in pack order)."""
     base = PLACE_NAMES[index % len(PLACE_NAMES)]
@@ -199,14 +209,13 @@ def tint_for(index, total):
     return 0xFF000000 | (round(r * 255) << 16) | (round(g * 255) << 8) | round(b * 255)
 
 
-# Cycle of 3D bodies for the Japan pack so neighbouring cameras look different. The first entry is the
-# default body (no modelAsset line). Files live in app/src/main/assets/models (see tools/glb-gen).
-JP_MODELS = [None, "leica_m", "ricoh_gr", "slr", "compact", "instant", "tlr", "box", "bridge", "pocket"]
-
-
-def model_asset_lines(index):
-    model = JP_MODELS[index % len(JP_MODELS)]
-    return [] if model is None else [f'                modelAsset = "models/{model}.glb",']
+def load_difficulty():
+    """Filter id -> difficulty from the shipped catalog; empty if the catalog has not been generated yet."""
+    path = os.path.join(REPO_ROOT, "app", "src", "main", "assets", "filters", "catalog.json")
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as f:
+        return {e["id"]: e.get("difficulty", 0.0) for e in json.load(f)["filters"]}
 
 
 def chips_kotlin(num):
@@ -246,7 +255,7 @@ def main(argv):
             ids.append(fid)
             name = look_name(len(filters))
             filters.append({"id": fid, "name": name, "group": "Japan Pack",
-                            "lut": f"luts/{fid}.png", "premium": False})
+                            "lut": f"luts/{fid}.png"})
             jobs.append((os.path.join(cube_root, row["duong_dan"]),
                          os.path.join(LUT_DIR, f"{fid}.png")))
         cameras.append((num, CAMERA_NAMES[num], folder, ids))
@@ -266,10 +275,16 @@ def main(argv):
     sys.path.insert(0, HERE)
     import camera_tints
     tints = [camera_tints.tint_for_ids(ids) for _, _, _, ids in cameras]
+    clash = EXISTING_TINTS.intersection(tints)
+    assert not clash, f"tint clashes with existing cameras: {clash}"
 
     # Entries go into CameraProfiles.ALL, between the markers, at the indent of the hand-written entries.
+    # Each camera lists its looks easiest first (catalog difficulty, from generate_luts.py). Ids not yet in the
+    # catalog sort as 0, so re-run generate_luts.py after importing to refresh the order.
+    difficulty = load_difficulty()
     block = []
     for index, ((num, name, folder, ids), tint) in enumerate(zip(cameras, tints)):
+        ids = sorted(ids, key=lambda fid: difficulty.get(fid, 0.0))
         block += [
             "            CameraProfile(",
             f'                id = "jp_{num}",',

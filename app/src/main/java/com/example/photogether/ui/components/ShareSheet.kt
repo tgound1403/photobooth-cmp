@@ -25,6 +25,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,6 +73,7 @@ fun ShareSheet(
     onDismiss: () -> Unit,
 ) {
     val clipboard = LocalClipboardManager.current
+    var showPreview by remember { mutableStateOf(false) }
 
     // skipPartiallyExpanded: the content is tall, so open fully instead of halfway.
     // The column scrolls and keeps clear of the navigation bar so the download button and the
@@ -100,6 +105,7 @@ fun ShareSheet(
                         modifier =
                             Modifier.size(72.dp)
                                 .clip(RoundedCornerShape(Radius.sm))
+                                .clickable { showPreview = true }
                                 .border(Stroke.border, AppColors.outline, RoundedCornerShape(Radius.sm)),
                     )
                 }
@@ -241,6 +247,11 @@ fun ShareSheet(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+    }
+
+    // The saved photo, opened full size like every other preview. It was saved a moment ago.
+    if (showPreview && previewUri != null) {
+        PhotoViewerDialog(uri = previewUri, takenAt = System.currentTimeMillis(), onDismiss = { showPreview = false })
     }
 }
 

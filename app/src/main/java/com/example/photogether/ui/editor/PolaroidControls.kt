@@ -217,7 +217,7 @@ private fun FrameThumbnail(
     }
 }
 
-/** Row of the palette colours for the Polaroid border. The selected one gets a thick outline. */
+/** Palette colours for the border, in one scrolling row. The selected one gets a thick outline. */
 @Composable
 fun BorderColorDots(
     selected: Int,
@@ -227,13 +227,12 @@ fun BorderColorDots(
     Row(
         modifier = modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
         FrameColors.PALETTE.forEach { color ->
             val isSelected = color == selected
             Box(
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(34.dp)
                     .clip(CircleShape)
                     .background(Color(color))
                     .border(

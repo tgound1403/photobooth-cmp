@@ -35,7 +35,7 @@ class FilterCatalogTest {
 
     @Test
     fun groupsAreKnown() {
-        val allowed = setOf("Fuji", "Kodak", "Korea", "Japan Pack", "Vintage")
+        val allowed = setOf("Fuji", "Kodak", "Leica", "Ricoh", "Korea", "Japan Pack", "Vintage")
         filters.forEach { assertTrue("unknown group ${it.group}", it.group in allowed) }
     }
 
@@ -52,7 +52,7 @@ class FilterCatalogTest {
     fun parseReadsFieldsAndDefaults() {
         val json = """{"version":1,"filters":[{"id":"a","name":"A","group":"Film"}]}"""
         val parsed = FilterCatalog.parse(json)
-        assertEquals(listOf(FilterInfo("a", "A", "Film", null, false)), parsed)
+        assertEquals(listOf(FilterInfo("a", "A", "Film", null)), parsed)
     }
 
     /** Reads width and height from the IHDR chunk: bytes 16..23, big-endian. */

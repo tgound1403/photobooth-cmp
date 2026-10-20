@@ -116,3 +116,29 @@ fun lutVoxelPixelIndex(r: Int, g: Int, b: Int): Int {
     val y = (b / LUT_TILES_PER_ROW) * LUT_TILE_SIZE + g
     return y * LUT_SIZE + x
 }
+
+/**
+ * Shape of a tiled LUT PNG: [levels] nodes per channel, one [levels]x[levels] tile per blue level,
+ * [LUT_TILES_PER_ROW] tiles per row. The layout is picked from the bitmap size, so the catalog does
+ * not need to say which one a file uses.
+ */
+data class LutLayout(val levels: Int, val width: Int, val height: Int) {
+    /** Row-major index of the texel for input (r, g, b), each in 0 until [levels]. */
+    fun voxelPixelIndex(r: Int, g: Int, b: Int): Int {
+        val x = (b % LUT_TILES_PER_ROW) * levels + r
+        val y = (b / LUT_TILES_PER_ROW) * levels + g
+        return y * width + x
+    }
+
+    companion object {
+        /** The 64-level layout every shipped LUT uses today. */
+        val LEVELS_64 = LutLayout(levels = 64, width = LUT_SIZE, height = LUT_SIZE)
+
+        /** 32 levels: 32 tiles of 32x32 in an 8x4 grid, a quarter of the size of [LEVELS_64] in texels. */
+        val LEVELS_32 = LutLayout(levels = 32, width = 256, height = 128)
+
+        /** Layout for a [width]x[height] LUT bitmap, or null when it matches no supported layout. */
+        fun fromSize(width: Int, height: Int): LutLayout? =
+            listOf(LEVELS_64, LEVELS_32).firstOrNull { it.width == width && it.height == height }
+    }
+}

@@ -1,5 +1,6 @@
 package com.example.photogether.ui.editor
 
+import com.example.photogether.core.navigation.popBackStackOnce
 import com.tgound.photogether.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.stringResource
@@ -129,7 +130,7 @@ fun EditorScreen(
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
                 EditorTopBar(
                     state = state,
-                    onBack = { navController.popBackStack() },
+                    onBack = { navController.popBackStackOnce() },
                     onUndo = viewModel::undo,
                     onRedo = viewModel::redo,
                     onReset = viewModel::reset,
@@ -151,7 +152,6 @@ fun EditorScreen(
                         EditorTab.FILTER -> FilterPanel(
                             params = params,
                             filters = viewModel.filters,
-                        isPremium = isPremium,
                             thumbnails = state.thumbnails,
                             onRequestThumbnail = viewModel::requestThumbnail,
                             onSelect = viewModel::selectFilter,

@@ -101,8 +101,10 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         val activeLut =
             lut?.takeIf { p.filterId != FilterCatalog.ORIGINAL_ID && p.filterIntensity > 0f }
         if (activeLut != null) {
-            require(activeLut.width == LUT_SIZE && activeLut.height == LUT_SIZE) {
-                "LUT must be ${LUT_SIZE}x$LUT_SIZE, was ${activeLut.width}x${activeLut.height}"
+            require(LutLayout.fromSize(activeLut.width, activeLut.height) != null) {
+                "LUT must be ${LutLayout.LEVELS_64.width}x${LutLayout.LEVELS_64.height} or " +
+                    "${LutLayout.LEVELS_32.width}x${LutLayout.LEVELS_32.height}, " +
+                    "was ${activeLut.width}x${activeLut.height}"
             }
         }
         return runOnGlThread { renderOnGlThread(src, p, activeLut, maxSize, reuseOutput, effects, stampQuarterTurns) }
@@ -152,12 +154,13 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         // does the downscale (mipmapped linear filtering) instead of the CPU.
         val srcTex = sourceTextureFor(src, downscale = outW < src.width || outH < src.height)
         val lutTex = lut?.let { lutTextureFor(it) } ?: 0
+        val lutLevels = lut?.let { LutLayout.fromSize(it.width, it.height)?.levels } ?: LUT_LEVELS
         var first: RenderTarget? = null
         var second: RenderTarget? = null
         try {
             first = createTarget(outW, outH)
             if (p.sharpness > 0f) second = createTarget(outW, outH)
-            drawAdjust(p, srcTex, lutTex, first, outW, outH)
+            drawAdjust(p, srcTex, lutTex, lutLevels, first, outW, outH)
             val useBloom = BloomMath.bloomScale(p.halation) > 0f
             var bloomTex = 0
             if (useBloom) {
@@ -255,7 +258,7 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         return tex
     }
 
-    private fun drawAdjust(p: EditParams, srcTex: Int, lutTex: Int, target: RenderTarget, w: Int, h: Int) {
+    private fun drawAdjust(p: EditParams, srcTex: Int, lutTex: Int, lutLevels: Int, target: RenderTarget, w: Int, h: Int) {
         bindTarget(target, w, h)
         GLES30.glUseProgram(adjustProgram)
 
@@ -266,7 +269,7 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         GLES30.glActiveTexture(GLES30.GL_TEXTURE2)
         GLES30.glBindTexture(GLES30.GL_TEXTURE_3D, lutTex)
 
-        GlUtil.applyAdjustUniforms(adjustProgram, p, useLut = lutTex != 0, outputHeight = h)
+        GlUtil.applyAdjustUniforms(adjustProgram, p, useLut = lutTex != 0, lutLevels = lutLevels, outputHeight = h)
 
         drawQuad()
         checkGl("adjust pass")

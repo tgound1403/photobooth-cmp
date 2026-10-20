@@ -339,7 +339,7 @@ fun CaptureImages(capturedImages: List<String>?, modifier: Modifier = Modifier) 
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            items(capturedImages ?: emptyList()) { imagePath ->
+            items(capturedImages ?: emptyList(), key = { it }) { imagePath ->
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))

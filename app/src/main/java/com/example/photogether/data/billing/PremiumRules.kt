@@ -35,14 +35,5 @@ fun purchaseStatusOf(
 fun isPremiumFrom(statuses: List<PurchaseStatus>): Boolean =
     statuses.any { it == PurchaseStatus.PURCHASED }
 
-/**
- * A save of a premium filter needs the paywall unless the user is premium. Free users can still
- * preview premium filters, so this is only consulted on save.
- */
-fun requiresPaywall(filterId: String, filters: List<FilterInfo>, isPremium: Boolean): Boolean {
-    if (isPremium) return false
-    return filters.any { it.id == filterId && it.premium }
-}
-
 /** Free users get a small watermark on photobooth images. Premium removes it. */
 fun shouldShowWatermark(isPremium: Boolean): Boolean = !isPremium

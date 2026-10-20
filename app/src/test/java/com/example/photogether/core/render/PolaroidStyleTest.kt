@@ -113,9 +113,10 @@ class PolaroidStyleTest {
 
     @Test
     fun paletteHasSevenColoursInOrder() {
-        assertEquals(7, FrameColors.PALETTE.size)
+        assertEquals(14, FrameColors.PALETTE.size)
         assertEquals(0xFFFFFFFF.toInt(), FrameColors.PALETTE.first())
-        assertEquals(0xFF111111.toInt(), FrameColors.PALETTE.last())
+        assertEquals(0xFF111111.toInt(), FrameColors.PALETTE[6])
+        assertEquals(0xFFF4A7B9.toInt(), FrameColors.PALETTE.last())
     }
 
     @Test

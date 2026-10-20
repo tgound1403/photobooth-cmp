@@ -1,5 +1,10 @@
 package com.example.photogether.core.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,7 +40,15 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val viewmodel = koinViewModel<PhotoBoothViewModel>()
 
-    NavHost(navController = navController, startDestination = AppRoutes.HOME) {
+    NavHost(
+        navController = navController,
+        startDestination = AppRoutes.HOME,
+        // One soft transition for every screen change: the new screen fades in with a small rise, the old one fades out.
+        enterTransition = { fadeIn(tween(260)) + slideInVertically(tween(300)) { it / 24 } },
+        exitTransition = { fadeOut(tween(180)) },
+        popEnterTransition = { fadeIn(tween(260)) },
+        popExitTransition = { fadeOut(tween(200)) + slideOutVertically(tween(260)) { it / 24 } },
+    ) {
         composable(AppRoutes.HOME) { 
             com.example.photogether.ui.view.HomeScreen(navController) 
         }
@@ -62,7 +75,7 @@ fun AppNavigation() {
         composable(AppRoutes.ONBOARDING) {
             com.example.photogether.ui.onboarding.OnboardingScreen(
                 replay = true,
-                onFinished = { navController.popBackStack() },
+                onFinished = { navController.popBackStackOnce() },
             )
         }
         composable(AppRoutes.NO_PERMISSION_GRANTED) {
@@ -72,7 +85,7 @@ fun AppNavigation() {
             val momentsViewModel = koinViewModel<MomentsViewModel>()
             MomentsScreen(
                 viewModel = momentsViewModel,
-                onBack = { navController.popBackStack() },
+                onBack = { navController.popBackStackOnce() },
                 onEdit = { uri -> navController.navigate(AppRoutes.imageDetail(uri)) },
             )
         }
@@ -84,14 +97,14 @@ fun AppNavigation() {
             if (story != null) {
                 ColorStoryScreen(
                     story = story,
-                    onBack = { navController.popBackStack() },
+                    onBack = { navController.popBackStackOnce() },
                     onOpenCredits = { navController.navigate(AppRoutes.PHOTO_CREDITS) },
                     onTryNow = { navController.navigate(AppRoutes.MAIN) },
                 )
             }
         }
         composable(AppRoutes.PHOTO_CREDITS) {
-            PhotoCreditsScreen(onBack = { navController.popBackStack() })
+            PhotoCreditsScreen(onBack = { navController.popBackStackOnce() })
         }
         composable(AppRoutes.CAMERA_PICKER) {
             InkTheme {
@@ -108,9 +121,9 @@ fun AppNavigation() {
                     moments = moments,
                     onConfirm = { profile ->
                         scope.launch { cameraSettings.setCameraId(profile.id) }
-                        navController.popBackStack()
+                        navController.popBackStackOnce()
                     },
-                    onBack = { navController.popBackStack() },
+                    onBack = { navController.popBackStackOnce() },
                 )
             }
         }

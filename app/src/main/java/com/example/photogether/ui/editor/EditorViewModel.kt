@@ -19,7 +19,6 @@ import com.example.photogether.core.render.PolaroidMode
 import com.example.photogether.core.render.Recipe
 import com.example.photogether.core.render.RecipeCode
 import com.example.photogether.core.render.RecipeCodeResult
-import com.example.photogether.data.billing.requiresPaywall
 import com.example.photogether.data.repository.RecipeRepository
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CancellationException
@@ -239,10 +238,6 @@ class EditorViewModel(
     /** Renders the edit at full size and saves it as a new JPEG. */
     fun save() {
         if (_state.value.isSaving) return
-        if (requiresPaywall(history.present.params.filterId, filters, isPremium.value)) {
-            openPaywall()
-            return
-        }
         val src = source ?: return
         scope.launch {
             _state.update { it.copy(isSaving = true, error = null) }
@@ -286,10 +281,6 @@ class EditorViewModel(
     fun saveRecipe() {
         val src = source
         val params = history.present.params
-        if (requiresPaywall(params.filterId, filters, isPremium.value)) {
-            openPaywall()
-            return
-        }
         val name = "Recipe ${recipes.value.size + 1}"
         scope.launch {
             val thumb = src?.let { renderer.render(it, EditSnapshot(params = params), null, density, THUMB_MAX_SIDE) }
@@ -312,11 +303,6 @@ class EditorViewModel(
     /** Closes the paywall. Nothing is saved until the user taps Save again. */
     fun dismissPaywall() {
         _state.update { it.copy(showPaywall = false) }
-    }
-
-    private fun openPaywall() {
-        _state.update { it.copy(showPaywall = true) }
-        analytics.log(AnalyticsEvent.PAYWALL_SHOWN, mapOf("trigger" to "save"))
     }
 
     fun clearError() {

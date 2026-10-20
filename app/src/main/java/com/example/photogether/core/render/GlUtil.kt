@@ -63,16 +63,21 @@ internal object GlUtil {
     }
 
     /**
-     * Uploads a 512x512 tiled LUT bitmap as a 64x64x64 RGBA8 GL_TEXTURE_3D (x = r, y = g, z = b)
-     * with linear filtering and edge clamping. Returns the texture id, left bound to TEXTURE_3D.
+     * Uploads a tiled LUT bitmap (512x512 for 64 levels, 256x128 for 32; see [LutLayout]) as an
+     * n x n x n RGBA8 GL_TEXTURE_3D (x = r, y = g, z = b) with linear filtering and edge clamping.
+     * Returns the texture id, left bound to TEXTURE_3D. The level count is [LutLayout.levels] of the bitmap.
      */
     fun uploadLut3D(bitmap: Bitmap): Int {
-        val n = LUT_LEVELS
-        val pixels = IntArray(LUT_SIZE * LUT_SIZE)
-        bitmap.getPixels(pixels, 0, LUT_SIZE, 0, 0, LUT_SIZE, LUT_SIZE)
+        val layout =
+            requireNotNull(LutLayout.fromSize(bitmap.width, bitmap.height)) {
+                "Unsupported LUT size ${bitmap.width}x${bitmap.height}"
+            }
+        val n = layout.levels
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
         val data = ByteBuffer.allocateDirect(n * n * n * 4).order(ByteOrder.nativeOrder())
         for (b in 0 until n) for (g in 0 until n) for (r in 0 until n) {
-            val argb = pixels[lutVoxelPixelIndex(r, g, b)]
+            val argb = pixels[layout.voxelPixelIndex(r, g, b)]
             data.put((argb shr 16).toByte()).put((argb shr 8).toByte()).put(argb.toByte()).put(0xFF.toByte())
         }
         data.flip()
@@ -148,12 +153,13 @@ internal object GlUtil {
     /**
      * Sets the uniforms of the adjust pass (see ADJUST_FRAGMENT_SHADER) from [p].
      * Texture units: uSrc = 0, uLutA = 1, uLutB = 2 (the same texture on both, uLutMix = 1).
-     * [useLut] false disables the LUT lookup.
+     * [useLut] false disables the LUT lookup. [lutLevels] is the node count of the bound LUT (64 or 32).
      */
     fun applyAdjustUniforms(
         program: Int,
         p: EditParams,
         useLut: Boolean,
+        lutLevels: Int = LUT_LEVELS,
         grainSeed: Float = GrainMath.CAPTURE_SEED,
         outputHeight: Int = 1080,
     ) {
@@ -165,6 +171,8 @@ internal object GlUtil {
         setUniform1i(program, "uLutB", 2)
         setUniform1i(program, "uUseLutA", if (useLut) 1 else 0)
         setUniform1i(program, "uUseLutB", if (useLut) 1 else 0)
+        setUniform1f(program, "uLutSizeA", lutLevels.toFloat())
+        setUniform1f(program, "uLutSizeB", lutLevels.toFloat())
         setUniform1f(program, "uLutMix", 1f)
         setUniform3f(program, "uPreGain", kr * evGain, kg * evGain, kb * evGain)
         setUniform1f(program, "uFilterIntensity", p.filterIntensity)

@@ -20,7 +20,6 @@ import com.example.photogether.core.render.FilterCatalog
 import com.example.photogether.core.render.FilterInfo
 import com.example.photogether.core.render.Recipe
 import com.example.photogether.core.render.RecipeFilters
-import com.example.photogether.data.billing.requiresPaywall
 import com.example.photogether.data.repository.PhotoBoothRepository
 import com.example.photogether.data.repository.RecipeRepository
 import com.example.photogether.domain.usecase.CreatePhotoBoothImageUseCase
@@ -71,13 +70,6 @@ class PhotoBoothViewModel(
         _showPaywall.value = false
     }
 
-    /** Free users can pick and preview premium filters; the paywall is shown instead of saving. */
-    private fun blockedByPaywall(): Boolean {
-        if (!requiresPaywall(_editParams.value.filterId, filters, isPremium.value)) return false
-        _showPaywall.value = true
-        analytics.log(AnalyticsEvent.PAYWALL_SHOWN, mapOf("trigger" to "save"))
-        return true
-    }
 
     private val _gifExportState = MutableStateFlow<GifExportState>(GifExportState.Idle)
     val gifExportState: StateFlow<GifExportState> = _gifExportState
@@ -269,11 +261,6 @@ class PhotoBoothViewModel(
             updateFilter(sourceId)
         }
         _selectedSourceId.value = sourceId
-        // Tell free users about the premium filter now, not on save. Preview stays allowed.
-        if (requiresPaywall(_editParams.value.filterId, filters, isPremium.value)) {
-            _showPaywall.value = true
-            analytics.log(AnalyticsEvent.PAYWALL_SHOWN, mapOf("trigger" to "pick"))
-        }
     }
 
     fun updateTheme(theme: com.example.photogether.data.model.FrameTheme) {
@@ -315,7 +302,6 @@ class PhotoBoothViewModel(
     }
 
     fun saveImages(context: Context, imagePaths: List<String>) {
-        if (blockedByPaywall()) return
         viewModelScope.launch {
             _saveState.value = SaveState.Saving
             try {
@@ -385,7 +371,6 @@ class PhotoBoothViewModel(
     }
 
     fun saveImageWithBg(context: Context, imagePaths: List<String>, background: String) {
-        if (blockedByPaywall()) return
         viewModelScope.launch {
             _saveState.value = SaveState.Saving
             try {

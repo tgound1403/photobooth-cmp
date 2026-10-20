@@ -79,6 +79,9 @@ class FilterSurfaceProcessor(private val assets: AssetManager? = null) : Surface
     // or finished). Both textures are owned here; ownership moves from lutTo to lutFrom on a switch.
     private var lutTo = 0
     private var lutFrom = 0
+    // Node count of each live LUT (64 or 32). Each side is sampled with its own size.
+    private var lutToLevels = LUT_LEVELS
+    private var lutFromLevels = LUT_LEVELS
     private var currentLut: Bitmap? = null
     private val crossfade = LutCrossfade(LUT_CROSSFADE_MS * 1_000_000L)
     // CameraX can ask for a new input surface while the previous request is still being torn down
@@ -214,6 +217,8 @@ class FilterSurfaceProcessor(private val assets: AssetManager? = null) : Surface
             GLES30.glUniformMatrix4fv(adjust.texMatrix, 1, false, texMatrix, 0)
             GLES30.glUniform1i(adjust.useLutA, if (lutFrom != 0) 1 else 0)
             GLES30.glUniform1i(adjust.useLutB, if (lutTo != 0) 1 else 0)
+            GLES30.glUniform1f(adjust.lutSizeA, lutFromLevels.toFloat())
+            GLES30.glUniform1f(adjust.lutSizeB, lutToLevels.toFloat())
             GLES30.glUniform1f(adjust.lutMix, mix)
             snapshot.values.apply(adjust)
             GLES30.glUniform1f(adjust.grainSeed, (grainFrame++ % GrainMath.SEED_RANGE).toFloat())
@@ -348,7 +353,9 @@ class FilterSurfaceProcessor(private val assets: AssetManager? = null) : Surface
         if (activeLut === currentLut) return
         dropLutFrom()
         lutFrom = lutTo
+        lutFromLevels = lutToLevels
         lutTo = if (activeLut != null) GlUtil.uploadLut3D(activeLut) else 0
+        lutToLevels = activeLut?.let { LutLayout.fromSize(it.width, it.height)?.levels } ?: LUT_LEVELS
         currentLut = activeLut
         crossfade.start(nowNs)
     }

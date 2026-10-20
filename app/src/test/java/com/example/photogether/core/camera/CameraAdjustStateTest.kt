@@ -112,4 +112,44 @@ class CameraAdjustStateTest {
         assertEquals(-0.4f, params.tint, 1e-4f)
         assertEquals(null, params.kelvin)
     }
+
+    private val manualCaps = CameraCapabilities(
+        evRange = null,
+        awbLockAvailable = false,
+        isoRange = 100..3200,
+        exposureRangeNs = 125_000L..1_000_000_000L,
+    )
+
+    @Test
+    fun manualIsNotAvailableWithoutSensorRanges() {
+        assertFalse(CameraAdjustState().manualAvailable)
+        assertTrue(CameraAdjustState().withCapabilities(manualCaps).manualAvailable)
+    }
+
+    @Test
+    fun manualValuesSnapToTheCameraStops() {
+        val state = CameraAdjustState().withCapabilities(manualCaps)
+        assertEquals(800, state.withManualIso(830).manualIso)
+        assertEquals(4_000_000L, state.withManualExposureNs(4_100_000L).manualExposureNs)
+    }
+
+    @Test
+    fun manualValuesAreUnchangedWithoutRanges() {
+        val state = CameraAdjustState()
+        assertEquals(state.manualIso, state.withManualIso(1600).manualIso)
+        assertEquals(state.manualExposureNs, state.withManualExposureNs(1L).manualExposureNs)
+    }
+
+    @Test
+    fun newCapabilitiesClampTheHeldManualValues() {
+        val high = CameraAdjustState().withCapabilities(manualCaps).withManualIso(3200)
+        val narrower = high.withCapabilities(manualCaps.copy(isoRange = 100..800))
+        assertEquals(800, narrower.manualIso)
+    }
+
+    @Test
+    fun manualExposureDropsSoftwareEv() {
+        val state = CameraAdjustState(ev = 1f, evMode = EvMode.SOFTWARE, manualExposureActive = true)
+        assertEquals(0f, EditParams().withCameraAdjust(state).softwareEv, 0f)
+    }
 }

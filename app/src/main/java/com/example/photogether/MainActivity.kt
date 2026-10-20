@@ -1,6 +1,7 @@
 package com.example.photogether
 
 import android.graphics.Color
+import android.view.KeyEvent
 import android.os.Bundle
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -9,6 +10,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import com.example.photogether.core.camera.VolumeKeyCapture
 import com.example.photogether.core.navigation.AppRoot
 import com.example.photogether.core.perf.JankLogger
 import com.example.photogether.data.prefs.ThemeRepository
@@ -40,6 +42,17 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    // Volume keys take the photo while the camera screen is listening (landscape body); elsewhere they change volume.
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        val isVolumeKey = keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
+        val handler = VolumeKeyCapture.handler
+        if (isVolumeKey && handler != null) {
+            if (event?.repeatCount == 0) handler()
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
     override fun onResume() {

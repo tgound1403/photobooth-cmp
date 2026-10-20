@@ -33,6 +33,9 @@ import com.example.photogether.ui.theme.Spacing
 import kotlin.math.roundToInt
 import com.example.photogether.ui.theme.AppIcons
 
+/** Height of the round buttons and the ratio pill in the row under the viewfinder, so the three line up. */
+val CAMERA_BUTTON_SIZE = 44.dp
+
 /**
  * Dark button under the viewfinder that shows the current aspect ratio, such as "4:3", inside corner brackets.
  * Tapping it opens the aspect panel.
@@ -45,16 +48,16 @@ fun AspectButton(
 ) {
     Box(
         modifier = modifier
+            .bounceClick(onClick = onClick)
             .semantics { contentDescription = "Tỷ lệ khung hình $label" }
-            .size(width = 72.dp, height = 44.dp)
-            .clip(RoundedCornerShape(Radius.md))
-            .background(InkColors.surfaceElevated.copy(alpha = 0.7f))
-            .clickable(onClick = onClick),
+            .size(width = 72.dp, height = CAMERA_BUTTON_SIZE)
+            .clip(RoundedCornerShape(percent = 50))
+            .background(InkColors.surfaceElevated.copy(alpha = 0.7f)),
         contentAlignment = Alignment.Center,
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
-            val inset = 8.dp.toPx()
-            val arm = 9.dp.toPx()
+            val inset = 13.dp.toPx()
+            val arm = 7.dp.toPx()
             val stroke = 1.5.dp.toPx()
             val left = inset
             val top = inset
@@ -127,11 +130,11 @@ private fun AspectChip(
 ) {
     Box(
         modifier = modifier
+            .bounceClick(onClick = onClick)
             .semantics { contentDescription = "Tỷ lệ ${aspect.label}" }
             .height(56.dp)
             .clip(RoundedCornerShape(Radius.lg))
-            .background(toolFill(selected))
-            .clickable(onClick = onClick),
+            .background(toolFill(selected)),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -168,9 +171,9 @@ fun LensPanel(
             val isSelected = mm == selected
             Column(
                 modifier = Modifier
+                    .bounceClick { onSelect(mm) }
                     .semantics { contentDescription = "Tiêu cự ${mm.roundToInt()}mm" }
                     .clip(RoundedCornerShape(percent = 50))
-                    .clickable { onSelect(mm) }
                     .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {

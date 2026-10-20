@@ -32,6 +32,8 @@ import com.example.photogether.core.camera.pickLens
 import com.example.photogether.core.camera.withCameraAdjust
 import com.example.photogether.core.camera.withCapabilities
 import com.example.photogether.core.camera.withEv
+import com.example.photogether.core.camera.withManualExposureNs
+import com.example.photogether.core.camera.withManualIso
 import com.example.photogether.core.camera.withKelvin
 import com.example.photogether.core.camera.withTint
 import com.example.photogether.core.camera.zoomFor
@@ -414,6 +416,35 @@ class CameraViewModel(
     fun clearManualExposure() {
         camera.value?.let { cameraService.clearManualExposure(it) }
         _adjust.update { it.copy(manualExposureActive = false) }
+        pushRender()
+    }
+
+    /** Switches the mode dial: manual sends the wheels' ISO and shutter to the camera, auto hands exposure back. */
+    fun setManualMode(on: Boolean) {
+        val state = _adjust.value
+        if (on) {
+            if (!state.manualAvailable) return
+            setManualExposure(state.manualExposureNs, state.manualIso)
+            pushRender()
+        } else {
+            clearManualExposure()
+        }
+    }
+
+    /** Sets the ISO wheel. Applied to the camera at once while manual mode is on. */
+    fun setManualIso(iso: Int) {
+        _adjust.update { it.withManualIso(iso) }
+        if (_adjust.value.manualExposureActive) {
+            setManualExposure(_adjust.value.manualExposureNs, _adjust.value.manualIso)
+        }
+    }
+
+    /** Sets the shutter wheel. Applied to the camera at once while manual mode is on. */
+    fun setManualShutter(exposureNs: Long) {
+        _adjust.update { it.withManualExposureNs(exposureNs) }
+        if (_adjust.value.manualExposureActive) {
+            setManualExposure(_adjust.value.manualExposureNs, _adjust.value.manualIso)
+        }
     }
 
     /**
@@ -437,6 +468,16 @@ class CameraViewModel(
             cameraService.setExposureCompensation(bound, state.evRange.indexFor(state.ev))
         }
         cameraService.setAwbLock(bound, locked = state.kelvin != null)
+        // A new camera or a rebind starts without the manual request options, so send them again.
+        if (state.manualExposureActive) {
+            if (state.manualAvailable) {
+                cameraService.setManualExposure(bound, state.manualExposureNs, state.manualIso)
+            } else {
+                // The new camera has no manual sensor control, so hand exposure back to auto.
+                cameraService.clearManualExposure(bound)
+                _adjust.update { it.copy(manualExposureActive = false) }
+            }
+        }
     }
 
     /** Captures a filtered JPEG, stores it through [ImageProcessingService] and returns its Uri. */

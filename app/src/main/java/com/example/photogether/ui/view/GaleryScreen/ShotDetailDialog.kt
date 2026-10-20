@@ -58,6 +58,11 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.example.photogether.ui.theme.AppIcons
+import com.example.photogether.ui.components.photoOpenLayer
+import com.example.photogether.ui.components.rememberPhotoOpenState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 /** Longest side of the copy used for the colour palette. Small is enough for a handful of colours. */
 private const val PALETTE_SIDE = 96
@@ -93,11 +98,22 @@ fun ShotDetailDialog(
         SimpleDateFormat("dd/MM/yyyy  HH:mm", Locale.forLanguageTag("vi-VN")).format(Date(takenAt))
     }
     val shape = RoundedCornerShape(Radius.sm)
+    // Opens like every other photo: slides up from the bottom and bends as it settles.
+    val openState = rememberPhotoOpenState()
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) { openState.open() }
+    val dismiss: () -> Unit = {
+        scope.launch {
+            openState.close()
+            onDismiss()
+        }
+    }
 
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .photoOpenLayer(openState)
                 .padding(horizontal = Spacing.lg)
                 .clip(shape)
                 .background(AppColors.background)
@@ -112,7 +128,7 @@ fun ShotDetailDialog(
                     color = AppColors.textPrimary,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = onDismiss) {
+                IconButton(onClick = dismiss) {
                     Icon(AppIcons.Close, contentDescription = stringResource(R.string.action_close), tint = AppColors.textPrimary)
                 }
             }

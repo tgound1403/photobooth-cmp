@@ -8,7 +8,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -43,6 +45,9 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 import com.example.photogether.ui.theme.AppIcons
 
+/** Width of the landscape-frame gallery box. Its height follows the live view's ratio. */
+private val LANDSCAPE_FRAME_WIDTH = 64.dp
+
 private const val BLADES = 6
 private const val STEP = 2 * PI / BLADES
 /** Each blade's outer edge sits this far round from its inner corner, which gives the leaves their slant. */
@@ -64,7 +69,8 @@ private val BLADE_FILL_ALT = Color(0xFF333333)
 /**
  * Gallery box in the camera's thumbnail slot, drawn as a camera iris. The last photo shows through the
  * opening. When [captureSeq] changes (the shutter was pressed), the blades close, the new photo is put
- * in, and the blades open again to reveal it. Tapping the box calls [onClick].
+ * in, and the blades open again to reveal it. Tapping the box calls [onClick]. With [frameRatio] (width over
+ * height) the box is a [LANDSCAPE_FRAME_WIDTH]-wide frame of that shape instead of the 36x56 portrait slot.
  */
 @Composable
 fun ApertureGalleryButton(
@@ -72,6 +78,7 @@ fun ApertureGalleryButton(
     captureSeq: Int,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    frameRatio: Float? = null,
 ) {
     val open = remember { Animatable(1f) }
     val latest by rememberUpdatedState(lastPhoto)
@@ -90,11 +97,18 @@ fun ApertureGalleryButton(
     val t = open.value
     Box(
         modifier = modifier
-            .size(width = 36.dp, height = 56.dp)
+            .bounceClick(onClick = onClick)
+            .then(
+                if (frameRatio != null) {
+                    // Landscape frame: a fixed width, with the height from the live view's own ratio.
+                    Modifier.width(LANDSCAPE_FRAME_WIDTH).aspectRatio(frameRatio)
+                } else {
+                    Modifier.size(width = 36.dp, height = 56.dp)
+                },
+            )
             .clip(RoundedCornerShape(Radius.md))
             .background(InkColors.surfaceElevated.copy(alpha = 0.7f))
             .depth(RoundedCornerShape(Radius.md))
-            .clickable(onClick = onClick)
             .semantics { contentDescription = "Mở thư viện" },
         contentAlignment = Alignment.Center,
     ) {

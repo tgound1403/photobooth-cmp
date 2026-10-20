@@ -5,3571 +5,3061 @@
    "id": "jp001_001",
    "name": "Saigon",
    "group": "Japan Pack",
-   "lut": "luts/jp001_001.png",
-   "premium": false
+   "lut": "luts/jp001_001.png"
   },
   {
    "id": "jp002_001",
    "name": "CatBa",
    "group": "Japan Pack",
-   "lut": "luts/jp002_001.png",
-   "premium": false
+   "lut": "luts/jp002_001.png"
   },
   {
    "id": "jp002_002",
    "name": "NhaTrang",
    "group": "Japan Pack",
-   "lut": "luts/jp002_002.png",
-   "premium": false
+   "lut": "luts/jp002_002.png"
   },
   {
    "id": "jp002_003",
    "name": "DaLat",
    "group": "Japan Pack",
-   "lut": "luts/jp002_003.png",
-   "premium": false
+   "lut": "luts/jp002_003.png"
   },
   {
    "id": "jp002_004",
    "name": "HoiAn",
    "group": "Japan Pack",
-   "lut": "luts/jp002_004.png",
-   "premium": false
+   "lut": "luts/jp002_004.png"
   },
   {
    "id": "jp002_005",
    "name": "NhaTrang2",
    "group": "Japan Pack",
-   "lut": "luts/jp002_005.png",
-   "premium": false
+   "lut": "luts/jp002_005.png"
   },
   {
    "id": "jp002_006",
    "name": "MuiNe",
    "group": "Japan Pack",
-   "lut": "luts/jp002_006.png",
-   "premium": false
+   "lut": "luts/jp002_006.png"
   },
   {
    "id": "jp002_007",
    "name": "DaLat2",
    "group": "Japan Pack",
-   "lut": "luts/jp002_007.png",
-   "premium": false
+   "lut": "luts/jp002_007.png"
   },
   {
    "id": "jp002_008",
    "name": "HaLong",
    "group": "Japan Pack",
-   "lut": "luts/jp002_008.png",
-   "premium": false
+   "lut": "luts/jp002_008.png"
   },
   {
    "id": "jp002_009",
    "name": "CanTho",
    "group": "Japan Pack",
-   "lut": "luts/jp002_009.png",
-   "premium": false
+   "lut": "luts/jp002_009.png"
   },
   {
    "id": "jp002_010",
    "name": "NhaTrang3",
    "group": "Japan Pack",
-   "lut": "luts/jp002_010.png",
-   "premium": false
+   "lut": "luts/jp002_010.png"
   },
   {
    "id": "jp002_011",
    "name": "PhongNha",
    "group": "Japan Pack",
-   "lut": "luts/jp002_011.png",
-   "premium": false
+   "lut": "luts/jp002_011.png"
   },
   {
    "id": "jp002_012",
    "name": "TayNinh",
    "group": "Japan Pack",
-   "lut": "luts/jp002_012.png",
-   "premium": false
+   "lut": "luts/jp002_012.png"
   },
   {
    "id": "jp002_013",
    "name": "MuiNe2",
    "group": "Japan Pack",
-   "lut": "luts/jp002_013.png",
-   "premium": false
+   "lut": "luts/jp002_013.png"
   },
   {
    "id": "jp002_014",
    "name": "MocChau",
    "group": "Japan Pack",
-   "lut": "luts/jp002_014.png",
-   "premium": false
+   "lut": "luts/jp002_014.png"
   },
   {
    "id": "jp002_015",
    "name": "LamDong",
    "group": "Japan Pack",
-   "lut": "luts/jp002_015.png",
-   "premium": false
+   "lut": "luts/jp002_015.png"
   },
   {
    "id": "jp002_016",
    "name": "DaLat3",
    "group": "Japan Pack",
-   "lut": "luts/jp002_016.png",
-   "premium": false
+   "lut": "luts/jp002_016.png"
   },
   {
    "id": "jp002_017",
    "name": "NhaTrang4",
    "group": "Japan Pack",
-   "lut": "luts/jp002_017.png",
-   "premium": false
+   "lut": "luts/jp002_017.png"
   },
   {
    "id": "jp002_018",
    "name": "CatBa2",
    "group": "Japan Pack",
-   "lut": "luts/jp002_018.png",
-   "premium": false
+   "lut": "luts/jp002_018.png"
   },
   {
    "id": "jp002_019",
    "name": "Danang",
    "group": "Japan Pack",
-   "lut": "luts/jp002_019.png",
-   "premium": false
+   "lut": "luts/jp002_019.png"
   },
   {
    "id": "jp002_020",
    "name": "MuiNe3",
    "group": "Japan Pack",
-   "lut": "luts/jp002_020.png",
-   "premium": false
+   "lut": "luts/jp002_020.png"
   },
   {
    "id": "jp002_021",
    "name": "NhaTrang5",
    "group": "Japan Pack",
-   "lut": "luts/jp002_021.png",
-   "premium": false
+   "lut": "luts/jp002_021.png"
   },
   {
    "id": "jp002_022",
    "name": "PhongNha2",
    "group": "Japan Pack",
-   "lut": "luts/jp002_022.png",
-   "premium": false
+   "lut": "luts/jp002_022.png"
   },
   {
    "id": "jp002_023",
    "name": "MocChau2",
    "group": "Japan Pack",
-   "lut": "luts/jp002_023.png",
-   "premium": false
+   "lut": "luts/jp002_023.png"
   },
   {
    "id": "jp002_024",
    "name": "DaLat4",
    "group": "Japan Pack",
-   "lut": "luts/jp002_024.png",
-   "premium": false
+   "lut": "luts/jp002_024.png"
   },
   {
    "id": "jp002_025",
    "name": "CanTho2",
    "group": "Japan Pack",
-   "lut": "luts/jp002_025.png",
-   "premium": false
+   "lut": "luts/jp002_025.png"
   },
   {
    "id": "jp002_026",
    "name": "LamDong2",
    "group": "Japan Pack",
-   "lut": "luts/jp002_026.png",
-   "premium": false
+   "lut": "luts/jp002_026.png"
   },
   {
    "id": "jp002_027",
    "name": "CatBa3",
    "group": "Japan Pack",
-   "lut": "luts/jp002_027.png",
-   "premium": false
+   "lut": "luts/jp002_027.png"
   },
   {
    "id": "jp002_028",
    "name": "NhaTrang6",
    "group": "Japan Pack",
-   "lut": "luts/jp002_028.png",
-   "premium": false
+   "lut": "luts/jp002_028.png"
   },
   {
    "id": "jp002_029",
    "name": "MuiNe4",
    "group": "Japan Pack",
-   "lut": "luts/jp002_029.png",
-   "premium": false
+   "lut": "luts/jp002_029.png"
   },
   {
    "id": "jp002_030",
    "name": "DaLat5",
    "group": "Japan Pack",
-   "lut": "luts/jp002_030.png",
-   "premium": false
+   "lut": "luts/jp002_030.png"
   },
   {
    "id": "jp002_031",
    "name": "NinhBinh",
    "group": "Japan Pack",
-   "lut": "luts/jp002_031.png",
-   "premium": false
+   "lut": "luts/jp002_031.png"
   },
   {
    "id": "jp002_032",
    "name": "NhaTrang7",
    "group": "Japan Pack",
-   "lut": "luts/jp002_032.png",
-   "premium": false
+   "lut": "luts/jp002_032.png"
   },
   {
    "id": "jp002_033",
    "name": "MuiNe5",
    "group": "Japan Pack",
-   "lut": "luts/jp002_033.png",
-   "premium": false
+   "lut": "luts/jp002_033.png"
   },
   {
    "id": "jp002_034",
    "name": "HaiPhong",
    "group": "Japan Pack",
-   "lut": "luts/jp002_034.png",
-   "premium": false
+   "lut": "luts/jp002_034.png"
   },
   {
    "id": "jp002_035",
    "name": "PhongNha3",
    "group": "Japan Pack",
-   "lut": "luts/jp002_035.png",
-   "premium": false
+   "lut": "luts/jp002_035.png"
   },
   {
    "id": "jp002_036",
    "name": "DaLat6",
    "group": "Japan Pack",
-   "lut": "luts/jp002_036.png",
-   "premium": false
+   "lut": "luts/jp002_036.png"
   },
   {
    "id": "jp002_037",
    "name": "QuyNhon",
    "group": "Japan Pack",
-   "lut": "luts/jp002_037.png",
-   "premium": false
+   "lut": "luts/jp002_037.png"
   },
   {
    "id": "jp002_038",
    "name": "HaLong2",
    "group": "Japan Pack",
-   "lut": "luts/jp002_038.png",
-   "premium": false
+   "lut": "luts/jp002_038.png"
   },
   {
    "id": "jp002_039",
    "name": "MocChau3",
    "group": "Japan Pack",
-   "lut": "luts/jp002_039.png",
-   "premium": false
+   "lut": "luts/jp002_039.png"
   },
   {
    "id": "jp002_040",
    "name": "LamDong3",
    "group": "Japan Pack",
-   "lut": "luts/jp002_040.png",
-   "premium": false
+   "lut": "luts/jp002_040.png"
   },
   {
    "id": "jp002_041",
    "name": "NhaTrang8",
    "group": "Japan Pack",
-   "lut": "luts/jp002_041.png",
-   "premium": false
+   "lut": "luts/jp002_041.png"
   },
   {
    "id": "jp002_042",
    "name": "MuiNe6",
    "group": "Japan Pack",
-   "lut": "luts/jp002_042.png",
-   "premium": false
+   "lut": "luts/jp002_042.png"
   },
   {
    "id": "jp002_043",
    "name": "CatBa4",
    "group": "Japan Pack",
-   "lut": "luts/jp002_043.png",
-   "premium": false
+   "lut": "luts/jp002_043.png"
   },
   {
    "id": "jp002_044",
    "name": "PhongNha4",
    "group": "Japan Pack",
-   "lut": "luts/jp002_044.png",
-   "premium": false
+   "lut": "luts/jp002_044.png"
   },
   {
    "id": "jp002_045",
    "name": "NhaTrang9",
    "group": "Japan Pack",
-   "lut": "luts/jp002_045.png",
-   "premium": false
+   "lut": "luts/jp002_045.png"
   },
   {
    "id": "jp002_046",
    "name": "NinhBinh2",
    "group": "Japan Pack",
-   "lut": "luts/jp002_046.png",
-   "premium": false
+   "lut": "luts/jp002_046.png"
   },
   {
    "id": "jp002_047",
    "name": "HaiPhong2",
    "group": "Japan Pack",
-   "lut": "luts/jp002_047.png",
-   "premium": false
+   "lut": "luts/jp002_047.png"
   },
   {
    "id": "jp002_048",
    "name": "MocChau4",
    "group": "Japan Pack",
-   "lut": "luts/jp002_048.png",
-   "premium": false
+   "lut": "luts/jp002_048.png"
   },
   {
    "id": "jp002_049",
    "name": "LamDong4",
    "group": "Japan Pack",
-   "lut": "luts/jp002_049.png",
-   "premium": false
+   "lut": "luts/jp002_049.png"
   },
   {
    "id": "jp002_050",
    "name": "DaLat7",
    "group": "Japan Pack",
-   "lut": "luts/jp002_050.png",
-   "premium": false
+   "lut": "luts/jp002_050.png"
   },
   {
    "id": "jp002_051",
    "name": "CatBa5",
    "group": "Japan Pack",
-   "lut": "luts/jp002_051.png",
-   "premium": false
+   "lut": "luts/jp002_051.png"
   },
   {
    "id": "jp002_052",
    "name": "PhongNha5",
    "group": "Japan Pack",
-   "lut": "luts/jp002_052.png",
-   "premium": false
+   "lut": "luts/jp002_052.png"
   },
   {
    "id": "jp002_053",
    "name": "MocChau5",
    "group": "Japan Pack",
-   "lut": "luts/jp002_053.png",
-   "premium": false
+   "lut": "luts/jp002_053.png"
   },
   {
    "id": "jp002_054",
    "name": "NhaTrang10",
    "group": "Japan Pack",
-   "lut": "luts/jp002_054.png",
-   "premium": false
+   "lut": "luts/jp002_054.png"
   },
   {
    "id": "jp002_055",
    "name": "MuiNe7",
    "group": "Japan Pack",
-   "lut": "luts/jp002_055.png",
-   "premium": false
+   "lut": "luts/jp002_055.png"
   },
   {
    "id": "jp002_056",
    "name": "DaLat8",
    "group": "Japan Pack",
-   "lut": "luts/jp002_056.png",
-   "premium": false
+   "lut": "luts/jp002_056.png"
   },
   {
    "id": "jp002_057",
    "name": "NhaTrang11",
    "group": "Japan Pack",
-   "lut": "luts/jp002_057.png",
-   "premium": false
+   "lut": "luts/jp002_057.png"
   },
   {
    "id": "jp002_058",
    "name": "Hanoi",
    "group": "Japan Pack",
-   "lut": "luts/jp002_058.png",
-   "premium": false
+   "lut": "luts/jp002_058.png"
   },
   {
    "id": "jp002_059",
    "name": "Hue",
    "group": "Japan Pack",
-   "lut": "luts/jp002_059.png",
-   "premium": false
+   "lut": "luts/jp002_059.png"
   },
   {
    "id": "jp002_060",
    "name": "MuiNe8",
    "group": "Japan Pack",
-   "lut": "luts/jp002_060.png",
-   "premium": false
+   "lut": "luts/jp002_060.png"
   },
   {
    "id": "jp002_061",
    "name": "DaLat9",
    "group": "Japan Pack",
-   "lut": "luts/jp002_061.png",
-   "premium": false
+   "lut": "luts/jp002_061.png"
   },
   {
    "id": "jp002_062",
    "name": "NhaTrang12",
    "group": "Japan Pack",
-   "lut": "luts/jp002_062.png",
-   "premium": false
+   "lut": "luts/jp002_062.png"
   },
   {
    "id": "jp002_063",
    "name": "MuiNe9",
    "group": "Japan Pack",
-   "lut": "luts/jp002_063.png",
-   "premium": false
+   "lut": "luts/jp002_063.png"
   },
   {
    "id": "jp002_064",
    "name": "DaLat10",
    "group": "Japan Pack",
-   "lut": "luts/jp002_064.png",
-   "premium": false
+   "lut": "luts/jp002_064.png"
   },
   {
    "id": "jp002_065",
    "name": "NhaTrang13",
    "group": "Japan Pack",
-   "lut": "luts/jp002_065.png",
-   "premium": false
+   "lut": "luts/jp002_065.png"
   },
   {
    "id": "jp002_066",
    "name": "MuiNe10",
    "group": "Japan Pack",
-   "lut": "luts/jp002_066.png",
-   "premium": false
+   "lut": "luts/jp002_066.png"
   },
   {
    "id": "jp002_067",
    "name": "DaLat11",
    "group": "Japan Pack",
-   "lut": "luts/jp002_067.png",
-   "premium": false
+   "lut": "luts/jp002_067.png"
   },
   {
    "id": "jp002_068",
    "name": "NhaTrang14",
    "group": "Japan Pack",
-   "lut": "luts/jp002_068.png",
-   "premium": false
+   "lut": "luts/jp002_068.png"
   },
   {
    "id": "jp002_069",
    "name": "MuiNe11",
    "group": "Japan Pack",
-   "lut": "luts/jp002_069.png",
-   "premium": false
+   "lut": "luts/jp002_069.png"
   },
   {
    "id": "jp002_070",
    "name": "DaLat12",
    "group": "Japan Pack",
-   "lut": "luts/jp002_070.png",
-   "premium": false
+   "lut": "luts/jp002_070.png"
   },
   {
    "id": "jp002_071",
    "name": "LamDong5",
    "group": "Japan Pack",
-   "lut": "luts/jp002_071.png",
-   "premium": false
+   "lut": "luts/jp002_071.png"
   },
   {
    "id": "jp002_072",
    "name": "CatBa6",
    "group": "Japan Pack",
-   "lut": "luts/jp002_072.png",
-   "premium": false
+   "lut": "luts/jp002_072.png"
   },
   {
    "id": "jp002_073",
    "name": "NhaTrang15",
    "group": "Japan Pack",
-   "lut": "luts/jp002_073.png",
-   "premium": false
+   "lut": "luts/jp002_073.png"
   },
   {
    "id": "jp002_074",
    "name": "MuiNe12",
    "group": "Japan Pack",
-   "lut": "luts/jp002_074.png",
-   "premium": false
+   "lut": "luts/jp002_074.png"
   },
   {
    "id": "jp002_075",
    "name": "DaLat13",
    "group": "Japan Pack",
-   "lut": "luts/jp002_075.png",
-   "premium": false
+   "lut": "luts/jp002_075.png"
   },
   {
    "id": "jp002_076",
    "name": "NhaTrang16",
    "group": "Japan Pack",
-   "lut": "luts/jp002_076.png",
-   "premium": false
+   "lut": "luts/jp002_076.png"
   },
   {
    "id": "jp002_077",
    "name": "PhuQuoc",
    "group": "Japan Pack",
-   "lut": "luts/jp002_077.png",
-   "premium": false
+   "lut": "luts/jp002_077.png"
   },
   {
    "id": "jp002_078",
    "name": "TayNinh2",
    "group": "Japan Pack",
-   "lut": "luts/jp002_078.png",
-   "premium": false
+   "lut": "luts/jp002_078.png"
   },
   {
    "id": "jp002_079",
    "name": "MuiNe13",
    "group": "Japan Pack",
-   "lut": "luts/jp002_079.png",
-   "premium": false
+   "lut": "luts/jp002_079.png"
   },
   {
    "id": "jp002_080",
    "name": "DaLat14",
    "group": "Japan Pack",
-   "lut": "luts/jp002_080.png",
-   "premium": false
+   "lut": "luts/jp002_080.png"
   },
   {
    "id": "jp002_081",
    "name": "NhaTrang17",
    "group": "Japan Pack",
-   "lut": "luts/jp002_081.png",
-   "premium": false
+   "lut": "luts/jp002_081.png"
   },
   {
    "id": "jp002_082",
    "name": "QuyNhon2",
    "group": "Japan Pack",
-   "lut": "luts/jp002_082.png",
-   "premium": false
+   "lut": "luts/jp002_082.png"
   },
   {
    "id": "jp002_083",
    "name": "PhongNha6",
    "group": "Japan Pack",
-   "lut": "luts/jp002_083.png",
-   "premium": false
+   "lut": "luts/jp002_083.png"
   },
   {
    "id": "jp002_084",
    "name": "NhaTrang18",
    "group": "Japan Pack",
-   "lut": "luts/jp002_084.png",
-   "premium": false
+   "lut": "luts/jp002_084.png"
   },
   {
    "id": "jp002_085",
    "name": "MocChau6",
    "group": "Japan Pack",
-   "lut": "luts/jp002_085.png",
-   "premium": false
+   "lut": "luts/jp002_085.png"
   },
   {
    "id": "jp002_086",
    "name": "LamDong6",
    "group": "Japan Pack",
-   "lut": "luts/jp002_086.png",
-   "premium": false
+   "lut": "luts/jp002_086.png"
   },
   {
    "id": "jp002_087",
    "name": "CatBa7",
    "group": "Japan Pack",
-   "lut": "luts/jp002_087.png",
-   "premium": false
+   "lut": "luts/jp002_087.png"
   },
   {
    "id": "jp002_088",
    "name": "MuiNe14",
    "group": "Japan Pack",
-   "lut": "luts/jp002_088.png",
-   "premium": false
+   "lut": "luts/jp002_088.png"
   },
   {
    "id": "jp002_089",
    "name": "CanTho3",
    "group": "Japan Pack",
-   "lut": "luts/jp002_089.png",
-   "premium": false
+   "lut": "luts/jp002_089.png"
   },
   {
    "id": "jp002_090",
    "name": "PhongNha7",
    "group": "Japan Pack",
-   "lut": "luts/jp002_090.png",
-   "premium": false
+   "lut": "luts/jp002_090.png"
   },
   {
    "id": "jp002_091",
    "name": "DaLat15",
    "group": "Japan Pack",
-   "lut": "luts/jp002_091.png",
-   "premium": false
+   "lut": "luts/jp002_091.png"
   },
   {
    "id": "jp002_092",
    "name": "HaLong3",
    "group": "Japan Pack",
-   "lut": "luts/jp002_092.png",
-   "premium": false
+   "lut": "luts/jp002_092.png"
   },
   {
    "id": "jp002_093",
    "name": "MocChau7",
    "group": "Japan Pack",
-   "lut": "luts/jp002_093.png",
-   "premium": false
+   "lut": "luts/jp002_093.png"
   },
   {
    "id": "jp002_094",
    "name": "NhaTrang19",
    "group": "Japan Pack",
-   "lut": "luts/jp002_094.png",
-   "premium": false
+   "lut": "luts/jp002_094.png"
   },
   {
    "id": "jp002_095",
    "name": "LamDong7",
    "group": "Japan Pack",
-   "lut": "luts/jp002_095.png",
-   "premium": false
+   "lut": "luts/jp002_095.png"
   },
   {
    "id": "jp002_096",
    "name": "CatBa8",
    "group": "Japan Pack",
-   "lut": "luts/jp002_096.png",
-   "premium": false
+   "lut": "luts/jp002_096.png"
   },
   {
    "id": "jp002_097",
    "name": "PhongNha8",
    "group": "Japan Pack",
-   "lut": "luts/jp002_097.png",
-   "premium": false
+   "lut": "luts/jp002_097.png"
   },
   {
    "id": "jp002_098",
    "name": "MuiNe15",
    "group": "Japan Pack",
-   "lut": "luts/jp002_098.png",
-   "premium": false
+   "lut": "luts/jp002_098.png"
   },
   {
    "id": "jp002_099",
    "name": "DaLat16",
    "group": "Japan Pack",
-   "lut": "luts/jp002_099.png",
-   "premium": false
+   "lut": "luts/jp002_099.png"
   },
   {
    "id": "jp002_100",
    "name": "NinhBinh3",
    "group": "Japan Pack",
-   "lut": "luts/jp002_100.png",
-   "premium": false
+   "lut": "luts/jp002_100.png"
   },
   {
    "id": "jp002_101",
    "name": "NhaTrang20",
    "group": "Japan Pack",
-   "lut": "luts/jp002_101.png",
-   "premium": false
+   "lut": "luts/jp002_101.png"
   },
   {
    "id": "jp002_102",
    "name": "MuiNe16",
    "group": "Japan Pack",
-   "lut": "luts/jp002_102.png",
-   "premium": false
+   "lut": "luts/jp002_102.png"
   },
   {
    "id": "jp002_103",
    "name": "MocChau8",
    "group": "Japan Pack",
-   "lut": "luts/jp002_103.png",
-   "premium": false
+   "lut": "luts/jp002_103.png"
   },
   {
    "id": "jp002_104",
    "name": "HaiPhong3",
    "group": "Japan Pack",
-   "lut": "luts/jp002_104.png",
-   "premium": false
+   "lut": "luts/jp002_104.png"
   },
   {
    "id": "jp002_105",
    "name": "LamDong8",
    "group": "Japan Pack",
-   "lut": "luts/jp002_105.png",
-   "premium": false
+   "lut": "luts/jp002_105.png"
   },
   {
    "id": "jp003_001",
    "name": "QuyNhon3",
    "group": "Japan Pack",
-   "lut": "luts/jp003_001.png",
-   "premium": false
+   "lut": "luts/jp003_001.png"
   },
   {
    "id": "jp003_002",
    "name": "CatBa9",
    "group": "Japan Pack",
-   "lut": "luts/jp003_002.png",
-   "premium": false
+   "lut": "luts/jp003_002.png"
   },
   {
    "id": "jp003_003",
    "name": "PhongNha9",
    "group": "Japan Pack",
-   "lut": "luts/jp003_003.png",
-   "premium": false
+   "lut": "luts/jp003_003.png"
   },
   {
    "id": "jp003_004",
    "name": "DaLat17",
    "group": "Japan Pack",
-   "lut": "luts/jp003_004.png",
-   "premium": false
+   "lut": "luts/jp003_004.png"
   },
   {
    "id": "jp003_005",
    "name": "NhaTrang21",
    "group": "Japan Pack",
-   "lut": "luts/jp003_005.png",
-   "premium": false
+   "lut": "luts/jp003_005.png"
   },
   {
    "id": "jp003_006",
    "name": "TayNinh3",
    "group": "Japan Pack",
-   "lut": "luts/jp003_006.png",
-   "premium": false
+   "lut": "luts/jp003_006.png"
   },
   {
    "id": "jp003_007",
    "name": "MocChau9",
    "group": "Japan Pack",
-   "lut": "luts/jp003_007.png",
-   "premium": false
+   "lut": "luts/jp003_007.png"
   },
   {
    "id": "jp003_008",
    "name": "MuiNe17",
    "group": "Japan Pack",
-   "lut": "luts/jp003_008.png",
-   "premium": false
+   "lut": "luts/jp003_008.png"
   },
   {
    "id": "jp003_009",
    "name": "DaLat18",
    "group": "Japan Pack",
-   "lut": "luts/jp003_009.png",
-   "premium": false
+   "lut": "luts/jp003_009.png"
   },
   {
    "id": "jp004_001",
    "name": "LamDong9",
    "group": "Japan Pack",
-   "lut": "luts/jp004_001.png",
-   "premium": false
+   "lut": "luts/jp004_001.png"
   },
   {
    "id": "jp004_002",
    "name": "CatBa10",
    "group": "Japan Pack",
-   "lut": "luts/jp004_002.png",
-   "premium": false
+   "lut": "luts/jp004_002.png"
   },
   {
    "id": "jp004_003",
    "name": "PhuQuoc2",
    "group": "Japan Pack",
-   "lut": "luts/jp004_003.png",
-   "premium": false
+   "lut": "luts/jp004_003.png"
   },
   {
    "id": "jp004_004",
    "name": "HaLong4",
    "group": "Japan Pack",
-   "lut": "luts/jp004_004.png",
-   "premium": false
+   "lut": "luts/jp004_004.png"
   },
   {
    "id": "jp004_005",
    "name": "NhaTrang22",
    "group": "Japan Pack",
-   "lut": "luts/jp004_005.png",
-   "premium": false
+   "lut": "luts/jp004_005.png"
   },
   {
    "id": "jp004_006",
    "name": "CanTho4",
    "group": "Japan Pack",
-   "lut": "luts/jp004_006.png",
-   "premium": false
+   "lut": "luts/jp004_006.png"
   },
   {
    "id": "jp004_007",
    "name": "PhongNha10",
    "group": "Japan Pack",
-   "lut": "luts/jp004_007.png",
-   "premium": false
+   "lut": "luts/jp004_007.png"
   },
   {
    "id": "jp004_008",
    "name": "TayNinh4",
    "group": "Japan Pack",
-   "lut": "luts/jp004_008.png",
-   "premium": false
+   "lut": "luts/jp004_008.png"
   },
   {
    "id": "jp004_009",
    "name": "VungTau",
    "group": "Japan Pack",
-   "lut": "luts/jp004_009.png",
-   "premium": false
+   "lut": "luts/jp004_009.png"
   },
   {
    "id": "jp004_010",
    "name": "NinhBinh4",
    "group": "Japan Pack",
-   "lut": "luts/jp004_010.png",
-   "premium": false
+   "lut": "luts/jp004_010.png"
   },
   {
    "id": "jp004_011",
    "name": "NhaTrang23",
    "group": "Japan Pack",
-   "lut": "luts/jp004_011.png",
-   "premium": false
+   "lut": "luts/jp004_011.png"
   },
   {
    "id": "jp004_012",
    "name": "NhaTrang24",
    "group": "Japan Pack",
-   "lut": "luts/jp004_012.png",
-   "premium": false
+   "lut": "luts/jp004_012.png"
   },
   {
    "id": "jp004_013",
    "name": "CanTho5",
    "group": "Japan Pack",
-   "lut": "luts/jp004_013.png",
-   "premium": false
+   "lut": "luts/jp004_013.png"
   },
   {
    "id": "jp004_014",
    "name": "MuiNe18",
    "group": "Japan Pack",
-   "lut": "luts/jp004_014.png",
-   "premium": false
+   "lut": "luts/jp004_014.png"
   },
   {
    "id": "jp004_015",
    "name": "TayNinh5",
    "group": "Japan Pack",
-   "lut": "luts/jp004_015.png",
-   "premium": false
+   "lut": "luts/jp004_015.png"
   },
   {
    "id": "jp004_016",
    "name": "NhaTrang25",
    "group": "Japan Pack",
-   "lut": "luts/jp004_016.png",
-   "premium": false
+   "lut": "luts/jp004_016.png"
   },
   {
    "id": "jp004_017",
    "name": "Hanoi2",
    "group": "Japan Pack",
-   "lut": "luts/jp004_017.png",
-   "premium": false
+   "lut": "luts/jp004_017.png"
   },
   {
    "id": "jp004_018",
    "name": "HaiPhong4",
    "group": "Japan Pack",
-   "lut": "luts/jp004_018.png",
-   "premium": false
+   "lut": "luts/jp004_018.png"
   },
   {
    "id": "jp005_001",
    "name": "HoiAn2",
    "group": "Japan Pack",
-   "lut": "luts/jp005_001.png",
-   "premium": false
+   "lut": "luts/jp005_001.png"
   },
   {
    "id": "jp005_002",
    "name": "DaLat19",
    "group": "Japan Pack",
-   "lut": "luts/jp005_002.png",
-   "premium": false
+   "lut": "luts/jp005_002.png"
   },
   {
    "id": "jp005_003",
    "name": "MocChau10",
    "group": "Japan Pack",
-   "lut": "luts/jp005_003.png",
-   "premium": false
+   "lut": "luts/jp005_003.png"
   },
   {
    "id": "jp005_004",
    "name": "CanTho6",
    "group": "Japan Pack",
-   "lut": "luts/jp005_004.png",
-   "premium": false
+   "lut": "luts/jp005_004.png"
   },
   {
    "id": "jp005_005",
    "name": "QuyNhon4",
    "group": "Japan Pack",
-   "lut": "luts/jp005_005.png",
-   "premium": false
+   "lut": "luts/jp005_005.png"
   },
   {
    "id": "jp005_006",
    "name": "HaLong5",
    "group": "Japan Pack",
-   "lut": "luts/jp005_006.png",
-   "premium": false
+   "lut": "luts/jp005_006.png"
   },
   {
    "id": "jp005_007",
    "name": "NinhBinh5",
    "group": "Japan Pack",
-   "lut": "luts/jp005_007.png",
-   "premium": false
+   "lut": "luts/jp005_007.png"
   },
   {
    "id": "jp006_001",
    "name": "HaGiang",
    "group": "Japan Pack",
-   "lut": "luts/jp006_001.png",
-   "premium": false
+   "lut": "luts/jp006_001.png"
   },
   {
    "id": "jp006_002",
    "name": "NhaTrang26",
    "group": "Japan Pack",
-   "lut": "luts/jp006_002.png",
-   "premium": false
+   "lut": "luts/jp006_002.png"
   },
   {
    "id": "jp006_003",
    "name": "MuiNe19",
    "group": "Japan Pack",
-   "lut": "luts/jp006_003.png",
-   "premium": false
+   "lut": "luts/jp006_003.png"
   },
   {
    "id": "jp006_004",
    "name": "Hue2",
    "group": "Japan Pack",
-   "lut": "luts/jp006_004.png",
-   "premium": false
+   "lut": "luts/jp006_004.png"
   },
   {
    "id": "jp006_005",
    "name": "NinhBinh6",
    "group": "Japan Pack",
-   "lut": "luts/jp006_005.png",
-   "premium": false
+   "lut": "luts/jp006_005.png"
   },
   {
    "id": "jp006_006",
    "name": "DaLat20",
    "group": "Japan Pack",
-   "lut": "luts/jp006_006.png",
-   "premium": false
+   "lut": "luts/jp006_006.png"
   },
   {
    "id": "jp006_007",
    "name": "NhaTrang27",
    "group": "Japan Pack",
-   "lut": "luts/jp006_007.png",
-   "premium": false
+   "lut": "luts/jp006_007.png"
   },
   {
    "id": "jp006_008",
    "name": "DienBien",
    "group": "Japan Pack",
-   "lut": "luts/jp006_008.png",
-   "premium": false
+   "lut": "luts/jp006_008.png"
   },
   {
    "id": "jp006_009",
    "name": "MuiNe20",
    "group": "Japan Pack",
-   "lut": "luts/jp006_009.png",
-   "premium": false
+   "lut": "luts/jp006_009.png"
   },
   {
    "id": "jp006_010",
    "name": "DaLat21",
    "group": "Japan Pack",
-   "lut": "luts/jp006_010.png",
-   "premium": false
+   "lut": "luts/jp006_010.png"
   },
   {
    "id": "jp006_011",
    "name": "NhaTrang28",
    "group": "Japan Pack",
-   "lut": "luts/jp006_011.png",
-   "premium": false
+   "lut": "luts/jp006_011.png"
   },
   {
    "id": "jp006_012",
    "name": "MuiNe21",
    "group": "Japan Pack",
-   "lut": "luts/jp006_012.png",
-   "premium": false
+   "lut": "luts/jp006_012.png"
   },
   {
    "id": "jp006_013",
    "name": "DaLat22",
    "group": "Japan Pack",
-   "lut": "luts/jp006_013.png",
-   "premium": false
+   "lut": "luts/jp006_013.png"
   },
   {
    "id": "jp006_014",
    "name": "LamDong10",
    "group": "Japan Pack",
-   "lut": "luts/jp006_014.png",
-   "premium": false
+   "lut": "luts/jp006_014.png"
   },
   {
    "id": "jp006_015",
    "name": "PhuYen",
    "group": "Japan Pack",
-   "lut": "luts/jp006_015.png",
-   "premium": false
+   "lut": "luts/jp006_015.png"
   },
   {
    "id": "jp007_001",
    "name": "HaiPhong5",
    "group": "Japan Pack",
-   "lut": "luts/jp007_001.png",
-   "premium": false
+   "lut": "luts/jp007_001.png"
   },
   {
    "id": "jp007_002",
    "name": "CatBa11",
    "group": "Japan Pack",
-   "lut": "luts/jp007_002.png",
-   "premium": false
+   "lut": "luts/jp007_002.png"
   },
   {
    "id": "jp007_003",
    "name": "PhongNha11",
    "group": "Japan Pack",
-   "lut": "luts/jp007_003.png",
-   "premium": false
+   "lut": "luts/jp007_003.png"
   },
   {
    "id": "jp007_004",
    "name": "Hanoi3",
    "group": "Japan Pack",
-   "lut": "luts/jp007_004.png",
-   "premium": false
+   "lut": "luts/jp007_004.png"
   },
   {
    "id": "jp007_005",
    "name": "NhaTrang29",
    "group": "Japan Pack",
-   "lut": "luts/jp007_005.png",
-   "premium": false
+   "lut": "luts/jp007_005.png"
   },
   {
    "id": "jp007_006",
    "name": "MuiNe22",
    "group": "Japan Pack",
-   "lut": "luts/jp007_006.png",
-   "premium": false
+   "lut": "luts/jp007_006.png"
   },
   {
    "id": "jp007_007",
    "name": "Saigon2",
    "group": "Japan Pack",
-   "lut": "luts/jp007_007.png",
-   "premium": false
+   "lut": "luts/jp007_007.png"
   },
   {
    "id": "jp007_008",
    "name": "DaLat23",
    "group": "Japan Pack",
-   "lut": "luts/jp007_008.png",
-   "premium": false
+   "lut": "luts/jp007_008.png"
   },
   {
    "id": "jp007_009",
    "name": "SaPa",
    "group": "Japan Pack",
-   "lut": "luts/jp007_009.png",
-   "premium": false
+   "lut": "luts/jp007_009.png"
   },
   {
    "id": "jp007_010",
    "name": "NhaTrang30",
    "group": "Japan Pack",
-   "lut": "luts/jp007_010.png",
-   "premium": false
+   "lut": "luts/jp007_010.png"
   },
   {
    "id": "jp007_011",
    "name": "MuiNe23",
    "group": "Japan Pack",
-   "lut": "luts/jp007_011.png",
-   "premium": false
+   "lut": "luts/jp007_011.png"
   },
   {
    "id": "jp007_012",
    "name": "DaLat24",
    "group": "Japan Pack",
-   "lut": "luts/jp007_012.png",
-   "premium": false
+   "lut": "luts/jp007_012.png"
   },
   {
    "id": "jp007_013",
    "name": "NhaTrang31",
    "group": "Japan Pack",
-   "lut": "luts/jp007_013.png",
-   "premium": false
+   "lut": "luts/jp007_013.png"
   },
   {
    "id": "jp007_014",
    "name": "MocChau11",
    "group": "Japan Pack",
-   "lut": "luts/jp007_014.png",
-   "premium": false
+   "lut": "luts/jp007_014.png"
   },
   {
    "id": "jp007_015",
    "name": "LamDong11",
    "group": "Japan Pack",
-   "lut": "luts/jp007_015.png",
-   "premium": false
+   "lut": "luts/jp007_015.png"
   },
   {
    "id": "jp007_016",
    "name": "CatBa12",
    "group": "Japan Pack",
-   "lut": "luts/jp007_016.png",
-   "premium": false
+   "lut": "luts/jp007_016.png"
   },
   {
    "id": "jp007_017",
    "name": "QuyNhon5",
    "group": "Japan Pack",
-   "lut": "luts/jp007_017.png",
-   "premium": false
+   "lut": "luts/jp007_017.png"
   },
   {
    "id": "jp007_018",
    "name": "PhongNha12",
    "group": "Japan Pack",
-   "lut": "luts/jp007_018.png",
-   "premium": false
+   "lut": "luts/jp007_018.png"
   },
   {
    "id": "jp008_001",
    "name": "MocChau12",
    "group": "Japan Pack",
-   "lut": "luts/jp008_001.png",
-   "premium": false
+   "lut": "luts/jp008_001.png"
   },
   {
    "id": "jp008_002",
    "name": "MuiNe24",
    "group": "Japan Pack",
-   "lut": "luts/jp008_002.png",
-   "premium": false
+   "lut": "luts/jp008_002.png"
   },
   {
    "id": "jp008_003",
    "name": "DaLat25",
    "group": "Japan Pack",
-   "lut": "luts/jp008_003.png",
-   "premium": false
+   "lut": "luts/jp008_003.png"
   },
   {
    "id": "jp008_004",
    "name": "LamDong12",
    "group": "Japan Pack",
-   "lut": "luts/jp008_004.png",
-   "premium": false
+   "lut": "luts/jp008_004.png"
   },
   {
    "id": "jp008_005",
    "name": "CatBa13",
    "group": "Japan Pack",
-   "lut": "luts/jp008_005.png",
-   "premium": false
+   "lut": "luts/jp008_005.png"
   },
   {
    "id": "jp008_006",
    "name": "NhaTrang32",
    "group": "Japan Pack",
-   "lut": "luts/jp008_006.png",
-   "premium": false
+   "lut": "luts/jp008_006.png"
   },
   {
    "id": "jp008_007",
    "name": "MuiNe25",
    "group": "Japan Pack",
-   "lut": "luts/jp008_007.png",
-   "premium": false
+   "lut": "luts/jp008_007.png"
   },
   {
    "id": "jp008_008",
    "name": "DaLat26",
    "group": "Japan Pack",
-   "lut": "luts/jp008_008.png",
-   "premium": false
+   "lut": "luts/jp008_008.png"
   },
   {
    "id": "jp008_009",
    "name": "NhaTrang33",
    "group": "Japan Pack",
-   "lut": "luts/jp008_009.png",
-   "premium": false
+   "lut": "luts/jp008_009.png"
   },
   {
    "id": "jp008_010",
    "name": "MuiNe26",
    "group": "Japan Pack",
-   "lut": "luts/jp008_010.png",
-   "premium": false
+   "lut": "luts/jp008_010.png"
   },
   {
    "id": "jp008_011",
    "name": "DaLat27",
    "group": "Japan Pack",
-   "lut": "luts/jp008_011.png",
-   "premium": false
+   "lut": "luts/jp008_011.png"
   },
   {
    "id": "jp008_012",
    "name": "PhongNha13",
    "group": "Japan Pack",
-   "lut": "luts/jp008_012.png",
-   "premium": false
+   "lut": "luts/jp008_012.png"
   },
   {
    "id": "jp008_013",
    "name": "LaiChau",
    "group": "Japan Pack",
-   "lut": "luts/jp008_013.png",
-   "premium": false
+   "lut": "luts/jp008_013.png"
   },
   {
    "id": "jp008_014",
    "name": "HaLong6",
    "group": "Japan Pack",
-   "lut": "luts/jp008_014.png",
-   "premium": false
+   "lut": "luts/jp008_014.png"
   },
   {
    "id": "jp008_015",
    "name": "MocChau13",
    "group": "Japan Pack",
-   "lut": "luts/jp008_015.png",
-   "premium": false
+   "lut": "luts/jp008_015.png"
   },
   {
    "id": "jp008_016",
    "name": "LamDong13",
    "group": "Japan Pack",
-   "lut": "luts/jp008_016.png",
-   "premium": false
+   "lut": "luts/jp008_016.png"
   },
   {
    "id": "jp008_017",
    "name": "NhaTrang34",
    "group": "Japan Pack",
-   "lut": "luts/jp008_017.png",
-   "premium": false
+   "lut": "luts/jp008_017.png"
   },
   {
    "id": "jp008_018",
    "name": "HoiAn3",
    "group": "Japan Pack",
-   "lut": "luts/jp008_018.png",
-   "premium": false
+   "lut": "luts/jp008_018.png"
   },
   {
    "id": "jp008_019",
    "name": "CatBa14",
    "group": "Japan Pack",
-   "lut": "luts/jp008_019.png",
-   "premium": false
+   "lut": "luts/jp008_019.png"
   },
   {
    "id": "jp008_020",
    "name": "PhongNha14",
    "group": "Japan Pack",
-   "lut": "luts/jp008_020.png",
-   "premium": false
+   "lut": "luts/jp008_020.png"
   },
   {
    "id": "jp008_021",
    "name": "MocChau14",
    "group": "Japan Pack",
-   "lut": "luts/jp008_021.png",
-   "premium": false
+   "lut": "luts/jp008_021.png"
   },
   {
    "id": "jp008_022",
    "name": "Danang2",
    "group": "Japan Pack",
-   "lut": "luts/jp008_022.png",
-   "premium": false
+   "lut": "luts/jp008_022.png"
   },
   {
    "id": "jp008_023",
    "name": "MuiNe27",
    "group": "Japan Pack",
-   "lut": "luts/jp008_023.png",
-   "premium": false
+   "lut": "luts/jp008_023.png"
   },
   {
    "id": "jp008_024",
    "name": "PhuQuoc3",
    "group": "Japan Pack",
-   "lut": "luts/jp008_024.png",
-   "premium": false
+   "lut": "luts/jp008_024.png"
   },
   {
    "id": "jp008_025",
    "name": "DaLat28",
    "group": "Japan Pack",
-   "lut": "luts/jp008_025.png",
-   "premium": false
+   "lut": "luts/jp008_025.png"
   },
   {
    "id": "jp009_001",
    "name": "NhaTrang35",
    "group": "Japan Pack",
-   "lut": "luts/jp009_001.png",
-   "premium": false
+   "lut": "luts/jp009_001.png"
   },
   {
    "id": "jp009_002",
    "name": "Hanoi4",
    "group": "Japan Pack",
-   "lut": "luts/jp009_002.png",
-   "premium": false
+   "lut": "luts/jp009_002.png"
   },
   {
    "id": "jp009_003",
    "name": "VungTau2",
    "group": "Japan Pack",
-   "lut": "luts/jp009_003.png",
-   "premium": false
+   "lut": "luts/jp009_003.png"
   },
   {
    "id": "jp009_004",
    "name": "MuiNe28",
    "group": "Japan Pack",
-   "lut": "luts/jp009_004.png",
-   "premium": false
+   "lut": "luts/jp009_004.png"
   },
   {
    "id": "jp009_005",
    "name": "DaLat29",
    "group": "Japan Pack",
-   "lut": "luts/jp009_005.png",
-   "premium": false
+   "lut": "luts/jp009_005.png"
   },
   {
    "id": "jp009_006",
    "name": "Saigon3",
    "group": "Japan Pack",
-   "lut": "luts/jp009_006.png",
-   "premium": false
+   "lut": "luts/jp009_006.png"
   },
   {
    "id": "jp009_007",
    "name": "NhaTrang36",
    "group": "Japan Pack",
-   "lut": "luts/jp009_007.png",
-   "premium": false
+   "lut": "luts/jp009_007.png"
   },
   {
    "id": "jp009_008",
    "name": "HoiAn4",
    "group": "Japan Pack",
-   "lut": "luts/jp009_008.png",
-   "premium": false
+   "lut": "luts/jp009_008.png"
   },
   {
    "id": "jp009_009",
    "name": "Danang3",
    "group": "Japan Pack",
-   "lut": "luts/jp009_009.png",
-   "premium": false
+   "lut": "luts/jp009_009.png"
   },
   {
    "id": "jp009_010",
    "name": "Hanoi5",
    "group": "Japan Pack",
-   "lut": "luts/jp009_010.png",
-   "premium": false
+   "lut": "luts/jp009_010.png"
   },
   {
    "id": "jp010_001",
    "name": "MuiNe29",
    "group": "Japan Pack",
-   "lut": "luts/jp010_001.png",
-   "premium": false
+   "lut": "luts/jp010_001.png"
   },
   {
    "id": "jp010_002",
    "name": "DaLat30",
    "group": "Japan Pack",
-   "lut": "luts/jp010_002.png",
-   "premium": false
+   "lut": "luts/jp010_002.png"
   },
   {
    "id": "jp010_003",
    "name": "NhaTrang37",
    "group": "Japan Pack",
-   "lut": "luts/jp010_003.png",
-   "premium": false
+   "lut": "luts/jp010_003.png"
   },
   {
    "id": "jp010_004",
    "name": "MuiNe30",
    "group": "Japan Pack",
-   "lut": "luts/jp010_004.png",
-   "premium": false
+   "lut": "luts/jp010_004.png"
   },
   {
    "id": "jp010_005",
    "name": "DaLat31",
    "group": "Japan Pack",
-   "lut": "luts/jp010_005.png",
-   "premium": false
+   "lut": "luts/jp010_005.png"
   },
   {
    "id": "jp010_006",
    "name": "NhaTrang38",
    "group": "Japan Pack",
-   "lut": "luts/jp010_006.png",
-   "premium": false
+   "lut": "luts/jp010_006.png"
   },
   {
    "id": "jp010_007",
    "name": "MuiNe31",
    "group": "Japan Pack",
-   "lut": "luts/jp010_007.png",
-   "premium": false
+   "lut": "luts/jp010_007.png"
   },
   {
    "id": "jp010_008",
    "name": "DaLat32",
    "group": "Japan Pack",
-   "lut": "luts/jp010_008.png",
-   "premium": false
+   "lut": "luts/jp010_008.png"
   },
   {
    "id": "jp010_009",
    "name": "PhuQuoc4",
    "group": "Japan Pack",
-   "lut": "luts/jp010_009.png",
-   "premium": false
+   "lut": "luts/jp010_009.png"
   },
   {
    "id": "jp011_001",
    "name": "NhaTrang39",
    "group": "Japan Pack",
-   "lut": "luts/jp011_001.png",
-   "premium": false
+   "lut": "luts/jp011_001.png"
   },
   {
    "id": "jp011_002",
    "name": "MuiNe32",
    "group": "Japan Pack",
-   "lut": "luts/jp011_002.png",
-   "premium": false
+   "lut": "luts/jp011_002.png"
   },
   {
    "id": "jp011_003",
    "name": "VungTau3",
    "group": "Japan Pack",
-   "lut": "luts/jp011_003.png",
-   "premium": false
+   "lut": "luts/jp011_003.png"
   },
   {
    "id": "jp011_004",
    "name": "DaLat33",
    "group": "Japan Pack",
-   "lut": "luts/jp011_004.png",
-   "premium": false
+   "lut": "luts/jp011_004.png"
   },
   {
    "id": "jp011_005",
    "name": "NhaTrang40",
    "group": "Japan Pack",
-   "lut": "luts/jp011_005.png",
-   "premium": false
+   "lut": "luts/jp011_005.png"
   },
   {
    "id": "jp011_006",
    "name": "LamDong14",
    "group": "Japan Pack",
-   "lut": "luts/jp011_006.png",
-   "premium": false
+   "lut": "luts/jp011_006.png"
   },
   {
    "id": "jp011_007",
    "name": "MuiNe33",
    "group": "Japan Pack",
-   "lut": "luts/jp011_007.png",
-   "premium": false
+   "lut": "luts/jp011_007.png"
   },
   {
    "id": "jp011_008",
    "name": "CatBa15",
    "group": "Japan Pack",
-   "lut": "luts/jp011_008.png",
-   "premium": false
+   "lut": "luts/jp011_008.png"
   },
   {
    "id": "jp011_009",
    "name": "TayNinh6",
    "group": "Japan Pack",
-   "lut": "luts/jp011_009.png",
-   "premium": false
+   "lut": "luts/jp011_009.png"
   },
   {
    "id": "jp011_010",
    "name": "NhaTrang41",
    "group": "Japan Pack",
-   "lut": "luts/jp011_010.png",
-   "premium": false
+   "lut": "luts/jp011_010.png"
   },
   {
    "id": "jp011_011",
    "name": "DaLat34",
    "group": "Japan Pack",
-   "lut": "luts/jp011_011.png",
-   "premium": false
+   "lut": "luts/jp011_011.png"
   },
   {
    "id": "jp012_001",
    "name": "PhongNha15",
    "group": "Japan Pack",
-   "lut": "luts/jp012_001.png",
-   "premium": false
+   "lut": "luts/jp012_001.png"
   },
   {
    "id": "jp012_002",
    "name": "MocChau15",
    "group": "Japan Pack",
-   "lut": "luts/jp012_002.png",
-   "premium": false
+   "lut": "luts/jp012_002.png"
   },
   {
    "id": "jp012_003",
    "name": "LamDong15",
    "group": "Japan Pack",
-   "lut": "luts/jp012_003.png",
-   "premium": false
+   "lut": "luts/jp012_003.png"
   },
   {
    "id": "jp012_004",
    "name": "CatBa16",
    "group": "Japan Pack",
-   "lut": "luts/jp012_004.png",
-   "premium": false
+   "lut": "luts/jp012_004.png"
   },
   {
    "id": "jp012_005",
    "name": "NhaTrang42",
    "group": "Japan Pack",
-   "lut": "luts/jp012_005.png",
-   "premium": false
+   "lut": "luts/jp012_005.png"
   },
   {
    "id": "jp012_006",
    "name": "CanTho7",
    "group": "Japan Pack",
-   "lut": "luts/jp012_006.png",
-   "premium": false
+   "lut": "luts/jp012_006.png"
   },
   {
    "id": "jp013_001",
    "name": "Saigon4",
    "group": "Japan Pack",
-   "lut": "luts/jp013_001.png",
-   "premium": false
+   "lut": "luts/jp013_001.png"
   },
   {
    "id": "jp013_002",
    "name": "NinhBinh7",
    "group": "Japan Pack",
-   "lut": "luts/jp013_002.png",
-   "premium": false
+   "lut": "luts/jp013_002.png"
   },
   {
    "id": "jp013_003",
    "name": "HoiAn5",
    "group": "Japan Pack",
-   "lut": "luts/jp013_003.png",
-   "premium": false
+   "lut": "luts/jp013_003.png"
   },
   {
    "id": "jp013_004",
    "name": "MuiNe34",
    "group": "Japan Pack",
-   "lut": "luts/jp013_004.png",
-   "premium": false
+   "lut": "luts/jp013_004.png"
   },
   {
    "id": "jp013_005",
    "name": "PhongNha16",
    "group": "Japan Pack",
-   "lut": "luts/jp013_005.png",
-   "premium": false
+   "lut": "luts/jp013_005.png"
   },
   {
    "id": "jp013_006",
    "name": "KonTum",
    "group": "Japan Pack",
-   "lut": "luts/jp013_006.png",
-   "premium": false
+   "lut": "luts/jp013_006.png"
   },
   {
    "id": "jp013_007",
    "name": "MocChau16",
    "group": "Japan Pack",
-   "lut": "luts/jp013_007.png",
-   "premium": false
+   "lut": "luts/jp013_007.png"
   },
   {
    "id": "jp013_008",
    "name": "LamDong16",
    "group": "Japan Pack",
-   "lut": "luts/jp013_008.png",
-   "premium": false
+   "lut": "luts/jp013_008.png"
   },
   {
    "id": "jp013_009",
    "name": "Danang4",
    "group": "Japan Pack",
-   "lut": "luts/jp013_009.png",
-   "premium": false
+   "lut": "luts/jp013_009.png"
   },
   {
    "id": "jp013_010",
    "name": "DaLat35",
    "group": "Japan Pack",
-   "lut": "luts/jp013_010.png",
-   "premium": false
+   "lut": "luts/jp013_010.png"
   },
   {
    "id": "jp014_001",
    "name": "PhuQuoc5",
    "group": "Japan Pack",
-   "lut": "luts/jp014_001.png",
-   "premium": false
+   "lut": "luts/jp014_001.png"
   },
   {
    "id": "jp014_002",
    "name": "CatBa17",
    "group": "Japan Pack",
-   "lut": "luts/jp014_002.png",
-   "premium": false
+   "lut": "luts/jp014_002.png"
   },
   {
    "id": "jp014_003",
    "name": "Hue3",
    "group": "Japan Pack",
-   "lut": "luts/jp014_003.png",
-   "premium": false
+   "lut": "luts/jp014_003.png"
   },
   {
    "id": "jp014_004",
    "name": "VungTau4",
    "group": "Japan Pack",
-   "lut": "luts/jp014_004.png",
-   "premium": false
+   "lut": "luts/jp014_004.png"
   },
   {
    "id": "jp014_005",
    "name": "PhongNha17",
    "group": "Japan Pack",
-   "lut": "luts/jp014_005.png",
-   "premium": false
+   "lut": "luts/jp014_005.png"
   },
   {
    "id": "jp014_006",
    "name": "HaGiang2",
    "group": "Japan Pack",
-   "lut": "luts/jp014_006.png",
-   "premium": false
+   "lut": "luts/jp014_006.png"
   },
   {
    "id": "jp014_007",
    "name": "Saigon5",
    "group": "Japan Pack",
-   "lut": "luts/jp014_007.png",
-   "premium": false
+   "lut": "luts/jp014_007.png"
   },
   {
    "id": "jp014_008",
    "name": "HoiAn6",
    "group": "Japan Pack",
-   "lut": "luts/jp014_008.png",
-   "premium": false
+   "lut": "luts/jp014_008.png"
   },
   {
    "id": "jp014_009",
    "name": "HoiAn7",
    "group": "Japan Pack",
-   "lut": "luts/jp014_009.png",
-   "premium": false
+   "lut": "luts/jp014_009.png"
   },
   {
    "id": "jp014_010",
    "name": "Danang5",
    "group": "Japan Pack",
-   "lut": "luts/jp014_010.png",
-   "premium": false
+   "lut": "luts/jp014_010.png"
   },
   {
    "id": "jp014_011",
    "name": "DienBien2",
    "group": "Japan Pack",
-   "lut": "luts/jp014_011.png",
-   "premium": false
+   "lut": "luts/jp014_011.png"
   },
   {
    "id": "jp014_012",
    "name": "Hue4",
    "group": "Japan Pack",
-   "lut": "luts/jp014_012.png",
-   "premium": false
+   "lut": "luts/jp014_012.png"
   },
   {
    "id": "jp015_001",
    "name": "MocChau17",
    "group": "Japan Pack",
-   "lut": "luts/jp015_001.png",
-   "premium": false
+   "lut": "luts/jp015_001.png"
   },
   {
    "id": "jp015_002",
    "name": "LamDong17",
    "group": "Japan Pack",
-   "lut": "luts/jp015_002.png",
-   "premium": false
+   "lut": "luts/jp015_002.png"
   },
   {
    "id": "jp015_003",
    "name": "CatBa18",
    "group": "Japan Pack",
-   "lut": "luts/jp015_003.png",
-   "premium": false
+   "lut": "luts/jp015_003.png"
   },
   {
    "id": "jp015_004",
    "name": "Saigon6",
    "group": "Japan Pack",
-   "lut": "luts/jp015_004.png",
-   "premium": false
+   "lut": "luts/jp015_004.png"
   },
   {
    "id": "jp015_005",
    "name": "PhongNha18",
    "group": "Japan Pack",
-   "lut": "luts/jp015_005.png",
-   "premium": false
+   "lut": "luts/jp015_005.png"
   },
   {
    "id": "jp016_001",
    "name": "NhaTrang43",
    "group": "Japan Pack",
-   "lut": "luts/jp016_001.png",
-   "premium": false
+   "lut": "luts/jp016_001.png"
   },
   {
    "id": "jp016_002",
    "name": "MocChau18",
    "group": "Japan Pack",
-   "lut": "luts/jp016_002.png",
-   "premium": false
+   "lut": "luts/jp016_002.png"
   },
   {
    "id": "jp016_003",
    "name": "MuiNe35",
    "group": "Japan Pack",
-   "lut": "luts/jp016_003.png",
-   "premium": false
+   "lut": "luts/jp016_003.png"
   },
   {
    "id": "jp016_004",
    "name": "DaLat36",
    "group": "Japan Pack",
-   "lut": "luts/jp016_004.png",
-   "premium": false
+   "lut": "luts/jp016_004.png"
   },
   {
    "id": "jp016_005",
    "name": "NhaTrang44",
    "group": "Japan Pack",
-   "lut": "luts/jp016_005.png",
-   "premium": false
+   "lut": "luts/jp016_005.png"
   },
   {
    "id": "jp016_006",
    "name": "MuiNe36",
    "group": "Japan Pack",
-   "lut": "luts/jp016_006.png",
-   "premium": false
+   "lut": "luts/jp016_006.png"
   },
   {
    "id": "jp016_007",
    "name": "DaLat37",
    "group": "Japan Pack",
-   "lut": "luts/jp016_007.png",
-   "premium": false
+   "lut": "luts/jp016_007.png"
   },
   {
    "id": "jp016_008",
    "name": "PhuQuoc6",
    "group": "Japan Pack",
-   "lut": "luts/jp016_008.png",
-   "premium": false
+   "lut": "luts/jp016_008.png"
   },
   {
    "id": "jp017_001",
    "name": "NhaTrang45",
    "group": "Japan Pack",
-   "lut": "luts/jp017_001.png",
-   "premium": false
+   "lut": "luts/jp017_001.png"
   },
   {
    "id": "jp017_002",
    "name": "MuiNe37",
    "group": "Japan Pack",
-   "lut": "luts/jp017_002.png",
-   "premium": false
+   "lut": "luts/jp017_002.png"
   },
   {
    "id": "jp017_003",
    "name": "DaLat38",
    "group": "Japan Pack",
-   "lut": "luts/jp017_003.png",
-   "premium": false
+   "lut": "luts/jp017_003.png"
   },
   {
    "id": "jp017_004",
    "name": "NhaTrang46",
    "group": "Japan Pack",
-   "lut": "luts/jp017_004.png",
-   "premium": false
+   "lut": "luts/jp017_004.png"
   },
   {
    "id": "jp017_005",
    "name": "VungTau5",
    "group": "Japan Pack",
-   "lut": "luts/jp017_005.png",
-   "premium": false
+   "lut": "luts/jp017_005.png"
   },
   {
    "id": "jp017_006",
    "name": "TayNinh7",
    "group": "Japan Pack",
-   "lut": "luts/jp017_006.png",
-   "premium": false
+   "lut": "luts/jp017_006.png"
   },
   {
    "id": "jp017_007",
    "name": "Saigon7",
    "group": "Japan Pack",
-   "lut": "luts/jp017_007.png",
-   "premium": false
+   "lut": "luts/jp017_007.png"
   },
   {
    "id": "jp017_008",
    "name": "MuiNe38",
    "group": "Japan Pack",
-   "lut": "luts/jp017_008.png",
-   "premium": false
+   "lut": "luts/jp017_008.png"
   },
   {
    "id": "jp017_009",
    "name": "DaLat39",
    "group": "Japan Pack",
-   "lut": "luts/jp017_009.png",
-   "premium": false
+   "lut": "luts/jp017_009.png"
   },
   {
    "id": "jp017_010",
    "name": "NhaTrang47",
    "group": "Japan Pack",
-   "lut": "luts/jp017_010.png",
-   "premium": false
+   "lut": "luts/jp017_010.png"
   },
   {
    "id": "jp017_011",
    "name": "MuiNe39",
    "group": "Japan Pack",
-   "lut": "luts/jp017_011.png",
-   "premium": false
+   "lut": "luts/jp017_011.png"
   },
   {
    "id": "jp017_012",
    "name": "DaLat40",
    "group": "Japan Pack",
-   "lut": "luts/jp017_012.png",
-   "premium": false
+   "lut": "luts/jp017_012.png"
   },
   {
    "id": "jp017_013",
    "name": "HoiAn8",
    "group": "Japan Pack",
-   "lut": "luts/jp017_013.png",
-   "premium": false
+   "lut": "luts/jp017_013.png"
   },
   {
    "id": "jp017_014",
    "name": "NhaTrang48",
    "group": "Japan Pack",
-   "lut": "luts/jp017_014.png",
-   "premium": false
+   "lut": "luts/jp017_014.png"
   },
   {
    "id": "jp017_015",
    "name": "MuiNe40",
    "group": "Japan Pack",
-   "lut": "luts/jp017_015.png",
-   "premium": false
+   "lut": "luts/jp017_015.png"
   },
   {
    "id": "jp018_001",
    "name": "DaLat41",
    "group": "Japan Pack",
-   "lut": "luts/jp018_001.png",
-   "premium": false
+   "lut": "luts/jp018_001.png"
   },
   {
    "id": "jp018_002",
    "name": "NhaTrang49",
    "group": "Japan Pack",
-   "lut": "luts/jp018_002.png",
-   "premium": false
+   "lut": "luts/jp018_002.png"
   },
   {
    "id": "jp018_003",
    "name": "HaiPhong6",
    "group": "Japan Pack",
-   "lut": "luts/jp018_003.png",
-   "premium": false
+   "lut": "luts/jp018_003.png"
   },
   {
    "id": "jp018_004",
    "name": "QuyNhon6",
    "group": "Japan Pack",
-   "lut": "luts/jp018_004.png",
-   "premium": false
+   "lut": "luts/jp018_004.png"
   },
   {
    "id": "jp019_001",
    "name": "LamDong18",
    "group": "Japan Pack",
-   "lut": "luts/jp019_001.png",
-   "premium": false
+   "lut": "luts/jp019_001.png"
   },
   {
    "id": "jp019_002",
    "name": "MuiNe41",
    "group": "Japan Pack",
-   "lut": "luts/jp019_002.png",
-   "premium": false
+   "lut": "luts/jp019_002.png"
   },
   {
    "id": "jp019_003",
    "name": "NhaTrang50",
    "group": "Japan Pack",
-   "lut": "luts/jp019_003.png",
-   "premium": false
+   "lut": "luts/jp019_003.png"
   },
   {
    "id": "jp019_004",
    "name": "CanTho8",
    "group": "Japan Pack",
-   "lut": "luts/jp019_004.png",
-   "premium": false
+   "lut": "luts/jp019_004.png"
   },
   {
    "id": "jp019_005",
    "name": "Danang6",
    "group": "Japan Pack",
-   "lut": "luts/jp019_005.png",
-   "premium": false
+   "lut": "luts/jp019_005.png"
   },
   {
    "id": "jp019_006",
    "name": "PhuQuoc7",
    "group": "Japan Pack",
-   "lut": "luts/jp019_006.png",
-   "premium": false
+   "lut": "luts/jp019_006.png"
   },
   {
    "id": "jp019_007",
    "name": "TayNinh8",
    "group": "Japan Pack",
-   "lut": "luts/jp019_007.png",
-   "premium": false
+   "lut": "luts/jp019_007.png"
   },
   {
    "id": "jp019_008",
    "name": "HaLong7",
    "group": "Japan Pack",
-   "lut": "luts/jp019_008.png",
-   "premium": false
+   "lut": "luts/jp019_008.png"
   },
   {
    "id": "jp019_009",
    "name": "DaLat42",
    "group": "Japan Pack",
-   "lut": "luts/jp019_009.png",
-   "premium": false
+   "lut": "luts/jp019_009.png"
   },
   {
    "id": "jp019_010",
    "name": "NhaTrang51",
    "group": "Japan Pack",
-   "lut": "luts/jp019_010.png",
-   "premium": false
+   "lut": "luts/jp019_010.png"
   },
   {
    "id": "jp019_011",
    "name": "NinhBinh8",
    "group": "Japan Pack",
-   "lut": "luts/jp019_011.png",
-   "premium": false
+   "lut": "luts/jp019_011.png"
   },
   {
    "id": "jp019_012",
    "name": "MuiNe42",
    "group": "Japan Pack",
-   "lut": "luts/jp019_012.png",
-   "premium": false
+   "lut": "luts/jp019_012.png"
   },
   {
    "id": "jp019_013",
    "name": "DaLat43",
    "group": "Japan Pack",
-   "lut": "luts/jp019_013.png",
-   "premium": false
+   "lut": "luts/jp019_013.png"
   },
   {
    "id": "jp019_014",
    "name": "HaiPhong7",
    "group": "Japan Pack",
-   "lut": "luts/jp019_014.png",
-   "premium": false
+   "lut": "luts/jp019_014.png"
   },
   {
    "id": "jp019_015",
    "name": "CatBa19",
    "group": "Japan Pack",
-   "lut": "luts/jp019_015.png",
-   "premium": false
+   "lut": "luts/jp019_015.png"
   },
   {
    "id": "jp020_001",
    "name": "NhaTrang52",
    "group": "Japan Pack",
-   "lut": "luts/jp020_001.png",
-   "premium": false
+   "lut": "luts/jp020_001.png"
   },
   {
    "id": "jp020_002",
    "name": "MuiNe43",
    "group": "Japan Pack",
-   "lut": "luts/jp020_002.png",
-   "premium": false
+   "lut": "luts/jp020_002.png"
   },
   {
    "id": "jp020_003",
    "name": "DaLat44",
    "group": "Japan Pack",
-   "lut": "luts/jp020_003.png",
-   "premium": false
+   "lut": "luts/jp020_003.png"
   },
   {
    "id": "jp020_004",
    "name": "VungTau6",
    "group": "Japan Pack",
-   "lut": "luts/jp020_004.png",
-   "premium": false
+   "lut": "luts/jp020_004.png"
   },
   {
    "id": "jp020_005",
    "name": "NhaTrang53",
    "group": "Japan Pack",
-   "lut": "luts/jp020_005.png",
-   "premium": false
+   "lut": "luts/jp020_005.png"
   },
   {
    "id": "jp020_006",
    "name": "Saigon8",
    "group": "Japan Pack",
-   "lut": "luts/jp020_006.png",
-   "premium": false
+   "lut": "luts/jp020_006.png"
   },
   {
    "id": "jp020_007",
    "name": "MuiNe44",
    "group": "Japan Pack",
-   "lut": "luts/jp020_007.png",
-   "premium": false
+   "lut": "luts/jp020_007.png"
   },
   {
    "id": "jp020_008",
    "name": "DaLat45",
    "group": "Japan Pack",
-   "lut": "luts/jp020_008.png",
-   "premium": false
+   "lut": "luts/jp020_008.png"
   },
   {
    "id": "jp020_009",
    "name": "NhaTrang54",
    "group": "Japan Pack",
-   "lut": "luts/jp020_009.png",
-   "premium": false
+   "lut": "luts/jp020_009.png"
   },
   {
    "id": "jp020_010",
    "name": "MuiNe45",
    "group": "Japan Pack",
-   "lut": "luts/jp020_010.png",
-   "premium": false
+   "lut": "luts/jp020_010.png"
   },
   {
    "id": "jp020_011",
    "name": "DaLat46",
    "group": "Japan Pack",
-   "lut": "luts/jp020_011.png",
-   "premium": false
+   "lut": "luts/jp020_011.png"
   },
   {
    "id": "jp020_012",
    "name": "NhaTrang55",
    "group": "Japan Pack",
-   "lut": "luts/jp020_012.png",
-   "premium": false
+   "lut": "luts/jp020_012.png"
   },
   {
    "id": "jp021_001",
    "name": "NinhBinh9",
    "group": "Japan Pack",
-   "lut": "luts/jp021_001.png",
-   "premium": false
+   "lut": "luts/jp021_001.png"
   },
   {
    "id": "jp021_002",
    "name": "PhuYen2",
    "group": "Japan Pack",
-   "lut": "luts/jp021_002.png",
-   "premium": false
+   "lut": "luts/jp021_002.png"
   },
   {
    "id": "jp021_003",
    "name": "MuiNe46",
    "group": "Japan Pack",
-   "lut": "luts/jp021_003.png",
-   "premium": false
+   "lut": "luts/jp021_003.png"
   },
   {
    "id": "jp021_004",
    "name": "DaLat47",
    "group": "Japan Pack",
-   "lut": "luts/jp021_004.png",
-   "premium": false
+   "lut": "luts/jp021_004.png"
   },
   {
    "id": "jp021_005",
    "name": "NhaTrang56",
    "group": "Japan Pack",
-   "lut": "luts/jp021_005.png",
-   "premium": false
+   "lut": "luts/jp021_005.png"
   },
   {
    "id": "jp022_001",
    "name": "MuiNe47",
    "group": "Japan Pack",
-   "lut": "luts/jp022_001.png",
-   "premium": false
+   "lut": "luts/jp022_001.png"
   },
   {
    "id": "jp022_002",
    "name": "DaLat48",
    "group": "Japan Pack",
-   "lut": "luts/jp022_002.png",
-   "premium": false
+   "lut": "luts/jp022_002.png"
   },
   {
    "id": "jp022_003",
    "name": "NhaTrang57",
    "group": "Japan Pack",
-   "lut": "luts/jp022_003.png",
-   "premium": false
+   "lut": "luts/jp022_003.png"
   },
   {
    "id": "jp022_004",
    "name": "MuiNe48",
    "group": "Japan Pack",
-   "lut": "luts/jp022_004.png",
-   "premium": false
+   "lut": "luts/jp022_004.png"
   },
   {
    "id": "jp022_005",
    "name": "DaLat49",
    "group": "Japan Pack",
-   "lut": "luts/jp022_005.png",
-   "premium": false
+   "lut": "luts/jp022_005.png"
   },
   {
    "id": "jp022_006",
    "name": "NhaTrang58",
    "group": "Japan Pack",
-   "lut": "luts/jp022_006.png",
-   "premium": false
+   "lut": "luts/jp022_006.png"
   },
   {
    "id": "jp022_007",
    "name": "MuiNe49",
    "group": "Japan Pack",
-   "lut": "luts/jp022_007.png",
-   "premium": false
+   "lut": "luts/jp022_007.png"
   },
   {
    "id": "jp022_008",
    "name": "DaLat50",
    "group": "Japan Pack",
-   "lut": "luts/jp022_008.png",
-   "premium": false
+   "lut": "luts/jp022_008.png"
   },
   {
    "id": "jp022_009",
    "name": "NhaTrang59",
    "group": "Japan Pack",
-   "lut": "luts/jp022_009.png",
-   "premium": false
+   "lut": "luts/jp022_009.png"
   },
   {
    "id": "jp022_010",
    "name": "MuiNe50",
    "group": "Japan Pack",
-   "lut": "luts/jp022_010.png",
-   "premium": false
+   "lut": "luts/jp022_010.png"
   },
   {
    "id": "jp022_011",
    "name": "DaLat51",
    "group": "Japan Pack",
-   "lut": "luts/jp022_011.png",
-   "premium": false
+   "lut": "luts/jp022_011.png"
   },
   {
    "id": "jp022_012",
    "name": "NhaTrang60",
    "group": "Japan Pack",
-   "lut": "luts/jp022_012.png",
-   "premium": false
+   "lut": "luts/jp022_012.png"
   },
   {
    "id": "jp022_013",
    "name": "MuiNe51",
    "group": "Japan Pack",
-   "lut": "luts/jp022_013.png",
-   "premium": false
+   "lut": "luts/jp022_013.png"
   },
   {
    "id": "jp022_014",
    "name": "DaLat52",
    "group": "Japan Pack",
-   "lut": "luts/jp022_014.png",
-   "premium": false
+   "lut": "luts/jp022_014.png"
   },
   {
    "id": "jp022_015",
    "name": "NhaTrang61",
    "group": "Japan Pack",
-   "lut": "luts/jp022_015.png",
-   "premium": false
+   "lut": "luts/jp022_015.png"
   },
   {
    "id": "jp023_001",
    "name": "MuiNe52",
    "group": "Japan Pack",
-   "lut": "luts/jp023_001.png",
-   "premium": false
+   "lut": "luts/jp023_001.png"
   },
   {
    "id": "jp023_002",
    "name": "HoiAn9",
    "group": "Japan Pack",
-   "lut": "luts/jp023_002.png",
-   "premium": false
+   "lut": "luts/jp023_002.png"
   },
   {
    "id": "jp023_003",
    "name": "Hanoi6",
    "group": "Japan Pack",
-   "lut": "luts/jp023_003.png",
-   "premium": false
+   "lut": "luts/jp023_003.png"
   },
   {
    "id": "jp023_004",
    "name": "PhongNha19",
    "group": "Japan Pack",
-   "lut": "luts/jp023_004.png",
-   "premium": false
+   "lut": "luts/jp023_004.png"
   },
   {
    "id": "jp023_005",
    "name": "DaLat53",
    "group": "Japan Pack",
-   "lut": "luts/jp023_005.png",
-   "premium": false
+   "lut": "luts/jp023_005.png"
   },
   {
    "id": "jp023_006",
    "name": "NhaTrang62",
    "group": "Japan Pack",
-   "lut": "luts/jp023_006.png",
-   "premium": false
+   "lut": "luts/jp023_006.png"
   },
   {
    "id": "jp023_007",
    "name": "MocChau19",
    "group": "Japan Pack",
-   "lut": "luts/jp023_007.png",
-   "premium": false
+   "lut": "luts/jp023_007.png"
   },
   {
    "id": "jp024_001",
    "name": "VungTau7",
    "group": "Japan Pack",
-   "lut": "luts/jp024_001.png",
-   "premium": false
+   "lut": "luts/jp024_001.png"
   },
   {
    "id": "jp024_002",
    "name": "QuyNhon7",
    "group": "Japan Pack",
-   "lut": "luts/jp024_002.png",
-   "premium": false
+   "lut": "luts/jp024_002.png"
   },
   {
    "id": "jp024_003",
    "name": "NhaTrang63",
    "group": "Japan Pack",
-   "lut": "luts/jp024_003.png",
-   "premium": false
+   "lut": "luts/jp024_003.png"
   },
   {
    "id": "jp024_004",
    "name": "PhuQuoc8",
    "group": "Japan Pack",
-   "lut": "luts/jp024_004.png",
-   "premium": false
+   "lut": "luts/jp024_004.png"
   },
   {
    "id": "jp024_005",
    "name": "LamDong19",
    "group": "Japan Pack",
-   "lut": "luts/jp024_005.png",
-   "premium": false
+   "lut": "luts/jp024_005.png"
   },
   {
    "id": "jp024_006",
    "name": "MuiNe53",
    "group": "Japan Pack",
-   "lut": "luts/jp024_006.png",
-   "premium": false
+   "lut": "luts/jp024_006.png"
   },
   {
    "id": "jp025_001",
    "name": "QuyNhon8",
    "group": "Japan Pack",
-   "lut": "luts/jp025_001.png",
-   "premium": false
+   "lut": "luts/jp025_001.png"
   },
   {
    "id": "jp025_002",
    "name": "HaLong8",
    "group": "Japan Pack",
-   "lut": "luts/jp025_002.png",
-   "premium": false
+   "lut": "luts/jp025_002.png"
   },
   {
    "id": "jp025_003",
    "name": "NhaTrang64",
    "group": "Japan Pack",
-   "lut": "luts/jp025_003.png",
-   "premium": false
+   "lut": "luts/jp025_003.png"
   },
   {
    "id": "jp025_004",
    "name": "CanTho9",
    "group": "Japan Pack",
-   "lut": "luts/jp025_004.png",
-   "premium": false
+   "lut": "luts/jp025_004.png"
   },
   {
    "id": "jp025_005",
    "name": "DaLat54",
    "group": "Japan Pack",
-   "lut": "luts/jp025_005.png",
-   "premium": false
+   "lut": "luts/jp025_005.png"
   },
   {
    "id": "jp025_006",
    "name": "NhaTrang65",
    "group": "Japan Pack",
-   "lut": "luts/jp025_006.png",
-   "premium": false
+   "lut": "luts/jp025_006.png"
   },
   {
    "id": "jp026_001",
    "name": "CatBa20",
    "group": "Japan Pack",
-   "lut": "luts/jp026_001.png",
-   "premium": false
+   "lut": "luts/jp026_001.png"
   },
   {
    "id": "jp026_002",
    "name": "PhongNha20",
    "group": "Japan Pack",
-   "lut": "luts/jp026_002.png",
-   "premium": false
+   "lut": "luts/jp026_002.png"
   },
   {
    "id": "jp026_003",
    "name": "MuiNe54",
    "group": "Japan Pack",
-   "lut": "luts/jp026_003.png",
-   "premium": false
+   "lut": "luts/jp026_003.png"
   },
   {
    "id": "jp026_004",
    "name": "DaLat55",
    "group": "Japan Pack",
-   "lut": "luts/jp026_004.png",
-   "premium": false
+   "lut": "luts/jp026_004.png"
   },
   {
    "id": "jp026_005",
    "name": "MocChau20",
    "group": "Japan Pack",
-   "lut": "luts/jp026_005.png",
-   "premium": false
+   "lut": "luts/jp026_005.png"
   },
   {
    "id": "jp026_006",
    "name": "LamDong20",
    "group": "Japan Pack",
-   "lut": "luts/jp026_006.png",
-   "premium": false
+   "lut": "luts/jp026_006.png"
   },
   {
    "id": "jp026_007",
    "name": "CatBa21",
    "group": "Japan Pack",
-   "lut": "luts/jp026_007.png",
-   "premium": false
+   "lut": "luts/jp026_007.png"
   },
   {
    "id": "jp026_008",
    "name": "PhongNha21",
    "group": "Japan Pack",
-   "lut": "luts/jp026_008.png",
-   "premium": false
+   "lut": "luts/jp026_008.png"
   },
   {
    "id": "jp026_009",
    "name": "MocChau21",
    "group": "Japan Pack",
-   "lut": "luts/jp026_009.png",
-   "premium": false
+   "lut": "luts/jp026_009.png"
   },
   {
    "id": "jp026_010",
    "name": "Danang7",
    "group": "Japan Pack",
-   "lut": "luts/jp026_010.png",
-   "premium": false
+   "lut": "luts/jp026_010.png"
   },
   {
    "id": "jp026_011",
    "name": "NhaTrang66",
    "group": "Japan Pack",
-   "lut": "luts/jp026_011.png",
-   "premium": false
+   "lut": "luts/jp026_011.png"
   },
   {
    "id": "jp026_012",
    "name": "MuiNe55",
    "group": "Japan Pack",
-   "lut": "luts/jp026_012.png",
-   "premium": false
+   "lut": "luts/jp026_012.png"
   },
   {
    "id": "jp027_001",
    "name": "DaLat56",
    "group": "Japan Pack",
-   "lut": "luts/jp027_001.png",
-   "premium": false
+   "lut": "luts/jp027_001.png"
   },
   {
    "id": "jp027_002",
    "name": "NhaTrang67",
    "group": "Japan Pack",
-   "lut": "luts/jp027_002.png",
-   "premium": false
+   "lut": "luts/jp027_002.png"
   },
   {
    "id": "jp027_003",
    "name": "MuiNe56",
    "group": "Japan Pack",
-   "lut": "luts/jp027_003.png",
-   "premium": false
+   "lut": "luts/jp027_003.png"
   },
   {
    "id": "jp027_004",
    "name": "DaLat57",
    "group": "Japan Pack",
-   "lut": "luts/jp027_004.png",
-   "premium": false
+   "lut": "luts/jp027_004.png"
   },
   {
    "id": "jp027_005",
    "name": "NhaTrang68",
    "group": "Japan Pack",
-   "lut": "luts/jp027_005.png",
-   "premium": false
+   "lut": "luts/jp027_005.png"
   },
   {
    "id": "jp027_006",
    "name": "MuiNe57",
    "group": "Japan Pack",
-   "lut": "luts/jp027_006.png",
-   "premium": false
+   "lut": "luts/jp027_006.png"
   },
   {
    "id": "jp027_007",
    "name": "DaLat58",
    "group": "Japan Pack",
-   "lut": "luts/jp027_007.png",
-   "premium": false
+   "lut": "luts/jp027_007.png"
   },
   {
    "id": "jp027_008",
    "name": "PhuQuoc9",
    "group": "Japan Pack",
-   "lut": "luts/jp027_008.png",
-   "premium": false
+   "lut": "luts/jp027_008.png"
   },
   {
    "id": "jp027_009",
    "name": "NhaTrang69",
    "group": "Japan Pack",
-   "lut": "luts/jp027_009.png",
-   "premium": false
+   "lut": "luts/jp027_009.png"
   },
   {
    "id": "jp027_010",
    "name": "MuiNe58",
    "group": "Japan Pack",
-   "lut": "luts/jp027_010.png",
-   "premium": false
+   "lut": "luts/jp027_010.png"
   },
   {
    "id": "jp027_011",
    "name": "DaLat59",
    "group": "Japan Pack",
-   "lut": "luts/jp027_011.png",
-   "premium": false
+   "lut": "luts/jp027_011.png"
   },
   {
    "id": "jp027_012",
    "name": "VungTau8",
    "group": "Japan Pack",
-   "lut": "luts/jp027_012.png",
-   "premium": false
+   "lut": "luts/jp027_012.png"
   },
   {
    "id": "jp027_013",
    "name": "NhaTrang70",
    "group": "Japan Pack",
-   "lut": "luts/jp027_013.png",
-   "premium": false
+   "lut": "luts/jp027_013.png"
   },
   {
    "id": "jp027_014",
    "name": "MuiNe59",
    "group": "Japan Pack",
-   "lut": "luts/jp027_014.png",
-   "premium": false
+   "lut": "luts/jp027_014.png"
   },
   {
    "id": "jp027_015",
    "name": "TayNinh9",
    "group": "Japan Pack",
-   "lut": "luts/jp027_015.png",
-   "premium": false
+   "lut": "luts/jp027_015.png"
   },
   {
    "id": "jp027_016",
    "name": "DaLat60",
    "group": "Japan Pack",
-   "lut": "luts/jp027_016.png",
-   "premium": false
+   "lut": "luts/jp027_016.png"
   },
   {
    "id": "jp027_017",
    "name": "NhaTrang71",
    "group": "Japan Pack",
-   "lut": "luts/jp027_017.png",
-   "premium": false
+   "lut": "luts/jp027_017.png"
   },
   {
    "id": "jp027_018",
    "name": "MuiNe60",
    "group": "Japan Pack",
-   "lut": "luts/jp027_018.png",
-   "premium": false
+   "lut": "luts/jp027_018.png"
   },
   {
    "id": "jp027_019",
    "name": "DaLat61",
    "group": "Japan Pack",
-   "lut": "luts/jp027_019.png",
-   "premium": false
+   "lut": "luts/jp027_019.png"
   },
   {
    "id": "jp027_020",
    "name": "NhaTrang72",
    "group": "Japan Pack",
-   "lut": "luts/jp027_020.png",
-   "premium": false
+   "lut": "luts/jp027_020.png"
   },
   {
    "id": "jp027_021",
    "name": "MuiNe61",
    "group": "Japan Pack",
-   "lut": "luts/jp027_021.png",
-   "premium": false
+   "lut": "luts/jp027_021.png"
   },
   {
    "id": "jp027_022",
    "name": "DaLat62",
    "group": "Japan Pack",
-   "lut": "luts/jp027_022.png",
-   "premium": false
+   "lut": "luts/jp027_022.png"
   },
   {
    "id": "jp027_023",
    "name": "NhaTrang73",
    "group": "Japan Pack",
-   "lut": "luts/jp027_023.png",
-   "premium": false
+   "lut": "luts/jp027_023.png"
   },
   {
    "id": "jp027_024",
    "name": "MuiNe62",
    "group": "Japan Pack",
-   "lut": "luts/jp027_024.png",
-   "premium": false
+   "lut": "luts/jp027_024.png"
   },
   {
    "id": "jp027_025",
    "name": "Hanoi7",
    "group": "Japan Pack",
-   "lut": "luts/jp027_025.png",
-   "premium": false
+   "lut": "luts/jp027_025.png"
   },
   {
    "id": "jp027_026",
    "name": "Saigon9",
    "group": "Japan Pack",
-   "lut": "luts/jp027_026.png",
-   "premium": false
+   "lut": "luts/jp027_026.png"
   },
   {
    "id": "jp027_027",
    "name": "DaLat63",
    "group": "Japan Pack",
-   "lut": "luts/jp027_027.png",
-   "premium": false
+   "lut": "luts/jp027_027.png"
   },
   {
    "id": "jp027_028",
    "name": "NinhBinh10",
    "group": "Japan Pack",
-   "lut": "luts/jp027_028.png",
-   "premium": false
+   "lut": "luts/jp027_028.png"
   },
   {
    "id": "jp027_029",
    "name": "NhaTrang74",
    "group": "Japan Pack",
-   "lut": "luts/jp027_029.png",
-   "premium": false
+   "lut": "luts/jp027_029.png"
   },
   {
    "id": "jp027_030",
    "name": "MuiNe63",
    "group": "Japan Pack",
-   "lut": "luts/jp027_030.png",
-   "premium": false
+   "lut": "luts/jp027_030.png"
   },
   {
    "id": "jp027_031",
    "name": "HoiAn10",
    "group": "Japan Pack",
-   "lut": "luts/jp027_031.png",
-   "premium": false
+   "lut": "luts/jp027_031.png"
   },
   {
    "id": "jp027_032",
    "name": "Danang8",
    "group": "Japan Pack",
-   "lut": "luts/jp027_032.png",
-   "premium": false
+   "lut": "luts/jp027_032.png"
   },
   {
    "id": "jp027_033",
    "name": "DaLat64",
    "group": "Japan Pack",
-   "lut": "luts/jp027_033.png",
-   "premium": false
+   "lut": "luts/jp027_033.png"
   },
   {
    "id": "jp027_034",
    "name": "NhaTrang75",
    "group": "Japan Pack",
-   "lut": "luts/jp027_034.png",
-   "premium": false
+   "lut": "luts/jp027_034.png"
   },
   {
    "id": "jp027_035",
    "name": "HaiPhong8",
    "group": "Japan Pack",
-   "lut": "luts/jp027_035.png",
-   "premium": false
+   "lut": "luts/jp027_035.png"
   },
   {
    "id": "jp028_001",
    "name": "MuiNe64",
    "group": "Japan Pack",
-   "lut": "luts/jp028_001.png",
-   "premium": false
+   "lut": "luts/jp028_001.png"
   },
   {
    "id": "jp028_002",
    "name": "DaLat65",
    "group": "Japan Pack",
-   "lut": "luts/jp028_002.png",
-   "premium": false
+   "lut": "luts/jp028_002.png"
   },
   {
    "id": "jp028_003",
    "name": "NhaTrang76",
    "group": "Japan Pack",
-   "lut": "luts/jp028_003.png",
-   "premium": false
+   "lut": "luts/jp028_003.png"
   },
   {
    "id": "jp028_004",
    "name": "MuiNe65",
    "group": "Japan Pack",
-   "lut": "luts/jp028_004.png",
-   "premium": false
+   "lut": "luts/jp028_004.png"
   },
   {
    "id": "jp028_005",
    "name": "Hue5",
    "group": "Japan Pack",
-   "lut": "luts/jp028_005.png",
-   "premium": false
+   "lut": "luts/jp028_005.png"
   },
   {
    "id": "jp028_006",
    "name": "DaLat66",
    "group": "Japan Pack",
-   "lut": "luts/jp028_006.png",
-   "premium": false
+   "lut": "luts/jp028_006.png"
   },
   {
    "id": "jp028_007",
    "name": "LamDong21",
    "group": "Japan Pack",
-   "lut": "luts/jp028_007.png",
-   "premium": false
+   "lut": "luts/jp028_007.png"
   },
   {
    "id": "jp028_008",
    "name": "NhaTrang77",
    "group": "Japan Pack",
-   "lut": "luts/jp028_008.png",
-   "premium": false
+   "lut": "luts/jp028_008.png"
   },
   {
    "id": "jp028_009",
    "name": "MuiNe66",
    "group": "Japan Pack",
-   "lut": "luts/jp028_009.png",
-   "premium": false
+   "lut": "luts/jp028_009.png"
   },
   {
    "id": "jp028_010",
    "name": "HaGiang3",
    "group": "Japan Pack",
-   "lut": "luts/jp028_010.png",
-   "premium": false
+   "lut": "luts/jp028_010.png"
   },
   {
    "id": "jp028_011",
    "name": "DienBien3",
    "group": "Japan Pack",
-   "lut": "luts/jp028_011.png",
-   "premium": false
+   "lut": "luts/jp028_011.png"
   },
   {
    "id": "jp028_012",
    "name": "DaLat67",
    "group": "Japan Pack",
-   "lut": "luts/jp028_012.png",
-   "premium": false
+   "lut": "luts/jp028_012.png"
   },
   {
    "id": "jp028_013",
    "name": "NhaTrang78",
    "group": "Japan Pack",
-   "lut": "luts/jp028_013.png",
-   "premium": false
+   "lut": "luts/jp028_013.png"
   },
   {
    "id": "jp028_014",
    "name": "MuiNe67",
    "group": "Japan Pack",
-   "lut": "luts/jp028_014.png",
-   "premium": false
+   "lut": "luts/jp028_014.png"
   },
   {
    "id": "jp028_015",
    "name": "PhuYen3",
    "group": "Japan Pack",
-   "lut": "luts/jp028_015.png",
-   "premium": false
+   "lut": "luts/jp028_015.png"
   },
   {
    "id": "jp028_016",
    "name": "CatBa22",
    "group": "Japan Pack",
-   "lut": "luts/jp028_016.png",
-   "premium": false
+   "lut": "luts/jp028_016.png"
   },
   {
    "id": "jp028_017",
    "name": "PhongNha22",
    "group": "Japan Pack",
-   "lut": "luts/jp028_017.png",
-   "premium": false
+   "lut": "luts/jp028_017.png"
   },
   {
    "id": "jp028_018",
    "name": "MocChau22",
    "group": "Japan Pack",
-   "lut": "luts/jp028_018.png",
-   "premium": false
+   "lut": "luts/jp028_018.png"
   },
   {
    "id": "jp028_019",
    "name": "Hue6",
    "group": "Japan Pack",
-   "lut": "luts/jp028_019.png",
-   "premium": false
+   "lut": "luts/jp028_019.png"
   },
   {
    "id": "jp028_020",
    "name": "LamDong22",
    "group": "Japan Pack",
-   "lut": "luts/jp028_020.png",
-   "premium": false
+   "lut": "luts/jp028_020.png"
   },
   {
    "id": "jp028_021",
    "name": "CatBa23",
    "group": "Japan Pack",
-   "lut": "luts/jp028_021.png",
-   "premium": false
+   "lut": "luts/jp028_021.png"
   },
   {
    "id": "jp028_022",
    "name": "PhongNha23",
    "group": "Japan Pack",
-   "lut": "luts/jp028_022.png",
-   "premium": false
+   "lut": "luts/jp028_022.png"
   },
   {
    "id": "jp028_023",
    "name": "MocChau23",
    "group": "Japan Pack",
-   "lut": "luts/jp028_023.png",
-   "premium": false
+   "lut": "luts/jp028_023.png"
   },
   {
    "id": "jp028_024",
    "name": "LamDong23",
    "group": "Japan Pack",
-   "lut": "luts/jp028_024.png",
-   "premium": false
+   "lut": "luts/jp028_024.png"
   },
   {
    "id": "jp028_025",
    "name": "DaLat68",
    "group": "Japan Pack",
-   "lut": "luts/jp028_025.png",
-   "premium": false
+   "lut": "luts/jp028_025.png"
   },
   {
    "id": "jp028_026",
    "name": "HaGiang4",
    "group": "Japan Pack",
-   "lut": "luts/jp028_026.png",
-   "premium": false
+   "lut": "luts/jp028_026.png"
   },
   {
    "id": "jp028_027",
    "name": "CatBa24",
    "group": "Japan Pack",
-   "lut": "luts/jp028_027.png",
-   "premium": false
+   "lut": "luts/jp028_027.png"
   },
   {
    "id": "jp028_028",
    "name": "PhongNha24",
    "group": "Japan Pack",
-   "lut": "luts/jp028_028.png",
-   "premium": false
+   "lut": "luts/jp028_028.png"
   },
   {
    "id": "jp028_029",
    "name": "MocChau24",
    "group": "Japan Pack",
-   "lut": "luts/jp028_029.png",
-   "premium": false
+   "lut": "luts/jp028_029.png"
   },
   {
    "id": "jp028_030",
    "name": "LamDong24",
    "group": "Japan Pack",
-   "lut": "luts/jp028_030.png",
-   "premium": false
+   "lut": "luts/jp028_030.png"
   },
   {
    "id": "jp028_031",
    "name": "CatBa25",
    "group": "Japan Pack",
-   "lut": "luts/jp028_031.png",
-   "premium": false
+   "lut": "luts/jp028_031.png"
   },
   {
    "id": "jp029_001",
    "name": "NhaTrang79",
    "group": "Japan Pack",
-   "lut": "luts/jp029_001.png",
-   "premium": false
+   "lut": "luts/jp029_001.png"
   },
   {
    "id": "jp029_002",
    "name": "MuiNe68",
    "group": "Japan Pack",
-   "lut": "luts/jp029_002.png",
-   "premium": false
+   "lut": "luts/jp029_002.png"
   },
   {
    "id": "jp029_003",
    "name": "DaLat69",
    "group": "Japan Pack",
-   "lut": "luts/jp029_003.png",
-   "premium": false
+   "lut": "luts/jp029_003.png"
   },
   {
    "id": "jp029_004",
    "name": "NhaTrang80",
    "group": "Japan Pack",
-   "lut": "luts/jp029_004.png",
-   "premium": false
+   "lut": "luts/jp029_004.png"
   },
   {
    "id": "jp029_005",
    "name": "MuiNe69",
    "group": "Japan Pack",
-   "lut": "luts/jp029_005.png",
-   "premium": false
+   "lut": "luts/jp029_005.png"
   },
   {
    "id": "jp029_006",
    "name": "DaLat70",
    "group": "Japan Pack",
-   "lut": "luts/jp029_006.png",
-   "premium": false
+   "lut": "luts/jp029_006.png"
   },
   {
    "id": "jp029_007",
    "name": "NhaTrang81",
    "group": "Japan Pack",
-   "lut": "luts/jp029_007.png",
-   "premium": false
+   "lut": "luts/jp029_007.png"
   },
   {
    "id": "jp029_008",
    "name": "MuiNe70",
    "group": "Japan Pack",
-   "lut": "luts/jp029_008.png",
-   "premium": false
+   "lut": "luts/jp029_008.png"
   },
   {
    "id": "jp029_009",
    "name": "DaLat71",
    "group": "Japan Pack",
-   "lut": "luts/jp029_009.png",
-   "premium": false
+   "lut": "luts/jp029_009.png"
   },
   {
    "id": "jp029_010",
    "name": "NhaTrang82",
    "group": "Japan Pack",
-   "lut": "luts/jp029_010.png",
-   "premium": false
+   "lut": "luts/jp029_010.png"
   },
   {
    "id": "jp029_011",
    "name": "MuiNe71",
    "group": "Japan Pack",
-   "lut": "luts/jp029_011.png",
-   "premium": false
+   "lut": "luts/jp029_011.png"
   },
   {
    "id": "jp029_012",
    "name": "DaLat72",
    "group": "Japan Pack",
-   "lut": "luts/jp029_012.png",
-   "premium": false
+   "lut": "luts/jp029_012.png"
   },
   {
    "id": "jp029_013",
    "name": "PhongNha25",
    "group": "Japan Pack",
-   "lut": "luts/jp029_013.png",
-   "premium": false
+   "lut": "luts/jp029_013.png"
   },
   {
    "id": "jp029_014",
    "name": "NhaTrang83",
    "group": "Japan Pack",
-   "lut": "luts/jp029_014.png",
-   "premium": false
+   "lut": "luts/jp029_014.png"
   },
   {
    "id": "jp029_015",
    "name": "MuiNe72",
    "group": "Japan Pack",
-   "lut": "luts/jp029_015.png",
-   "premium": false
+   "lut": "luts/jp029_015.png"
   },
   {
    "id": "jp029_016",
    "name": "DaLat73",
    "group": "Japan Pack",
-   "lut": "luts/jp029_016.png",
-   "premium": false
+   "lut": "luts/jp029_016.png"
   },
   {
    "id": "jp029_017",
    "name": "NhaTrang84",
    "group": "Japan Pack",
-   "lut": "luts/jp029_017.png",
-   "premium": false
+   "lut": "luts/jp029_017.png"
   },
   {
    "id": "jp029_018",
    "name": "MuiNe73",
    "group": "Japan Pack",
-   "lut": "luts/jp029_018.png",
-   "premium": false
+   "lut": "luts/jp029_018.png"
   },
   {
    "id": "jp029_019",
    "name": "DaLat74",
    "group": "Japan Pack",
-   "lut": "luts/jp029_019.png",
-   "premium": false
+   "lut": "luts/jp029_019.png"
   },
   {
    "id": "jp030_001",
    "name": "NhaTrang85",
    "group": "Japan Pack",
-   "lut": "luts/jp030_001.png",
-   "premium": false
+   "lut": "luts/jp030_001.png"
   },
   {
    "id": "jp030_002",
    "name": "DaLat75",
    "group": "Japan Pack",
-   "lut": "luts/jp030_002.png",
-   "premium": false
+   "lut": "luts/jp030_002.png"
   },
   {
    "id": "jp030_003",
    "name": "MuiNe74",
    "group": "Japan Pack",
-   "lut": "luts/jp030_003.png",
-   "premium": false
+   "lut": "luts/jp030_003.png"
   },
   {
    "id": "jp030_004",
    "name": "PhuQuoc10",
    "group": "Japan Pack",
-   "lut": "luts/jp030_004.png",
-   "premium": false
+   "lut": "luts/jp030_004.png"
   },
   {
    "id": "jp030_005",
    "name": "VungTau9",
    "group": "Japan Pack",
-   "lut": "luts/jp030_005.png",
-   "premium": false
+   "lut": "luts/jp030_005.png"
   },
   {
    "id": "jp031_001",
    "name": "DaLat76",
    "group": "Japan Pack",
-   "lut": "luts/jp031_001.png",
-   "premium": false
+   "lut": "luts/jp031_001.png"
   },
   {
    "id": "jp031_002",
    "name": "Saigon10",
    "group": "Japan Pack",
-   "lut": "luts/jp031_002.png",
-   "premium": false
+   "lut": "luts/jp031_002.png"
   },
   {
    "id": "jp031_003",
    "name": "NhaTrang86",
    "group": "Japan Pack",
-   "lut": "luts/jp031_003.png",
-   "premium": false
+   "lut": "luts/jp031_003.png"
   },
   {
    "id": "jp031_004",
    "name": "MuiNe75",
    "group": "Japan Pack",
-   "lut": "luts/jp031_004.png",
-   "premium": false
+   "lut": "luts/jp031_004.png"
   },
   {
    "id": "jp031_005",
    "name": "MocChau25",
    "group": "Japan Pack",
-   "lut": "luts/jp031_005.png",
-   "premium": false
+   "lut": "luts/jp031_005.png"
   },
   {
    "id": "jp031_006",
    "name": "HoiAn11",
    "group": "Japan Pack",
-   "lut": "luts/jp031_006.png",
-   "premium": false
+   "lut": "luts/jp031_006.png"
   },
   {
    "id": "jp031_007",
    "name": "DienBien4",
    "group": "Japan Pack",
-   "lut": "luts/jp031_007.png",
-   "premium": false
+   "lut": "luts/jp031_007.png"
   },
   {
    "id": "jp031_008",
    "name": "LamDong25",
    "group": "Japan Pack",
-   "lut": "luts/jp031_008.png",
-   "premium": false
+   "lut": "luts/jp031_008.png"
   },
   {
    "id": "jp032_001",
    "name": "QuyNhon9",
    "group": "Japan Pack",
-   "lut": "luts/jp032_001.png",
-   "premium": false
+   "lut": "luts/jp032_001.png"
   },
   {
    "id": "jp032_002",
    "name": "DaLat77",
    "group": "Japan Pack",
-   "lut": "luts/jp032_002.png",
-   "premium": false
+   "lut": "luts/jp032_002.png"
   },
   {
    "id": "jp032_003",
    "name": "NhaTrang87",
    "group": "Japan Pack",
-   "lut": "luts/jp032_003.png",
-   "premium": false
+   "lut": "luts/jp032_003.png"
   },
   {
    "id": "jp032_004",
    "name": "NhaTrang88",
    "group": "Japan Pack",
-   "lut": "luts/jp032_004.png",
-   "premium": false
+   "lut": "luts/jp032_004.png"
   },
   {
    "id": "jp032_005",
    "name": "CanTho10",
    "group": "Japan Pack",
-   "lut": "luts/jp032_005.png",
-   "premium": false
+   "lut": "luts/jp032_005.png"
   },
   {
    "id": "jp033_001",
    "name": "MuiNe76",
    "group": "Japan Pack",
-   "lut": "luts/jp033_001.png",
-   "premium": false
+   "lut": "luts/jp033_001.png"
   },
   {
    "id": "jp033_002",
    "name": "DaLat78",
    "group": "Japan Pack",
-   "lut": "luts/jp033_002.png",
-   "premium": false
+   "lut": "luts/jp033_002.png"
   },
   {
    "id": "jp033_003",
    "name": "NhaTrang89",
    "group": "Japan Pack",
-   "lut": "luts/jp033_003.png",
-   "premium": false
+   "lut": "luts/jp033_003.png"
   },
   {
    "id": "jp033_004",
    "name": "MuiNe77",
    "group": "Japan Pack",
-   "lut": "luts/jp033_004.png",
-   "premium": false
+   "lut": "luts/jp033_004.png"
   },
   {
    "id": "jp033_005",
    "name": "DaLat79",
    "group": "Japan Pack",
-   "lut": "luts/jp033_005.png",
-   "premium": false
+   "lut": "luts/jp033_005.png"
   },
   {
    "id": "jp033_006",
    "name": "NhaTrang90",
    "group": "Japan Pack",
-   "lut": "luts/jp033_006.png",
-   "premium": false
+   "lut": "luts/jp033_006.png"
   },
   {
    "id": "jp033_007",
    "name": "MuiNe78",
    "group": "Japan Pack",
-   "lut": "luts/jp033_007.png",
-   "premium": false
+   "lut": "luts/jp033_007.png"
   },
   {
    "id": "jp033_008",
    "name": "DaLat80",
    "group": "Japan Pack",
-   "lut": "luts/jp033_008.png",
-   "premium": false
+   "lut": "luts/jp033_008.png"
   },
   {
    "id": "jp033_009",
    "name": "NhaTrang91",
    "group": "Japan Pack",
-   "lut": "luts/jp033_009.png",
-   "premium": false
+   "lut": "luts/jp033_009.png"
   },
   {
    "id": "jp033_010",
    "name": "MuiNe79",
    "group": "Japan Pack",
-   "lut": "luts/jp033_010.png",
-   "premium": false
+   "lut": "luts/jp033_010.png"
   },
   {
    "id": "jp034_001",
    "name": "HaLong9",
    "group": "Japan Pack",
-   "lut": "luts/jp034_001.png",
-   "premium": false
+   "lut": "luts/jp034_001.png"
   },
   {
    "id": "jp034_002",
    "name": "DaLat81",
    "group": "Japan Pack",
-   "lut": "luts/jp034_002.png",
-   "premium": false
+   "lut": "luts/jp034_002.png"
   },
   {
    "id": "jp034_003",
    "name": "NinhBinh11",
    "group": "Japan Pack",
-   "lut": "luts/jp034_003.png",
-   "premium": false
+   "lut": "luts/jp034_003.png"
   },
   {
    "id": "jp034_004",
    "name": "NhaTrang92",
    "group": "Japan Pack",
-   "lut": "luts/jp034_004.png",
-   "premium": false
+   "lut": "luts/jp034_004.png"
   },
   {
    "id": "jp034_005",
    "name": "HoiAn12",
    "group": "Japan Pack",
-   "lut": "luts/jp034_005.png",
-   "premium": false
+   "lut": "luts/jp034_005.png"
   },
   {
    "id": "jp034_006",
    "name": "MuiNe80",
    "group": "Japan Pack",
-   "lut": "luts/jp034_006.png",
-   "premium": false
+   "lut": "luts/jp034_006.png"
   },
   {
    "id": "jp034_007",
    "name": "CatBa26",
    "group": "Japan Pack",
-   "lut": "luts/jp034_007.png",
-   "premium": false
+   "lut": "luts/jp034_007.png"
   },
   {
    "id": "jp034_008",
    "name": "PhongNha26",
    "group": "Japan Pack",
-   "lut": "luts/jp034_008.png",
-   "premium": false
+   "lut": "luts/jp034_008.png"
   },
   {
    "id": "jp034_009",
    "name": "MocChau26",
    "group": "Japan Pack",
-   "lut": "luts/jp034_009.png",
-   "premium": false
+   "lut": "luts/jp034_009.png"
   },
   {
    "id": "jp034_010",
    "name": "DaLat82",
    "group": "Japan Pack",
-   "lut": "luts/jp034_010.png",
-   "premium": false
+   "lut": "luts/jp034_010.png"
   },
   {
    "id": "jp034_011",
    "name": "NhaTrang93",
    "group": "Japan Pack",
-   "lut": "luts/jp034_011.png",
-   "premium": false
+   "lut": "luts/jp034_011.png"
   },
   {
    "id": "jp035_001",
    "name": "MuiNe81",
    "group": "Japan Pack",
-   "lut": "luts/jp035_001.png",
-   "premium": false
+   "lut": "luts/jp035_001.png"
   },
   {
    "id": "jp035_002",
    "name": "DaLat83",
    "group": "Japan Pack",
-   "lut": "luts/jp035_002.png",
-   "premium": false
+   "lut": "luts/jp035_002.png"
   },
   {
    "id": "jp035_003",
    "name": "LamDong26",
    "group": "Japan Pack",
-   "lut": "luts/jp035_003.png",
-   "premium": false
+   "lut": "luts/jp035_003.png"
   },
   {
    "id": "jp035_004",
    "name": "NhaTrang94",
    "group": "Japan Pack",
-   "lut": "luts/jp035_004.png",
-   "premium": false
+   "lut": "luts/jp035_004.png"
   },
   {
    "id": "jp035_005",
    "name": "MuiNe82",
    "group": "Japan Pack",
-   "lut": "luts/jp035_005.png",
-   "premium": false
+   "lut": "luts/jp035_005.png"
   },
   {
    "id": "jp035_006",
    "name": "DaLat84",
    "group": "Japan Pack",
-   "lut": "luts/jp035_006.png",
-   "premium": false
+   "lut": "luts/jp035_006.png"
   },
   {
    "id": "jp036_001",
    "name": "HaiPhong9",
    "group": "Japan Pack",
-   "lut": "luts/jp036_001.png",
-   "premium": false
+   "lut": "luts/jp036_001.png"
   },
   {
    "id": "jp036_002",
    "name": "CatBa27",
    "group": "Japan Pack",
-   "lut": "luts/jp036_002.png",
-   "premium": false
+   "lut": "luts/jp036_002.png"
   },
   {
    "id": "jp036_003",
    "name": "Danang9",
    "group": "Japan Pack",
-   "lut": "luts/jp036_003.png",
-   "premium": false
+   "lut": "luts/jp036_003.png"
   },
   {
    "id": "jp036_004",
    "name": "PhongNha27",
    "group": "Japan Pack",
-   "lut": "luts/jp036_004.png",
-   "premium": false
+   "lut": "luts/jp036_004.png"
   },
   {
    "id": "jp036_005",
    "name": "MocChau27",
    "group": "Japan Pack",
-   "lut": "luts/jp036_005.png",
-   "premium": false
+   "lut": "luts/jp036_005.png"
   },
   {
    "id": "jp037_001",
    "name": "NhaTrang95",
    "group": "Japan Pack",
-   "lut": "luts/jp037_001.png",
-   "premium": false
+   "lut": "luts/jp037_001.png"
   },
   {
    "id": "jp037_002",
    "name": "MuiNe83",
    "group": "Japan Pack",
-   "lut": "luts/jp037_002.png",
-   "premium": false
+   "lut": "luts/jp037_002.png"
   },
   {
    "id": "jp037_003",
    "name": "LamDong27",
    "group": "Japan Pack",
-   "lut": "luts/jp037_003.png",
-   "premium": false
+   "lut": "luts/jp037_003.png"
   },
   {
    "id": "jp037_004",
    "name": "DaLat85",
    "group": "Japan Pack",
-   "lut": "luts/jp037_004.png",
-   "premium": false
+   "lut": "luts/jp037_004.png"
   },
   {
    "id": "jp037_005",
    "name": "CatBa28",
    "group": "Japan Pack",
-   "lut": "luts/jp037_005.png",
-   "premium": false
+   "lut": "luts/jp037_005.png"
   },
   {
    "id": "jp037_006",
    "name": "PhongNha28",
    "group": "Japan Pack",
-   "lut": "luts/jp037_006.png",
-   "premium": false
+   "lut": "luts/jp037_006.png"
   },
   {
    "id": "jp037_007",
    "name": "Danang10",
    "group": "Japan Pack",
-   "lut": "luts/jp037_007.png",
-   "premium": false
+   "lut": "luts/jp037_007.png"
   },
   {
    "id": "jp037_008",
    "name": "NhaTrang96",
    "group": "Japan Pack",
-   "lut": "luts/jp037_008.png",
-   "premium": false
+   "lut": "luts/jp037_008.png"
   },
   {
    "id": "jp037_009",
    "name": "MuiNe84",
    "group": "Japan Pack",
-   "lut": "luts/jp037_009.png",
-   "premium": false
+   "lut": "luts/jp037_009.png"
   }
  ]
 }

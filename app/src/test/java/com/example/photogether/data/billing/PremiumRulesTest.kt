@@ -1,6 +1,5 @@
 package com.example.photogether.data.billing
 
-import com.example.photogether.core.render.FilterInfo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -57,31 +56,5 @@ class PremiumRulesTest {
         assertFalse(isPremiumFrom(listOf(PurchaseStatus.NONE)))
         assertFalse(isPremiumFrom(listOf(PurchaseStatus.PENDING)))
         assertFalse(isPremiumFrom(listOf(PurchaseStatus.NONE, PurchaseStatus.PENDING)))
-    }
-
-    private val filters = listOf(
-        FilterInfo(id = "original", name = "Original", group = "Classic", premium = false),
-        FilterInfo(id = "kodak_portra", name = "Kodak Portra", group = "Classic", premium = false),
-        FilterInfo(id = "vsco_cool_fade", name = "Cool Fade", group = "Portrait", premium = true),
-    )
-
-    @Test
-    fun save_freeFilter_neverNeedsPaywall() {
-        assertFalse(requiresPaywall("kodak_portra", filters, isPremium = false))
-    }
-
-    @Test
-    fun save_premiumFilter_needsPaywallForFreeUser() {
-        assertTrue(requiresPaywall("vsco_cool_fade", filters, isPremium = false))
-    }
-
-    @Test
-    fun save_premiumFilter_doesNotNeedPaywallForPremiumUser() {
-        assertFalse(requiresPaywall("vsco_cool_fade", filters, isPremium = true))
-    }
-
-    @Test
-    fun save_unknownFilter_doesNotNeedPaywall() {
-        assertFalse(requiresPaywall("missing", filters, isPremium = false))
     }
 }

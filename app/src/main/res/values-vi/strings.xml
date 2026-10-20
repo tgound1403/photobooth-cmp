@@ -264,4 +264,9 @@
     <string name="empty_state_title">Chưa có dữ liệu</string>
     <string name="empty_state_message">Hãy thử lại sau</string>
     <string name="camera_save_failed">Không lưu được ảnh, thử lại</string>
+    <string name="settings_round_wheel">Bánh xe tròn điều khiển</string>
+    <string name="settings_round_wheel_desc">Thông số mà bánh xe tròn điều khiển ở chế độ ngang; hai thông số còn lại thành thanh trượt</string>
+    <string name="camera_rotate_tip">Xoay ngang điện thoại để vào chế độ Pro</string>
+    <string name="camera_rotate_tip_dismiss">Đã hiểu</string>
+    <string name="camera_filter_fallback">Bộ lọc</string>
 </resources>

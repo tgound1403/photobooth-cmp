@@ -73,8 +73,6 @@ fun FilterPanel(
     onSaveRecipe: () -> Unit,
     onApplyRecipe: (EditParams) -> Unit,
     onImportRecipe: (String) -> Unit,
-    /** Premium filters get a PRO badge until the user has Premium. */
-    isPremium: Boolean = false,
     modifier: Modifier = Modifier,
     /** Ids of favorited filters. They appear under the FAVORITE chip. */
     favorites: Set<String> = emptySet(),
@@ -96,7 +94,6 @@ fun FilterPanel(
                 onSelect = onSelect,
                 onLive = onLive,
                 onCommit = onCommit,
-                isPremium = isPremium,
                 favorites = favorites,
                 onToggleFavorite = onToggleFavorite,
             )
@@ -141,7 +138,6 @@ private fun FilterStripSection(
     onSelect: (String) -> Unit,
     onLive: (ParamsEdit) -> Unit,
     onCommit: () -> Unit,
-    isPremium: Boolean,
     favorites: Set<String>,
     onToggleFavorite: ((String) -> Unit)?,
 ) {
@@ -193,7 +189,6 @@ private fun FilterStripSection(
                     filter = filter,
                     selected = params.filterId == filter.id,
                     thumbnail = thumbnails[filter.id],
-                    showPro = filter.premium && !isPremium,
                     favorite = filter.id in favorites,
                     onClick = { onSelect(filter.id) },
                     onLongClick = onToggleFavorite?.let { toggle -> { toggle(filter.id) } },
@@ -221,7 +216,6 @@ private fun FilterThumb(
     filter: FilterInfo,
     selected: Boolean,
     thumbnail: Bitmap?,
-    showPro: Boolean,
     favorite: Boolean,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)?,
@@ -264,18 +258,6 @@ private fun FilterThumb(
                     color = AppColors.onAccent,
                     modifier = Modifier
                         .align(androidx.compose.ui.Alignment.TopStart)
-                        .padding(Spacing.xs)
-                        .background(AppColors.accent, RoundedCornerShape(Radius.sm))
-                        .padding(horizontal = Spacing.xs),
-                )
-            }
-            if (showPro) {
-                Text(
-                    text = stringResource(R.string.pro_badge),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.onAccent,
-                    modifier = Modifier
-                        .align(androidx.compose.ui.Alignment.TopEnd)
                         .padding(Spacing.xs)
                         .background(AppColors.accent, RoundedCornerShape(Radius.sm))
                         .padding(horizontal = Spacing.xs),

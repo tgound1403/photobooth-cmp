@@ -6,7 +6,11 @@ import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import com.example.photogether.core.camera.RoundWheel
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -60,6 +64,7 @@ fun SettingsScreen(navController: NavController) {
     val cropZoomOn by viewModel.cropZoomEnabled.collectAsStateWithLifecycle()
     val gridOn by viewModel.gridEnabled.collectAsStateWithLifecycle()
     val darkThemeOn by viewModel.darkThemeEnabled.collectAsStateWithLifecycle()
+    val roundWheel by viewModel.roundWheel.collectAsStateWithLifecycle()
     val comingSoon = stringResource(R.string.settings_coming_soon)
     val soon = { Toast.makeText(context, comingSoon, Toast.LENGTH_SHORT).show() }
     SettingsContent(
@@ -70,6 +75,8 @@ fun SettingsScreen(navController: NavController) {
         onCropZoomChange = viewModel::setCropZoomEnabled,
         gridOn = gridOn,
         onGridChange = viewModel::setGridEnabled,
+        roundWheel = roundWheel,
+        onRoundWheelChange = viewModel::setRoundWheel,
         darkThemeOn = darkThemeOn,
         onDarkThemeChange = viewModel::setDarkThemeEnabled,
         versionName = BuildConfig.VERSION_NAME,
@@ -93,6 +100,8 @@ fun SettingsContent(
     onCropZoomChange: (Boolean) -> Unit = {},
     gridOn: Boolean = false,
     onGridChange: (Boolean) -> Unit = {},
+    roundWheel: RoundWheel = RoundWheel.DEFAULT,
+    onRoundWheelChange: (RoundWheel) -> Unit = {},
     darkThemeOn: Boolean = false,
     onDarkThemeChange: (Boolean) -> Unit = {},
     versionName: String = "1.0",
@@ -210,6 +219,39 @@ fun SettingsContent(
                     )
                 }
                 Switch(checked = gridOn, onCheckedChange = onGridChange)
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+
+            SettingsCard {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_round_wheel),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AppColors.textPrimary,
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_round_wheel_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.textSecondary,
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        RoundWheel.entries.forEach { option ->
+                            val selected = option == roundWheel
+                            Text(
+                                text = option.name,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (selected) AppColors.onAccent else AppColors.textPrimary,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(percent = 50))
+                                    .background(if (selected) AppColors.accent else AppColors.surfaceElevated)
+                                    .clickable { onRoundWheelChange(option) }
+                                    .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+                            )
+                        }
+                    }
+                }
             }
 
             SectionTitle(stringResource(R.string.settings_section_general), topPadding = Spacing.xl)

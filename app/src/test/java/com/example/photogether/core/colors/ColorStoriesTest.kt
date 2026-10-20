@@ -25,11 +25,10 @@ class ColorStoriesTest {
     }
 
     @Test
-    fun everyStoryUsesAnExistingFreeFilter() {
+    fun everyStoryUsesAnExistingFilter() {
         ColorStories.ALL.forEach { story ->
             val filter = filters[story.filterId]
             assertNotNull("${story.id}: unknown filter ${story.filterId}", filter)
-            assertTrue("${story.id}: filter is premium", !filter!!.premium)
         }
     }
 

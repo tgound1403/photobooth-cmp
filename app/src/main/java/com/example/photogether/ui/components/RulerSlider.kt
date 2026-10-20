@@ -39,10 +39,12 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.photogether.core.camera.SliderTickPlayer
 import com.example.photogether.ui.theme.AppColors
 import com.example.photogether.ui.theme.InkColors
 import com.example.photogether.ui.theme.Spacing
@@ -120,6 +122,7 @@ fun RulerSlider(
     onVerticalValueChange: ((Float) -> Unit)? = null,
 ) {
     val haptics = LocalHapticFeedback.current
+    val context = LocalContext.current
     val density = LocalDensity.current
     val tickPx = with(density) { TICK_SPACING.toPx() }
     val scaleUnitPx = with(density) { SCALE_UNIT.toPx() }
@@ -223,6 +226,7 @@ fun RulerSlider(
                                 if (index != lastVerticalStep.intValue) {
                                     lastVerticalStep.intValue = index
                                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    SliderTickPlayer.play(context)
                                 }
                                 latestOnVertical?.invoke(dragVertical)
                             }
@@ -240,6 +244,7 @@ fun RulerSlider(
                                 if (index != lastStep.intValue) {
                                     lastStep.intValue = index
                                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    SliderTickPlayer.play(context)
                                 }
                                 latestOnChange(dragValue)
                             }

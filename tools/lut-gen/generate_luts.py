@@ -157,6 +157,17 @@ def op_split_tone(shadow=(0.0, 0.0, 0.0), highlight=(0.0, 0.0, 0.0)):
     return op
 
 
+def op_mid_tone(offset=(0.0, 0.0, 0.0)):
+    """Adds a colour offset weighted toward midtones (peak at luma 0.5), like a colour-grading midtone wheel."""
+
+    def op(r, g, b):
+        y = clamp01(luma709(r, g, b))
+        w = 4.0 * y * (1.0 - y)
+        return (r + offset[0] * w, g + offset[1] * w, b + offset[2] * w)
+
+    return op
+
+
 HSL_BAND_CENTERS = {
     "red": 0.0, "orange": 30.0, "yellow": 60.0, "green": 120.0,
     "aqua": 180.0, "blue": 240.0, "purple": 275.0, "magenta": 320.0,
@@ -266,39 +277,41 @@ def compose(*ops):
 
 
 # ---------------------------------------------------------------------------
-# Looks. Each entry: id, name, group, premium, description, builder.
+# Looks. Each entry: id, name, group, description, builder.
 # Fujifilm-, Kodak- and VSCO-style film looks built from the ops above.
 # Highlights stay below ~0.98 so skin tones do not clip; blacks are lifted a little.
 # ---------------------------------------------------------------------------
 
 FILTERS = [
     # Classic: Fujifilm style
-    ("fuji_velvia", "Fuji Velvia", "Fuji", True, "Saturated, deep blues and greens, punchy contrast.", lambda: compose(
-        op_curve([(0, 0.0), (0.2, 0.15), (0.5, 0.5), (0.8, 0.86), (1, 0.985)]),
-        op_saturation(1.38),
-        op_split_tone(shadow=(-0.01, 0.0, 0.025)),
-        op_white_balance(temp=0.04))),
-    ("fuji_classic_chrome", "Fuji Classic Chrome", "Fuji", False, "Muted and desaturated, cool shadows, firm contrast.", lambda: compose(
-        op_saturation(0.72),
-        op_curve([(0, 0.03), (0.25, 0.22), (0.5, 0.5), (0.75, 0.79), (1, 0.97)]),
-        op_split_tone(shadow=(-0.012, 0.005, 0.03), highlight=(0.015, 0.005, -0.01)))),
-    ("fuji_superia", "Fuji Superia", "Fuji", False, "Warm skin, green-leaning shadows, everyday colour negative.", lambda: compose(
-        op_curve([(0, 0.025), (0.25, 0.235), (0.5, 0.505), (0.75, 0.775), (1, 0.98)]),
-        op_split_tone(shadow=(-0.01, 0.025, 0.005), highlight=(0.03, 0.01, -0.025)),
-        op_white_balance(temp=0.08),
+    ("fuji_velvia", "Fuji Velvia", "Fuji", "Slide-film punch: deep saturated blues, emerald greens, strong reds, rich blacks and high contrast.", lambda: compose(
+        op_curve([(0,0.0),(0.2,0.14),(0.5,0.49),(0.8,0.87),(1,0.99)]),
+        op_hsl({"red":(-2,1.15,-0.02),"orange":(1,0.92,0.0),"yellow":(-2,1.08,0.0),
+                "green":(5,1.3,-0.05),"aqua":(0,1.2,-0.04),"blue":(-2,1.3,-0.08),"purple":(0,1.1,-0.03),"magenta":(0,1.1,0.0)}),
+        op_split_tone(shadow=(-0.012,0.004,0.02)),
+        op_saturation(1.06))),
+    ("fuji_classic_chrome", "Fuji Classic Chrome", "Fuji", "Muted documentary colour: low saturation, deep cool shadows, olive greens and vibrant cyan-leaning blues.", lambda: compose(
+        op_curve([(0,0.0),(0.2,0.155),(0.5,0.49),(0.8,0.82),(1,0.97)]),
+        op_hsl({"red":(2,0.85,-0.02),"orange":(-2,0.85,0.0),"yellow":(-4,0.8,-0.02),
+                "green":(-8,0.6,-0.05),"aqua":(-6,0.75,-0.04),"blue":(-8,1.0,-0.07),"purple":(-6,0.6,-0.03),"magenta":(0,0.45,-0.03)}),
+        op_split_tone(shadow=(-0.015,0.004,0.03),highlight=(0.012,0.006,-0.006)),
+        op_saturation(0.82))),
+    ("fuji_superia", "Fuji Superia", "Fuji", "Everyday colour negative: neutral-cool whites, cyan-green shadows, strong greens and blues, natural skin.", lambda: compose(
+        op_curve([(0,0.01),(0.25,0.225),(0.5,0.50),(0.75,0.78),(1,0.985)]),
+        op_hsl({"red":(0,1.05,0.0),"orange":(0,1.0,0.02),"yellow":(-2,0.95,0.0),
+                "green":(5,1.2,-0.03),"aqua":(2,1.15,-0.03),"blue":(0,1.15,-0.04),"magenta":(0,0.9,0.0)}),
+        op_split_tone(shadow=(-0.012,0.018,0.014),highlight=(0.006,0.004,-0.004)),
         op_saturation(1.08))),
-    ("fuji_classic_neg", "Fuji Classic Neg", "Fuji", False, "Warm golden highlights, teal shadows, muted olive greens, deep cyan blues.", lambda: compose(
-        op_white_balance(temp=0.1),
-        op_curve_rgb([(0, 0.01), (0.25, 0.215), (0.5, 0.5), (0.75, 0.79), (1, 0.985)],
-                     [(0, 0.03), (0.25, 0.245), (0.5, 0.495), (0.75, 0.765), (1, 0.97)],
-                     [(0, 0.07), (0.25, 0.27), (0.5, 0.48), (0.75, 0.70), (1, 0.93)]),
-        op_curve([(0, 0.0), (0.2, 0.19), (0.5, 0.505), (0.8, 0.8), (1, 1.0)]),
-        op_hsl({"red": (0, 1.05, 0.0), "orange": (1, 1.3, 0.08), "yellow": (-6, 1.05, 0.0),
-                "green": (14, 0.72, -0.03), "aqua": (-4, 0.8, -0.05),
-                "blue": (-4, 0.95, -0.06), "purple": (-10, 0.85, -0.05)}),
-        op_split_tone(shadow=(-0.015, 0.012, 0.03), highlight=(0.03, 0.015, -0.02)),
+    ("fuji_classic_neg", "Fuji Classic Neg", "Fuji", "Contrasty negative look: warm golden highlights, teal shadows, muted yellow-greens, cyan-leaning blues.", lambda: compose(
+        op_curve_rgb([(0,0.0),(0.25,0.215),(0.5,0.51),(0.75,0.80),(1,0.985)],
+                     [(0,0.01),(0.25,0.235),(0.5,0.50),(0.75,0.775),(1,0.97)],
+                     [(0,0.03),(0.25,0.26),(0.5,0.49),(0.75,0.73),(1,0.94)]),
+        op_curve([(0,0.0),(0.2,0.17),(0.5,0.5),(0.8,0.82),(1,1.0)]),
+        op_hsl({"red":(0,1.1,0.0),"orange":(1,1.2,0.05),"yellow":(-6,0.85,0.0),
+                "green":(12,0.7,-0.04),"aqua":(-3,0.8,-0.05),"blue":(-4,0.9,-0.07),"purple":(-8,0.8,-0.04),"magenta":(0,0.8,0.0)}),
+        op_split_tone(shadow=(-0.018,0.012,0.022),highlight=(0.03,0.015,-0.02)),
         op_saturation(1.08))),
-    ("fuji_forest", "Fuji Forest", "Fuji", False, "Deep emerald greens, cool lifted shadows, soft warm skin, fine-grain slide feel.", lambda: compose(
+    ("fuji_forest", "Fuji Forest", "Fuji", "Deep emerald greens, cool lifted shadows, soft warm skin, fine-grain slide feel.", lambda: compose(
         op_white_balance(temp=-0.02, tint=-0.1),
         op_curve_rgb([(0, 0.02), (0.25, 0.225), (0.5, 0.495), (0.75, 0.775), (1, 0.975)],
                      [(0, 0.045), (0.25, 0.265), (0.5, 0.515), (0.75, 0.775), (1, 0.98)],
@@ -310,39 +323,46 @@ FILTERS = [
         op_split_tone(shadow=(-0.02, 0.018, 0.012), highlight=(0.015, 0.012, -0.012)),
         op_saturation(1.04))),
     # Film: Kodak style
-    ("kodak_colorplus", "Kodak ColorPlus", "Kodak", False, "Sunny golden warmth, creamy highlights, soft teal sky, nostalgic everyday film.", lambda: compose(
-        op_white_balance(temp=0.2, tint=0.02),
-        op_curve_rgb([(0, 0.03), (0.25, 0.25), (0.5, 0.53), (0.75, 0.80), (1, 0.99)],
-                     [(0, 0.025), (0.25, 0.235), (0.5, 0.5), (0.75, 0.765), (1, 0.965)],
-                     [(0, 0.04), (0.25, 0.215), (0.5, 0.44), (0.75, 0.65), (1, 0.86)]),
-        op_hsl({"red": (-2, 1.05, 0.0), "orange": (-4, 1.1, 0.09), "yellow": (-8, 1.15, 0.0),
-                "green": (-6, 0.9, -0.03), "aqua": (-4, 0.95, -0.03),
-                "blue": (0, 1.1, -0.03), "purple": (-8, 0.9, -0.03)}),
-        op_split_tone(shadow=(0.008, 0.004, -0.008), highlight=(0.035, 0.022, -0.035)),
-        op_saturation(1.02))),
-    ("kodak_portra", "Kodak Portra", "Kodak", False, "Warm pastel skin, lifted blacks, low saturation.", lambda: compose(
-        op_fade(0.04),
-        op_curve([(0, 0.0), (0.25, 0.26), (0.5, 0.52), (0.75, 0.775), (1, 0.97)]),
-        op_white_balance(temp=0.12),
-        op_split_tone(highlight=(0.02, 0.01, -0.015)),
-        op_saturation(0.88))),
-    ("kodak_gold", "Kodak Gold", "Kodak", False, "Warm yellow cast, rich greens and reds.", lambda: compose(
-        op_curve([(0, 0.025), (0.25, 0.23), (0.5, 0.505), (0.75, 0.78), (1, 0.98)]),
-        op_white_balance(temp=0.3),
-        op_split_tone(shadow=(0.012, 0.0, -0.015), highlight=(0.035, 0.02, -0.04)),
-        op_saturation(1.15))),
-    ("kodachrome", "Kodachrome", "Kodak", True, "Warm, red-rich slide film with deep contrast.", lambda: compose(
-        op_curve([(0, 0.0), (0.2, 0.15), (0.5, 0.5), (0.8, 0.85), (1, 0.98)]),
-        op_curve_rgb([(0, 0), (0.5, 0.525), (1, 1)], [(0, 0), (0.5, 0.5), (1, 0.99)], [(0, 0.01), (0.5, 0.47), (1, 0.95)]),
-        op_saturation(1.15))),
+    ("kodak_colorplus", "Kodak ColorPlus", "Kodak", "Budget everyday film: golden warmth, creamy highlights, soft lifted blacks and gentle colour.", lambda: compose(
+        op_curve_rgb([(0,0.02),(0.25,0.245),(0.5,0.52),(0.75,0.79),(1,0.985)],
+                     [(0,0.015),(0.25,0.235),(0.5,0.50),(0.75,0.765),(1,0.97)],
+                     [(0,0.03),(0.25,0.22),(0.5,0.465),(0.75,0.71),(1,0.92)]),
+        op_hsl({"red":(-2,1.05,0.0),"orange":(-3,1.1,0.06),"yellow":(-6,1.1,0.0),
+                "green":(-6,0.85,-0.02),"aqua":(-3,0.9,-0.02),"blue":(0,1.0,-0.03),"purple":(-6,0.85,-0.02)}),
+        op_split_tone(shadow=(0.006,0.004,-0.004),highlight=(0.03,0.02,-0.03)),
+        op_saturation(0.98))),
+    ("kodak_portra", "Kodak Portra", "Kodak", "Soft pastel colour: flattering warm skin, gentle contrast, muted greens and blues, creamy highlights.", lambda: compose(
+        op_curve_rgb([(0,0.025),(0.25,0.255),(0.5,0.52),(0.75,0.785),(1,0.975)],
+                     [(0,0.025),(0.25,0.25),(0.5,0.505),(0.75,0.77),(1,0.965)],
+                     [(0,0.03),(0.25,0.24),(0.5,0.475),(0.75,0.735),(1,0.95)]),
+        op_hsl({"red":(0,0.95,0.0),"orange":(0,1.0,0.05),"yellow":(-3,0.9,0.02),
+                "green":(4,0.75,0.0),"aqua":(-4,0.75,0.0),"blue":(-4,0.8,0.0),"purple":(0,0.8,0.0),"magenta":(0,0.85,0.0)}),
+        op_split_tone(shadow=(0.0,0.006,0.006),highlight=(0.015,0.008,-0.012)),
+        op_saturation(0.95))),
+    ("kodak_gold", "Kodak Gold", "Kodak", "Warm golden cast, rich yellows and reds, warm greens, nostalgic sunny contrast.", lambda: compose(
+        op_curve_rgb([(0,0.01),(0.25,0.24),(0.5,0.52),(0.75,0.79),(1,0.985)],
+                     [(0,0.01),(0.25,0.23),(0.5,0.495),(0.75,0.765),(1,0.97)],
+                     [(0,0.02),(0.25,0.21),(0.5,0.455),(0.75,0.70),(1,0.91)]),
+        op_hsl({"red":(-1,1.15,0.0),"orange":(-2,1.15,0.04),"yellow":(-4,1.2,0.0),
+                "green":(-8,0.95,-0.03),"aqua":(-4,0.95,-0.03),"blue":(-2,0.95,-0.04),"magenta":(0,0.9,0.0)}),
+        op_split_tone(shadow=(0.01,0.004,-0.012),highlight=(0.025,0.015,-0.03)),
+        op_saturation(1.08))),
+    ("kodachrome", "Kodachrome", "Kodak", "Slide classic: deep contrast, rich crimson reds, warm highlights, olive greens and deep cyan blues.", lambda: compose(
+        op_curve_rgb([(0,0.0),(0.2,0.15),(0.5,0.52),(0.8,0.855),(1,0.985)],
+                     [(0,0.0),(0.2,0.15),(0.5,0.495),(0.8,0.84),(1,0.98)],
+                     [(0,0.01),(0.2,0.145),(0.5,0.475),(0.8,0.815),(1,0.95)]),
+        op_hsl({"red":(0,1.15,-0.03),"orange":(1,0.95,0.0),"yellow":(-3,1.0,0.0),
+                "green":(-10,0.85,-0.05),"aqua":(-4,1.0,-0.05),"blue":(-5,1.15,-0.10),"purple":(0,0.9,-0.03),"magenta":(4,0.8,0.0)}),
+        op_split_tone(shadow=(0.0,0.0,0.008),highlight=(0.02,0.012,-0.02)),
+        op_saturation(1.05))),
     # Portrait: VSCO style
-    ("vsco_faded_warm", "Faded Warm", "Vintage", False, "Lifted blacks with warm highlights, soft matte finish.", lambda: compose(
+    ("vsco_faded_warm", "Faded Warm", "Vintage", "Lifted blacks with warm highlights, soft matte finish.", lambda: compose(
         op_fade(0.07),
         op_curve([(0, 0.0), (0.5, 0.52), (1, 0.96)]),
         op_split_tone(shadow=(0.005, 0.0, 0.015), highlight=(0.04, 0.02, -0.03)),
         op_white_balance(temp=0.1),
         op_saturation(0.88))),
-    ("seoul_soft", "Seoul Soft", "Korea", False, "Soft creamy skin, olive-yellow greens, gentle matte blacks, warm daylight.", lambda: compose(
+    ("seoul_soft", "Seoul Soft", "Korea", "Soft creamy skin, olive-yellow greens, gentle matte blacks, warm daylight.", lambda: compose(
         op_white_balance(temp=0.13, tint=0.015),
         op_curve_rgb([(0, 0.045), (0.25, 0.26), (0.5, 0.525), (0.75, 0.79), (1, 0.98)],
                      [(0, 0.04), (0.25, 0.25), (0.5, 0.51), (0.75, 0.775), (1, 0.97)],
@@ -352,7 +372,7 @@ FILTERS = [
                 "blue": (6, 0.85, -0.03), "magenta": (0, 0.85, 0.0)}),
         op_split_tone(shadow=(0.005, 0.0, -0.002), highlight=(0.02, 0.014, -0.014)),
         op_saturation(0.97))),
-    ("airy_cream", "Airy Cream", "Korea", False, "Bright airy exposure, cream whites, teal-green glass, soft film matte.", lambda: compose(
+    ("airy_cream", "Airy Cream", "Korea", "Bright airy exposure, cream whites, teal-green glass, soft film matte.", lambda: compose(
         op_white_balance(temp=0.11),
         op_curve_rgb([(0, 0.04), (0.25, 0.27), (0.5, 0.575), (0.75, 0.83), (1, 0.985)],
                      [(0, 0.04), (0.25, 0.265), (0.5, 0.56), (0.75, 0.81), (1, 0.97)],
@@ -362,7 +382,7 @@ FILTERS = [
                 "blue": (-8, 0.85, -0.03), "purple": (-8, 0.8, 0.0)}),
         op_split_tone(shadow=(-0.01, 0.01, 0.015), highlight=(0.018, 0.014, -0.02)),
         op_saturation(0.95))),
-    ("pastel_sea", "Pastel Sea", "Korea", False, "Cool teal sea tone, peach pastels, lifted teal blacks, quiet and airy.", lambda: compose(
+    ("pastel_sea", "Pastel Sea", "Korea", "Cool teal sea tone, peach pastels, lifted teal blacks, quiet and airy.", lambda: compose(
         op_white_balance(temp=-0.12, tint=-0.08),
         op_curve_rgb([(0, 0.035), (0.25, 0.235), (0.5, 0.5), (0.75, 0.765), (1, 0.975)],
                      [(0, 0.055), (0.25, 0.27), (0.5, 0.52), (0.75, 0.775), (1, 0.975)],
@@ -373,18 +393,18 @@ FILTERS = [
         op_split_tone(shadow=(-0.025, 0.018, 0.02), highlight=(0.006, 0.006, 0.012)),
         op_saturation(0.9))),
     # Mood
-    ("vsco_soft_film", "Soft Film", "Vintage", False, "Faded, low contrast, soft green tint.", lambda: compose(
+    ("vsco_soft_film", "Soft Film", "Vintage", "Faded, low contrast, soft green tint.", lambda: compose(
         op_fade(0.08),
         op_curve([(0, 0.0), (0.5, 0.51), (1, 0.95)]),
         op_split_tone(shadow=(-0.01, 0.02, 0.0), highlight=(0.0, 0.015, 0.0)),
         op_saturation(0.82))),
-    ("vsco_cool_fade", "Cool Fade", "Vintage", True, "Muted colour with cool blue shadows and a faded finish.", lambda: compose(
+    ("vsco_cool_fade", "Cool Fade", "Vintage", "Muted colour with cool blue shadows and a faded finish.", lambda: compose(
         op_fade(0.06),
         op_white_balance(temp=-0.18),
         op_split_tone(shadow=(-0.02, 0.0, 0.04), highlight=(0.005, 0.01, 0.015)),
         op_curve([(0, 0.0), (0.5, 0.5), (1, 0.96)]),
         op_saturation(0.78))),
-    ("neon_night", "Neon Night", "Japan Pack", False, "Warm orange-red glow, brown-teal lifted blacks, creamy peach highlights.", lambda: compose(
+    ("neon_night", "Neon Night", "Japan Pack", "Warm orange-red glow, brown-teal lifted blacks, creamy peach highlights.", lambda: compose(
         op_white_balance(temp=0.09, tint=0.02),
         op_curve_rgb([(0, 0.05), (0.25, 0.26), (0.5, 0.53), (0.75, 0.80), (1, 0.985)],
                      [(0, 0.035), (0.25, 0.225), (0.5, 0.47), (0.75, 0.73), (1, 0.95)],
@@ -394,7 +414,7 @@ FILTERS = [
                 "blue": (6, 0.9, -0.05), "magenta": (-6, 1.0, 0.0)}),
         op_split_tone(shadow=(0.012, -0.004, 0.012), highlight=(0.03, 0.015, -0.025)),
         op_saturation(1.04))),
-    ("tokyo_rain", "Tokyo Rain", "Japan Pack", False, "Cool teal-green wash, muted tones, soft contrast, warm accents stay alive.", lambda: compose(
+    ("tokyo_rain", "Tokyo Rain", "Japan Pack", "Cool teal-green wash, muted tones, soft contrast, warm accents stay alive.", lambda: compose(
         op_white_balance(temp=-0.06, tint=-0.1),
         op_curve_rgb([(0, 0.02), (0.25, 0.22), (0.5, 0.485), (0.75, 0.76), (1, 0.965)],
                      [(0, 0.045), (0.25, 0.26), (0.5, 0.515), (0.75, 0.775), (1, 0.98)],
@@ -404,18 +424,7 @@ FILTERS = [
                 "blue": (-6, 0.85, -0.05), "magenta": (8, 0.8, 0.0)}),
         op_split_tone(shadow=(-0.018, 0.014, 0.014), highlight=(0.008, 0.012, 0.004)),
         op_saturation(0.9))),
-    # B&W
-    ("bw_tri_x", "Tri-X Mono", "Vintage", False, "High-contrast mono with deep blacks, ready for grain.", lambda: compose(
-        op_channel_mix((0.3, 0.55, 0.15)),
-        op_curve([(0, 0.0), (0.2, 0.12), (0.5, 0.5), (0.8, 0.9), (1, 1.0)]))),
-    ("bw_noir", "Noir Mono", "Vintage", True, "Dark, moody mono with crushed shadows and bright highlights.", lambda: compose(
-        op_channel_mix((0.4, 0.45, 0.15)),
-        op_curve([(0, 0.0), (0.25, 0.1), (0.5, 0.42), (0.75, 0.82), (1, 1.0)]))),
-    ("bw_soft_mono", "Soft Mono", "Vintage", False, "Gentle mono with lifted shadows and soft highlights.", lambda: compose(
-        op_channel_mix((0.33, 0.5, 0.17)),
-        op_fade(0.06),
-        op_curve([(0, 0.06), (0.5, 0.52), (1, 0.97)]))),
-    ("matte_meadow", "Matte Meadow", "Vintage", False, "Milky lifted blacks, soft yellow-green meadow, warm cream highlights, muted and airy.", lambda: compose(
+    ("matte_meadow", "Matte Meadow", "Vintage", "Milky lifted blacks, soft yellow-green meadow, warm cream highlights, muted and airy.", lambda: compose(
         op_curve_rgb([(0, 0.10), (0.25, 0.33), (0.5, 0.60), (0.75, 0.84), (1, 0.98)],
                      [(0, 0.11), (0.25, 0.34), (0.5, 0.60), (0.75, 0.84), (1, 0.98)],
                      [(0, 0.12), (0.25, 0.33), (0.5, 0.60), (0.75, 0.84), (1, 0.98)]),
@@ -423,7 +432,7 @@ FILTERS = [
                 "yellow": (0, 0.9, 0.10), "orange": (-2, 0.9, 0.05)}),
         op_split_tone(shadow=(-0.01, 0.0, 0.03), highlight=(0.012, 0.008, -0.01)),
         op_saturation(0.95))),
-    ("sunlit_ruins", "Sunlit Ruins", "Vintage", False, "Deep cyan-blue sky, muted olive greens, cool blue-tinted shadows and a contrasty film finish.", lambda: compose(
+    ("sunlit_ruins", "Sunlit Ruins", "Vintage", "Deep cyan-blue sky, muted olive greens, cool blue-tinted shadows and a contrasty film finish.", lambda: compose(
         op_curve_rgb([(0, 0.045), (0.25, 0.21), (0.5, 0.45), (0.75, 0.71), (1, 0.95)],
                      [(0, 0.045), (0.25, 0.22), (0.5, 0.46), (0.75, 0.72), (1, 0.95)],
                      [(0, 0.055), (0.25, 0.23), (0.5, 0.46), (0.75, 0.70), (1, 0.92)]),
@@ -431,7 +440,7 @@ FILTERS = [
                 "yellow": (6, 0.65, 0.07), "orange": (0, 0.9, 0.0)}),
         op_split_tone(shadow=(-0.003, -0.006, 0.02), highlight=(0.02, 0.01, -0.01)),
         op_saturation(1.0))),
-    ("clear_alpine", "Clear Alpine", "Vintage", False, "Clean deep-blue sky, muted olive greens, warm earth tones and rich blacks with natural contrast.", lambda: compose(
+    ("clear_alpine", "Clear Alpine", "Vintage", "Clean deep-blue sky, muted olive greens, warm earth tones and rich blacks with natural contrast.", lambda: compose(
         op_curve_rgb([(0, 0.0), (0.25, 0.20), (0.5, 0.48), (0.75, 0.77), (1, 0.99)],
                      [(0, 0.0), (0.25, 0.21), (0.5, 0.48), (0.75, 0.77), (1, 0.99)],
                      [(0, 0.01), (0.25, 0.22), (0.5, 0.48), (0.75, 0.76), (1, 0.98)]),
@@ -439,10 +448,135 @@ FILTERS = [
                 "yellow": (2, 0.65, -0.02), "orange": (-1, 0.9, -0.02)}),
         op_split_tone(shadow=(-0.01, 0.0, 0.02), highlight=(0.01, 0.0, -0.005)),
         op_saturation(0.97))),
+    # Leica- and Ricoh-style looks
+    ("leica_standard", "Leica Standard", "Leica", "Rich contrast with deep blacks, slightly warm neutrals, deep reds and restrained greens and blues.", lambda: compose(
+        op_curve_rgb([(0,0.0),(0.2,0.165),(0.5,0.50),(0.8,0.835),(1,0.985)],
+        [(0,0.0),(0.2,0.165),(0.5,0.495),(0.8,0.83),(1,0.98)],
+        [(0,0.005),(0.2,0.165),(0.5,0.485),(0.8,0.815),(1,0.97)]),
+        op_hsl({"red":(0,1.1,-0.03),"orange":(0,1.0,0.0),"yellow":(-3,0.9,-0.02),
+        "green":(-5,0.8,-0.06),"aqua":(-2,0.85,-0.05),"blue":(-3,0.95,-0.07),"purple":(0,0.85,-0.03),"magenta":(0,0.9,-0.02)}),
+        op_split_tone(shadow=(-0.006,0.002,0.01),highlight=(0.008,0.004,-0.006)),
+        op_saturation(0.98))),
+    ("leica_vivid", "Leica Vivid", "Leica", "Punchier Leica rendering: stronger reds and blues, crisp contrast and deep blacks.", lambda: compose(
+        op_curve_rgb([(0,0.0),(0.2,0.15),(0.5,0.50),(0.8,0.85),(1,0.99)],
+        [(0,0.0),(0.2,0.15),(0.5,0.495),(0.8,0.845),(1,0.985)],
+        [(0,0.005),(0.2,0.15),(0.5,0.485),(0.8,0.83),(1,0.975)]),
+        op_hsl({"red":(-1,1.25,-0.04),"orange":(0,1.05,0.0),"yellow":(-3,1.0,-0.02),
+        "green":(-3,1.0,-0.07),"aqua":(-2,1.1,-0.06),"blue":(-3,1.2,-0.1),"purple":(0,1.0,-0.04),"magenta":(0,1.0,-0.02)}),
+        op_split_tone(shadow=(-0.006,0.002,0.012),highlight=(0.008,0.004,-0.006)),
+        op_saturation(1.08))),
+    ("leica_natural", "Leica Natural", "Leica", "Gentle contrast, softly lifted blacks and understated colour, close to what the eye saw.", lambda: compose(
+        op_curve_rgb([(0,0.015),(0.25,0.245),(0.5,0.50),(0.75,0.765),(1,0.98)],
+        [(0,0.015),(0.25,0.245),(0.5,0.50),(0.75,0.765),(1,0.975)],
+        [(0,0.02),(0.25,0.245),(0.5,0.495),(0.75,0.755),(1,0.97)]),
+        op_hsl({"red":(0,0.95,-0.01),"orange":(0,0.95,0.01),"yellow":(-2,0.85,0.0),
+        "green":(-3,0.75,-0.03),"aqua":(-2,0.8,-0.03),"blue":(-2,0.85,-0.03),"magenta":(0,0.85,0.0)}),
+        op_split_tone(highlight=(0.004,0.002,-0.003)),
+        op_saturation(0.92))),
+    ("leica_mono", "Leica Mono", "Leica", "Fine-tonality monochrome with deep blacks, crisp midtone contrast and clean highlights.", lambda: compose(
+        op_channel_mix((0.36,0.52,0.12)),
+        op_curve([(0,0.0),(0.15,0.09),(0.5,0.50),(0.85,0.915),(1,0.99)]))),
+    ("ricoh_positive_film", "Ricoh Positive Film", "Ricoh", "Vivid slide-film colour with firm contrast, deep blacks and saturated blues and greens.", lambda: compose(
+        op_curve([(0,0.0),(0.2,0.145),(0.5,0.49),(0.8,0.86),(1,0.99)]),
+        op_hsl({"red":(0,1.15,-0.02),"orange":(0,0.98,0.0),"yellow":(-2,1.05,0.0),
+        "green":(2,1.25,-0.05),"aqua":(0,1.2,-0.04),"blue":(0,1.3,-0.07),"purple":(0,1.1,-0.03),"magenta":(0,1.1,0.0)}),
+        op_split_tone(shadow=(-0.008,0.0,0.014)),
+        op_saturation(1.08))),
+    ("ricoh_negative_film", "Ricoh Negative Film", "Ricoh", "Soft negative look: gentle contrast, slightly lifted blacks, green-tinged shadows and relaxed colour.", lambda: compose(
+        op_curve_rgb([(0,0.02),(0.25,0.24),(0.5,0.505),(0.75,0.78),(1,0.98)],
+        [(0,0.025),(0.25,0.25),(0.5,0.51),(0.75,0.78),(1,0.975)],
+        [(0,0.035),(0.25,0.25),(0.5,0.495),(0.75,0.75),(1,0.955)]),
+        op_hsl({"orange":(0,1.0,0.03),"yellow":(-3,0.9,0.0),"green":(3,0.8,-0.02),"aqua":(-3,0.85,-0.02),"blue":(-3,0.85,-0.03)}),
+        op_split_tone(shadow=(-0.006,0.01,0.006),highlight=(0.012,0.006,-0.008)),
+        op_saturation(0.9))),
+    ("ricoh_bleach_bypass", "Ricoh Bleach Bypass", "Ricoh", "Desaturated, gritty and contrasty with cool-neutral shadows.", lambda: compose(
+        op_curve([(0,0.0),(0.2,0.12),(0.5,0.48),(0.8,0.88),(1,1.0)]),
+        op_saturation(0.5),
+        op_split_tone(shadow=(-0.006,0.0,0.012),highlight=(0.006,0.004,0.0)))),
+    ("ricoh_cross_process", "Ricoh Cross Process", "Ricoh", "Cross-processed shift: yellow-green highlights, blue shadows and punchy unpredictable colour.", lambda: compose(
+        op_curve_rgb([(0,0.0),(0.25,0.17),(0.5,0.52),(0.75,0.88),(1,1.0)],
+        [(0,0.0),(0.25,0.24),(0.5,0.52),(0.75,0.79),(1,0.98)],
+        [(0,0.10),(0.25,0.32),(0.5,0.46),(0.75,0.6),(1,0.86)]),
+        op_saturation(1.12))),
+    ("ricoh_hicon_bw", "Ricoh Hi-Contrast B&W", "Ricoh", "Hard black and white with crushed blacks and bright whites for street photography.", lambda: compose(
+        op_channel_mix((0.34,0.50,0.16)),
+        op_curve([(0,0.0),(0.2,0.08),(0.5,0.5),(0.8,0.93),(1,1.0)]))),
+    # B&W
+    ("bw_tri_x", "Tri-X Mono", "Vintage", "High-contrast mono with deep blacks, ready for grain.", lambda: compose(
+        op_channel_mix((0.3, 0.55, 0.15)),
+        op_curve([(0, 0.0), (0.2, 0.12), (0.5, 0.5), (0.8, 0.9), (1, 1.0)]))),
+    ("bw_noir", "Noir Mono", "Vintage", "Dark, moody mono with crushed shadows and bright highlights.", lambda: compose(
+        op_channel_mix((0.4, 0.45, 0.15)),
+        op_curve([(0, 0.0), (0.25, 0.1), (0.5, 0.42), (0.75, 0.82), (1, 1.0)]))),
+    ("cyan_sun", "Cyan Sun", "Vintage", "Deep cyan-blue skies, hot orange roofs, creamy whites, warm reddish shadows, bright and slightly cool mids.", lambda: compose(
+        op_white_balance(temp=0.12, tint=-0.03),
+        op_curve_rgb([(0, 0.02), (0.25, 0.27), (0.5, 0.59), (0.75, 0.80), (1, 0.985)],
+                     [(0, 0.04), (0.25, 0.245), (0.5, 0.54), (0.75, 0.79), (1, 0.985)],
+                     [(0, 0.0), (0.25, 0.345), (0.5, 0.70), (0.75, 0.78), (1, 0.985)]),
+        op_hsl({"red": (6, 0.95, -0.04), "orange": (0, 1.4, 0.03), "yellow": (-3, 0.8, -0.02),
+                "green": (-24, 0.6, -0.06), "aqua": (-14, 1.9, -0.18),
+                "blue": (-15, 1.45, -0.11), "purple": (-33, 0.5, 0.18)}),
+        op_split_tone(shadow=(0.075, 0.032, 0.01), highlight=(0.05, 0.04, -0.035)),
+        op_saturation(1.2))),
+    ("turquoise_cream", "Turquoise Cream", "Vintage", "Warm cream whites, turquoise blues, hot orange-red, lifted mauve-grey blacks, bright and punchy.", lambda: compose(
+        op_white_balance(temp=0.03, tint=0.02),
+        op_curve_rgb([(0, 0.05), (0.25, 0.26), (0.5, 0.54), (0.75, 0.80), (1, 0.985)],
+                     [(0, 0.035), (0.25, 0.235), (0.5, 0.50), (0.75, 0.77), (1, 0.97)],
+                     [(0, 0.045), (0.25, 0.245), (0.5, 0.52), (0.75, 0.75), (1, 0.93)]),
+        op_hsl({"red": (4, 1.1, -0.03), "orange": (0, 1.12, 0.0), "yellow": (-4, 0.9, 0.0),
+                "green": (-20, 0.75, -0.05), "aqua": (-12, 1.6, -0.06), "blue": (-14, 1.4, 0.0),
+                "purple": (-20, 0.7, 0.05), "magenta": (0, 0.9, 0.0)}),
+        op_split_tone(shadow=(0.02, -0.004, 0.012), highlight=(0.02, 0.014, -0.02)),
+        op_saturation(1.08))),
+    ("teal_sea", "Teal Sea", "Vintage", "Bright airy teal seas, pale lavender-white skies, jade green land, lifted milky highlights.", lambda: compose(
+        op_white_balance(temp=-0.09, tint=-0.101),
+        op_curve_rgb([(0, 0.032), (0.25, 0.204), (0.5, 0.553), (0.75, 0.749), (1, 0.985)],
+                     [(0, 0.0), (0.25, 0.273), (0.5, 0.676), (0.75, 0.685), (1, 0.985)],
+                     [(0, 0.0), (0.25, 0.223), (0.5, 0.629), (0.75, 0.851), (1, 0.985)]),
+        op_hsl({"red": (0.0, 1.0, 0.0), "orange": (0.0, 1.0, 0.0), "yellow": (-3.375, 1.0, 0.045), "green": (-5.625, 0.588, 0.263), "aqua": (9.0, 0.7, 0.15), "blue": (-3.375, 0.962, 0.203), "purple": (0.0, 1.0, 0.0)}),
+        op_split_tone(shadow=(0.011, -0.007, -0.004), highlight=(0.086, 0.034, 0.049)),
+        op_saturation(1.0))),
+    ("street_green", "Street Green", "Vintage", "Deep teal-emerald foliage, cool neutral whites, soft muted city tones.", lambda: compose(
+        op_white_balance(temp=-0.045, tint=-0.022),
+        op_curve_rgb([(0, 0.0), (0.25, 0.19), (0.5, 0.477), (0.75, 0.798), (1, 0.985)],
+                     [(0, 0.022), (0.25, 0.254), (0.5, 0.518), (0.75, 0.772), (1, 0.985)],
+                     [(0, 0.007), (0.25, 0.261), (0.5, 0.511), (0.75, 0.766), (1, 0.985)]),
+        op_hsl({"red": (1.125, 0.925, 0.0), "orange": (1.125, 0.925, 0.12), "yellow": (0.0, 0.925, 0.052), "green": (10.125, 1.075, -0.007), "aqua": (-6.75, 0.587, 0.09), "blue": (0.0, 1.0, -0.052), "purple": (0.0, 1.0, 0.0)}),
+        op_split_tone(shadow=(0.011, 0.007, -0.004), highlight=(-0.004, 0.004, 0.011)),
+        op_saturation(0.955))),
+    ("park_gold", "Park Gold", "Vintage", "Sunlit golden-yellow foliage, creamy warm highlights, lifted soft blacks.", lambda: compose(
+        op_white_balance(temp=0.141, tint=-0.023),
+        op_curve_rgb([(0, 0.0), (0.25, 0.34), (0.5, 0.573), (0.75, 0.751), (1, 0.985)],
+                     [(0, 0.0), (0.25, 0.307), (0.5, 0.544), (0.75, 0.775), (1, 0.985)],
+                     [(0, 0.005), (0.25, 0.23), (0.5, 0.5), (0.75, 0.736), (1, 0.985)]),
+        op_hsl({"red": (1.125, 1.038, 0.015), "orange": (10.125, 1.0, 0.12), "yellow": (-10, 1.15, 0.075), "green": (-1, 1.25, 0.09), "aqua": (0.0, 1.0, 0.0), "blue": (0.0, 1.0, 0.007), "purple": (0.0, 1.0, 0.0)}),
+        op_split_tone(shadow=(0.004, 0.019, 0.004), highlight=(0.042, 0.007, -0.024)),
+        op_saturation(0.82))),
+    ("dusk_gold", "Golden Dusk", "Vintage", "Golden-hour haze with orange-amber midtones, cool blue shadows, creamy highlights, rich olive greens.", lambda: compose(
+        op_white_balance(temp=0.15, tint=-0.4),
+        op_curve_rgb([(0, 0.012), (0.25, 0.38), (0.5, 0.65), (0.75, 0.9), (1, 0.985)],
+                     [(0, 0.012), (0.25, 0.35), (0.5, 0.64), (0.75, 0.87), (1, 0.985)],
+                     [(0, 0.0), (0.25, 0.37), (0.5, 0.58), (0.75, 0.8), (1, 0.985)]),
+        op_mid_tone((0.04, 0.01, -0.05)),
+        op_hsl({"red": (2, 1.25, 0.03), "orange": (8, 1.25, 0.05), "yellow": (2, 0.95, 0.03), "green": (-8, 1.15, -0.13), "aqua": (-10, 0.9, 0.0)}),
+        op_split_tone(shadow=(-0.004, -0.018, 0.022), highlight=(0.03, 0.02, -0.015)),
+        op_saturation(0.84))),
+    ("surf_teal", "Teal Surf", "Vintage", "Deep teal seawater, creamy white foam, warm olive-amber rocks, matte soft blacks.", lambda: compose(
+        op_white_balance(temp=0.0, tint=-0.011),
+        op_curve_rgb([(0, 0.002), (0.25, 0.254), (0.5, 0.486), (0.75, 0.808), (1, 0.985)],
+                     [(0, 0.0), (0.25, 0.233), (0.5, 0.543), (0.75, 0.797), (1, 0.985)],
+                     [(0, 0.009), (0.25, 0.231), (0.5, 0.547), (0.75, 0.761), (1, 0.985)]),
+        op_hsl({"red": (1.125, 0.963, 0.052), "orange": (8.0, 1.1, -0.03), "yellow": (-2.0, 1.2, -0.04), "green": (10.0, 1.4, -0.03), "aqua": (14, 1.7, 0.06), "blue": (0.0, 1.0, 0.0), "purple": (0.0, 1.0, 0.0)}),
+        op_split_tone(shadow=(-0.011, 0.007, 0.004), highlight=(0.0, -0.004, 0.046)),
+        op_saturation(1.1))),
+    ("bw_soft_mono", "Soft Mono", "Vintage", "Gentle mono with lifted shadows and soft highlights.", lambda: compose(
+        op_channel_mix((0.33, 0.5, 0.17)),
+        op_fade(0.06),
+        op_curve([(0, 0.06), (0.5, 0.52), (1, 0.97)]))),
 ]
 
-GROUP_ORDER = ["Fuji", "Kodak", "Korea", "Japan Pack", "Vintage"]
-ORIGINAL = {"id": "original", "name": "Original", "group": "Kodak", "lut": None, "premium": False}
+GROUP_ORDER = ["Fuji", "Kodak", "Leica", "Ricoh", "Korea", "Japan Pack", "Vintage"]
+ORIGINAL = {"id": "original", "name": "Original", "group": "Kodak", "lut": None}
 
 
 def load_pack_entries():
@@ -607,11 +741,112 @@ def self_check(identity_png):
     print("self-check: identity LUT matches formula at 5 sample positions")
 
 
+# ---------------------------------------------------------------------------
+# Look tags: how a LUT grades the photo, read back from its PNG. The app's chips use these.
+# Thresholds were set from the distribution of the shipped LUTs (see the tag summary in main()).
+# ---------------------------------------------------------------------------
+
+TAG_ORDER = ["warm", "cool", "soft", "bold", "mono"]
+TAG_WARM_CUT = 8        # mean (R - B) of the grey samples, in 0..255
+TAG_SOFT_MAX = 70.0     # mean distance from identity, in 0..441; at or below is soft
+TAG_BOLD_MIN = 99.0     # at or above is bold
+TAG_MONO_MAX_SAT = 0.1  # mean HSV saturation of the output; below this, and untinted, is mono
+
+
+def lut_tags(png_bytes):
+    """Tags for one LUT PNG. A look can be warm or cool, soft or bold, and mono stands alone."""
+    _, _, pixels = decode_png_rgb(png_bytes)
+    grey_warmth = []
+    for k in (16, 32, 47):
+        off = lut_offset(k, k, k)
+        grey_warmth.append(pixels[off] - pixels[off + 2])
+    warmth = sum(grey_warmth) / len(grey_warmth)
+
+    levels = [0, 8, 16, 24, 32, 40, 48, 56, 63]
+    distances, saturations = [], []
+    for r in levels:
+        for g in levels:
+            for b in levels:
+                off = lut_offset(r, g, b)
+                out = (pixels[off], pixels[off + 1], pixels[off + 2])
+                src = (r * 255 / 63, g * 255 / 63, b * 255 / 63)
+                distances.append(math.dist(src, out))
+                hi, lo = max(out), min(out)
+                saturations.append(0.0 if hi == 0 else (hi - lo) / hi)
+    distance = sum(distances) / len(distances)
+    saturation = sum(saturations) / len(saturations)
+
+    if saturation < TAG_MONO_MAX_SAT and abs(warmth) < TAG_WARM_CUT:
+        return ["mono"]
+    tags = []
+    if warmth >= TAG_WARM_CUT:
+        tags.append("warm")
+    elif warmth <= -TAG_WARM_CUT:
+        tags.append("cool")
+    if distance <= TAG_SOFT_MAX:
+        tags.append("soft")
+    elif distance >= TAG_BOLD_MIN:
+        tags.append("bold")
+    return tags
+
+
+# Difficulty: how far a LUT moves a photo from the original, so how hard it is to use well.
+# Each term is measured per LUT, then turned into a percentile among all shipped LUTs, and the
+# difficulty is the mean of those percentiles (0 = easiest, 1 = hardest). Cameras list their looks
+# easiest first, so the default look of each camera is the gentlest one it offers.
+# The chroma term uses absolute max-min change, not a ratio: a ratio is near zero on the dark and
+# grey samples that make up most of the grid, so it would rate a strong saturation boost as mild.
+DIFFICULTY_TERMS = ("distance", "warmth", "luma", "chroma")
+
+
+def lut_difficulty_terms(png_bytes):
+    """Raw difficulty terms for one LUT PNG: mean displacement, grey warmth, luma and chroma change."""
+    _, _, pixels = decode_png_rgb(png_bytes)
+    grey_warmth = []
+    for k in (16, 32, 47):
+        off = lut_offset(k, k, k)
+        grey_warmth.append(abs(pixels[off] - pixels[off + 2]))
+
+    levels = [0, 8, 16, 24, 32, 40, 48, 56, 63]
+    distances, luma_shifts, chroma_shifts = [], [], []
+    for r in levels:
+        for g in levels:
+            for b in levels:
+                off = lut_offset(r, g, b)
+                out = (pixels[off], pixels[off + 1], pixels[off + 2])
+                src = (r * 255 / 63, g * 255 / 63, b * 255 / 63)
+                distances.append(math.dist(src, out))
+                luma_shifts.append(abs(luma709(*out) - luma709(*src)))
+                chroma_shifts.append(abs((max(out) - min(out)) - (max(src) - min(src))))
+    return {
+        "distance": sum(distances) / len(distances),
+        "warmth": sum(grey_warmth) / len(grey_warmth),
+        "luma": sum(luma_shifts) / len(luma_shifts),
+        "chroma": sum(chroma_shifts) / len(chroma_shifts),
+    }
+
+
+def assign_difficulty(terms_by_id):
+    """Maps each id to its difficulty in 0..1 from the mean percentile of its terms."""
+    ids = list(terms_by_id)
+    percentile = {fid: [] for fid in ids}
+    for term in DIFFICULTY_TERMS:
+        values = sorted(terms_by_id[fid][term] for fid in ids)
+        denom = max(len(values) - 1, 1)
+        for fid in ids:
+            # Mean rank among ties, so equal LUTs get equal difficulty.
+            v = terms_by_id[fid][term]
+            below = sum(1 for x in values if x < v)
+            equal = sum(1 for x in values if x == v)
+            percentile[fid].append((below + (equal - 1) / 2) / denom)
+    return {fid: round(sum(p) / len(p), 3) for fid, p in percentile.items()}
+
+
 def main():
     all_entries = [ORIGINAL]
     builders = []
-    for fid, name, group, premium, _desc, make in FILTERS:
-        all_entries.append({"id": fid, "name": name, "group": group, "lut": f"luts/{fid}.png", "premium": premium})
+    for fid, name, group, _desc, make in FILTERS:
+        all_entries.append({"id": fid, "name": name, "group": group, "lut": f"luts/{fid}.png"})
         builders.append((fid, make()))
     pack = load_pack_entries()
     all_entries += pack
@@ -642,6 +877,19 @@ def main():
     for e in pack:
         total_bytes += os.path.getsize(os.path.join(LUT_DIR, os.path.basename(e["lut"])))
 
+    terms_by_id = {}
+    for e in all_entries:
+        if e["lut"]:
+            with open(os.path.join(ASSET_DIR, e["lut"]), "rb") as f:
+                png = f.read()
+            e["tags"] = lut_tags(png)
+            terms_by_id[e["id"]] = lut_difficulty_terms(png)
+        else:
+            e["tags"] = []
+    difficulty = assign_difficulty(terms_by_id)
+    for e in all_entries:
+        e["difficulty"] = difficulty.get(e["id"], 0.0)
+
     catalog = {"version": 1, "filters": all_entries}
     with open(CATALOG_PATH, "w", encoding="utf-8") as f:
         f.write(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n")
@@ -650,9 +898,10 @@ def main():
     print("Summary")
     for group in GROUP_ORDER:
         members = [e for e in all_entries if e["group"] == group]
-        premium = sum(1 for e in members if e["premium"])
-        print(f"  {group:<9} {len(members):>3} filters ({premium} premium)")
-    print(f"  total     {len(all_entries):>3} entries, {len(builders)} LUT files")
+        print(f"  {group:<9} {len(members):>3} filters")
+    print(f"  total     {len(all_entries):>3} entries, {len(builders)} builder LUT files")
+    for tag in TAG_ORDER:
+        print(f"  tag {tag:<5} {sum(1 for e in all_entries if tag in e['tags']):>3} entries")
     print(f"  LUT PNG total size: {total_bytes / 1024:.1f} KB")
     if total_bytes >= MAX_TOTAL_BYTES:
         sys.exit(f"LUT assets exceed {MAX_TOTAL_BYTES} bytes")

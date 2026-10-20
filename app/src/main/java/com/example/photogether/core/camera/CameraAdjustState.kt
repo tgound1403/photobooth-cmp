@@ -12,6 +12,10 @@ enum class EvMode { HARDWARE, SOFTWARE }
 data class CameraCapabilities(
     val evRange: EvRange?,
     val awbLockAvailable: Boolean,
+    /** Sensor ISO range; null when the camera has no manual sensor control. */
+    val isoRange: IntRange? = null,
+    /** Sensor exposure time range in nanoseconds; null when the camera has no manual sensor control. */
+    val exposureRangeNs: LongRange? = null,
 )
 
 /** Live camera-adjust state held by the view model. */
@@ -25,7 +29,20 @@ data class CameraAdjustState(
     val openTool: CameraTool? = null,
     /** Green (-1) to magenta (+1). Applied by the shader, so it never touches the camera hardware. */
     val tint: Float = 0f,
-)
+    val isoRange: IntRange? = null,
+    val exposureRangeNs: LongRange? = null,
+    /** ISO and shutter the manual wheels hold. Sent to the camera only while [manualExposureActive]. */
+    val manualIso: Int = DEFAULT_MANUAL_ISO,
+    val manualExposureNs: Long = DEFAULT_MANUAL_EXPOSURE_NS,
+) {
+    /** Whether the camera accepts a manual ISO and shutter. */
+    val manualAvailable: Boolean get() = isoRange != null && exposureRangeNs != null
+}
+
+const val DEFAULT_MANUAL_ISO = 400
+
+/** 1/125 s. */
+const val DEFAULT_MANUAL_EXPOSURE_NS = 8_000_000L
 
 /** Largest tint magnitude the camera accepts. Matches [EditParams.tint]. */
 const val CAMERA_TINT_LIMIT = 1f
@@ -53,7 +70,23 @@ fun CameraAdjustState.withCapabilities(c: CameraCapabilities): CameraAdjustState
         evMode = if (c.evRange != null) EvMode.HARDWARE else EvMode.SOFTWARE,
         awbLockAvailable = c.awbLockAvailable,
         ev = range.evFor(range.indexFor(ev)),
-    )
+        isoRange = c.isoRange,
+        exposureRangeNs = c.exposureRangeNs,
+    ).withManualIso(manualIso).withManualExposureNs(manualExposureNs)
+}
+
+/** Sets the manual ISO, snapped to the nearest stop of the sensor range. Unchanged without a range. */
+fun CameraAdjustState.withManualIso(iso: Int): CameraAdjustState {
+    val range = isoRange ?: return this
+    val steps = ManualExposureSteps.isoSteps(range)
+    return copy(manualIso = steps[ManualExposureSteps.nearestIndex(steps, iso)])
+}
+
+/** Sets the manual shutter time, snapped to the nearest stop of the sensor range. Unchanged without a range. */
+fun CameraAdjustState.withManualExposureNs(ns: Long): CameraAdjustState {
+    val range = exposureRangeNs ?: return this
+    val steps = ManualExposureSteps.shutterSteps(range)
+    return copy(manualExposureNs = steps[ManualExposureSteps.nearestIndex(steps, ns)])
 }
 
 /**
@@ -74,5 +107,6 @@ fun EditParams.withCameraAdjust(s: CameraAdjustState): EditParams =
     copy(
         kelvin = s.kelvin,
         tint = s.tint,
-        softwareEv = if (s.evMode == EvMode.SOFTWARE) s.ev else 0f,
+        // Manual exposure fixes the brightness, so the EV shift would only fight the wheels.
+        softwareEv = if (s.evMode == EvMode.SOFTWARE && !s.manualExposureActive) s.ev else 0f,
     )

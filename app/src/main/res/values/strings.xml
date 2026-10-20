@@ -264,4 +264,9 @@
     <string name="empty_state_title">Nothing here yet</string>
     <string name="empty_state_message">Try again later</string>
     <string name="camera_save_failed">Could not save the photo, try again</string>
+    <string name="settings_round_wheel">Round wheel controls</string>
+    <string name="settings_round_wheel_desc">Which control the big round wheel turns on the landscape camera; the other two become sliders</string>
+    <string name="camera_rotate_tip">Rotate your phone sideways for Pro mode</string>
+    <string name="camera_rotate_tip_dismiss">Got it</string>
+    <string name="camera_filter_fallback">Filter</string>
 </resources>

@@ -119,12 +119,53 @@ def make_disposable(rng: random.Random) -> list[float]:
     return out
 
 
+def make_gear_tick(rng: random.Random) -> list[float]:
+    """Detent click of a mechanical gear under a slider: about 25 ms, a sharp noise tick, a short
+    metallic ring at 3.2 kHz and a dull 220 Hz thunk underneath."""
+    out = [0.0] * _samples(0.025)
+    _burst(rng, 0.0, 0.003, out, amp=0.9)
+    _tone(out, freq=3200.0, decay=0.004, amp=0.3, duration=0.025)
+    _tone(out, freq=220.0, decay=0.008, amp=0.35, duration=0.025)
+    _fade_out(out, 0.003)
+    return out
+
+
+def make_wheel_click(rng: random.Random) -> list[float]:
+    """Ratchet click of a camera control wheel: about 60 ms. A pawl strike, a small ring, then a softer
+    second tick as the pawl drops into the next tooth, over a dull 160 Hz body thunk."""
+    out = [0.0] * _samples(0.06)
+    _burst(rng, 0.0, 0.003, out, amp=1.0)
+    _tone(out, freq=1900.0, decay=0.006, amp=0.35, duration=0.06)
+    _tone(out, freq=160.0, decay=0.014, amp=0.5, duration=0.06)
+    _burst(rng, 0.011, 0.002, out, amp=0.55)
+    _tone(out, freq=2700.0, decay=0.004, amp=0.2, duration=0.06)
+    _fade_out(out, 0.006)
+    return out
+
+
+def make_switch_clunk(rng: random.Random) -> list[float]:
+    """Heavier clunk of a mode switch snapping over: about 100 ms, a low thump, a mid knock and a
+    second tick when the lever reaches the end of its travel."""
+    out = [0.0] * _samples(0.1)
+    _burst(rng, 0.0, 0.004, out, amp=0.8)
+    _tone(out, freq=110.0, decay=0.03, amp=0.8, duration=0.1)
+    _tone(out, freq=720.0, decay=0.01, amp=0.3, duration=0.1)
+    _burst(rng, 0.034, 0.003, out, amp=0.6)
+    _tone(out, freq=1500.0, decay=0.008, amp=0.25, duration=0.1)
+    _fade_out(out, 0.008)
+    return _lowpass(out, 0.7)
+
+
 def main() -> None:
     rng = random.Random(SEED)
+    # New sounds go at the end so the seeded noise of the shutter sounds above does not change.
     targets = [
         ("shutter_mech.wav", make_mech),
         ("shutter_soft.wav", make_soft),
         ("shutter_disposable.wav", make_disposable),
+        ("slider_tick.wav", make_gear_tick),
+        ("wheel_click.wav", make_wheel_click),
+        ("switch_clunk.wav", make_switch_clunk),
     ]
     for name, make in targets:
         path = OUT_DIR / name

@@ -10,7 +10,7 @@ Usage (repo root):
     python3 -I tools/glb-gen/generate_glb.py --preview DIR   # also writes DIR/<id>_{3q,front}.png
     python3 -I tools/glb-gen/generate_glb.py --stills        # also rewrites the 2D stills in res/drawable-nodpi
 """
-import json, math, struct, sys, os
+import json, math, re, struct, sys, os
 
 MATS = [
     ("body", [0.8, 0.8, 0.8, 1.0], 0.0, 0.5),
@@ -463,6 +463,24 @@ def render(mesh, tint, yaw, pitch, size=(984, 664), dist=7.2, fov=1.0, fit=0.0):
     return img.resize((W, H), Image.LANCZOS)
 
 
+def profile_bodies():
+    """(profile id, model name, body RGB) for every camera profile, read from CameraProfiles.kt. Profiles on
+    the default model (nikon_s3.glb, not generated here) are included with that model name and skipped by the caller."""
+    src = open(os.path.join("app", "src", "main", "java", "com", "example", "photogether", "core", "render",
+                            "CameraProfiles.kt"), encoding="utf-8").read()
+    default = re.search(r'DEFAULT_MODEL = "models/([a-z0-9_]+)\.glb"', src)[1]
+    out = []
+    for block in src.split("CameraProfile(\n")[1:]:
+        pid = re.search(r'\bid = "([a-z0-9_]+)"', block)
+        tint = re.search(r'modelTint = 0xFF([0-9A-Fa-f]{6})', block)
+        if not pid or not tint:
+            continue
+        model = re.search(r'modelAsset = "models/([a-z0-9_]+)\.glb"', block)
+        rgb = tuple(int(tint[1][i:i + 2], 16) for i in (0, 2, 4))
+        out.append((pid[1], model[1] if model else default, rgb))
+    return out
+
+
 def main():
     out_dir = os.path.join("app", "src", "main", "assets", "models")
     os.makedirs(out_dir, exist_ok=True)
@@ -473,15 +491,18 @@ def main():
     tints = {"leica_m": (58, 58, 60), "ricoh_gr": (62, 66, 72), "slr": (224, 169, 28),
              "compact": (31, 154, 163), "instant": (239, 230, 210), "kodak": (201, 161, 91),
              "tlr": (74, 74, 78), "box": (96, 72, 52), "bridge": (50, 52, 56), "pocket": (190, 190, 194)}
-    # model -> profile whose still (res/drawable-nodpi/camera_<id>.png) is rendered from it
-    stills = {"leica_m": "leica_m", "ricoh_gr": "ricoh_gr", "slr": "golden", "compact": "night", "instant": "fuji_mini", "kodak": "classic35"}
+    # Each profile's still (res/drawable-nodpi/camera_<id>.png) is its own body in its modelTint, the same as the 3D picker.
+    stills = {}
+    for pid, model, rgb in profile_bodies():
+        stills.setdefault(model, []).append((pid, rgb))
     for name, fn in MODELS.items():
         mesh = fn()
         mesh.write(os.path.join(out_dir, name + ".glb"))
         print(name, os.path.getsize(os.path.join(out_dir, name + ".glb")), "bytes")
-        if "--stills" in sys.argv and name in stills:
-            render(mesh, tints[name], math.radians(-18), math.radians(10), size=(492, 332), fit=0.92).save(
-                os.path.join("app", "src", "main", "res", "drawable-nodpi", "camera_%s.png" % stills[name]))
+        if "--stills" in sys.argv:
+            for pid, rgb in stills.get(name, []):
+                render(mesh, rgb, math.radians(-18), math.radians(10), size=(492, 332), fit=0.92).save(
+                    os.path.join("app", "src", "main", "res", "drawable-nodpi", "camera_%s.png" % pid))
         if preview:
             render(mesh, tints[name], math.radians(-30), math.radians(18)).save(os.path.join(preview, name + "_3q.png"))
             render(mesh, tints[name], 0, 0).save(os.path.join(preview, name + "_front.png"))

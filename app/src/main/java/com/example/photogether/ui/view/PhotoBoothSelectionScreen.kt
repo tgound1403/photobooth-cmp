@@ -206,7 +206,7 @@ fun PhotoBoothSelectionContent(
                 verticalArrangement = Arrangement.spacedBy(Spacing.md),
                 modifier = Modifier.weight(1f)
             ) {
-                items(capturedImages) { imagePath ->
+                items(capturedImages, key = { it }) { imagePath ->
                     val isSelected = selectedImages.contains(imagePath)
                     val slot = pickOrder.indexOf(imagePath) + 1
                     Box(

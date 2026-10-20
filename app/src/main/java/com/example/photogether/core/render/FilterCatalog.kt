@@ -13,7 +13,8 @@ data class FilterInfo(
     val name: String,
     val group: String,
     val lut: String? = null,
-    val premium: Boolean = false,
+    /** Look tags written by generate_luts.py: any of warm, cool, soft, bold, mono. Empty for Original. */
+    val tags: List<String> = emptyList(),
 )
 
 @Serializable

@@ -91,6 +91,13 @@ object FrameColors {
         0xFF5B6B4A.toInt(), // moss green
         0xFF3A3A3C.toInt(), // dark grey
         0xFF111111.toInt(), // black
+        0xFFE63946.toInt(), // red
+        0xFFF4A261.toInt(), // orange
+        0xFFF2CC4B.toInt(), // yellow
+        0xFF2A9D8F.toInt(), // teal
+        0xFF3A6EA5.toInt(), // blue
+        0xFF8E5BA8.toInt(), // purple
+        0xFFF4A7B9.toInt(), // pink
     )
 
     /** Black text on light borders, white text on dark ones, by perceived brightness. */

@@ -14,7 +14,7 @@ sweep, a skin-tone patch set (light to dark), and a sky/foliage gradient.
 
 Outputs in --out:
   index.html          contact sheet: near-duplicate table at the top, then rows = LUTs
-                      (original first), columns = images, with group, premium flag and
+                      (original first), columns = images, with group and
                       flags for banding / non-monotonic grey response
   inputs/*.png        the input images used
   results/<id>__<image>.png  each LUT applied to each image
@@ -413,7 +413,6 @@ def main(argv=None):
             "id": os.path.splitext(fname)[0],
             "name": entry.get("name", os.path.splitext(fname)[0]),
             "group": entry.get("group", "not in catalog"),
-            "premium": bool(entry.get("premium", False)),
             "order": catalog_order.index(fname) if fname in by_file else 10 ** 6,
             "sample": make_lut_sampler(rgb),
         })
@@ -543,9 +542,8 @@ def main(argv=None):
             flags.append(f'<span class="flag">banding/non-monotonic (drop {drop:.1f} at grey {at})</span>')
         if L["id"] in dup_partners:
             flags.append(f'<span class="dup">near-dup: {html.escape(", ".join(dup_partners[L["id"]]))}</span>')
-        premium = '<span class="premium">premium</span>' if L["premium"] else ""
         label = (
-            f"<strong>{html.escape(L['name'])}</strong> {premium}"
+            f"<strong>{html.escape(L['name'])}</strong>"
             f"<div class=\"meta\">{html.escape(L['id'])} &middot; {html.escape(L['group'])}</div>"
             + (f"<div class=\"flags\">{''.join(flags)}</div>" if flags else "")
         )
@@ -580,7 +578,6 @@ def main(argv=None):
   .wrap {{ overflow-x: auto; }}
   .flag {{ color: var(--flag); font-size: 12px; display: block; }}
   .dup {{ color: var(--dup); font-size: 12px; display: block; }}
-  .premium {{ font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 3px; }}
   tr.orig td {{ background: rgba(127,127,127,0.08); }}
 </style>
 </head>

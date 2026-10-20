@@ -1,5 +1,6 @@
 package com.example.photogether.ui.view.GaleryScreen
 
+import com.example.photogether.core.navigation.popBackStackOnce
 import com.tgound.photogether.R
 import androidx.compose.ui.res.stringResource
 import android.Manifest
@@ -137,7 +138,7 @@ fun GalleryScreen(navController: NavController, cameraOnly: Boolean = false) {
 
     GalleryPickerContent(
         images = images,
-        onBack = { navController.popBackStack() },
+        onBack = { navController.popBackStackOnce() },
         onImageClick = { imagePath ->
             if (cameraOnly) {
                 selected = shots.firstOrNull { it.path == imagePath }
@@ -210,7 +211,7 @@ fun GalleryPickerContent(
             columns = GridCells.Adaptive(IconSize.hero * 2),
             contentPadding = PaddingValues(Spacing.sm),
             content = {
-                items(images) { imagePath ->
+                items(images, key = { it }) { imagePath ->
                     ImageItem(imagePath = imagePath, onClick = { onImageClick(imagePath) })
                 }
             }

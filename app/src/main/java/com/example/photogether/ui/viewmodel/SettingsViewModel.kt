@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.example.photogether.core.camera.CropZoomPrefs
 import com.example.photogether.core.camera.GridPrefs
+import com.example.photogether.core.camera.RoundWheel
+import com.example.photogether.core.camera.RoundWheelPrefs
 import com.example.photogether.core.camera.ShutterSoundPrefs
 import com.example.photogether.data.prefs.ThemeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,5 +55,16 @@ class SettingsViewModel(
     fun setGridEnabled(enabled: Boolean) {
         _gridEnabled.value = enabled
         GridPrefs.write(getApplication(), enabled)
+    }
+
+    private val _roundWheel = MutableStateFlow(RoundWheelPrefs.read(application))
+
+    /** Which exposure control the round wheel turns on the landscape camera. */
+    val roundWheel: StateFlow<RoundWheel> = _roundWheel.asStateFlow()
+
+    /** Saves the round wheel choice. The camera re-reads it when its screen resumes. */
+    fun setRoundWheel(wheel: RoundWheel) {
+        _roundWheel.value = wheel
+        RoundWheelPrefs.write(getApplication(), wheel)
     }
 }

@@ -13,7 +13,7 @@ class FilterGroupingTest {
     private fun ids(list: List<FilterInfo>): List<String> = list.map { it.id }
 
     @Test
-    fun chipsWithoutFavoritesAreAllAndFiveGroupsInCatalogOrder() {
+    fun chipsWithoutFavoritesAreAllGroupsThenTagsInOrder() {
         val chips = FilterGrouping.chips(filters, hasFavorites = false)
 
         assertEquals(
@@ -23,18 +23,41 @@ class FilterGroupingTest {
                 "group:Fuji",
                 "group:Vintage",
                 "group:Korea",
-                "group:Japan Pack",
+                "group:Leica",
+                "group:Ricoh",
+                "tag:warm",
+                "tag:cool",
+                "tag:soft",
+                "tag:bold",
+                "tag:mono",
             ),
             chips.map { it.id },
         )
     }
 
     @Test
+    fun japanPackHasNoGroupChipBecauseTagsBrowseIt() {
+        val chips = FilterGrouping.chips(filters, hasFavorites = false).map { it.id }
+
+        assertTrue(chips.none { it == "group:Japan Pack" })
+        assertTrue(filters.any { it.group == "Japan Pack" && it.tags.isNotEmpty() })
+    }
+
+    @Test
     fun chipsWithFavoritesPutFavoriteSecond() {
         val chips = FilterGrouping.chips(filters, hasFavorites = true)
 
-        assertEquals(7, chips.size)
+        assertEquals(13, chips.size)
         assertEquals(FilterGrouping.FAVORITE, chips[1].id)
+    }
+
+    @Test
+    fun tagChipKeepsOnlyLooksWithThatTagAndOriginalFirst() {
+        val warm = FilterGrouping.filterBy("tag:warm", filters, emptySet())
+
+        assertEquals(FilterCatalog.ORIGINAL_ID, warm.first().id)
+        assertTrue(warm.drop(1).all { "warm" in it.tags })
+        assertEquals(1 + filters.count { "warm" in it.tags }, warm.size)
     }
 
     @Test

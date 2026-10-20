@@ -1,5 +1,20 @@
 package com.example.photogether.ui.view.CameraScreen
 
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.AnimatedContent
+import com.example.photogether.core.navigation.navigateOnce
+import com.example.photogether.core.navigation.popBackStackOnce
+import com.example.photogether.ui.components.CAMERA_BUTTON_SIZE
 import com.tgound.photogether.R
 import androidx.compose.ui.res.stringResource
 import android.net.Uri
@@ -17,6 +32,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.example.photogether.ui.components.FanUiState
+import com.example.photogether.ui.components.FilterFanOverlay
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateZoom
@@ -47,6 +65,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import com.example.photogether.core.camera.VolumeKeyCapture
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -67,6 +86,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import android.content.res.Configuration
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import com.example.photogether.ui.camera.CameraBodyPlate
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -86,6 +112,10 @@ import com.example.photogether.core.camera.formatEv
 import com.example.photogether.core.camera.lensOptions
 import com.example.photogether.core.navigation.AppRoutes
 import com.example.photogether.core.camera.GridPrefs
+import com.example.photogether.core.camera.RotateTipPrefs
+import com.example.photogether.core.camera.RoundWheelPrefs
+import com.example.photogether.ui.components.FilterFanButton
+import com.example.photogether.ui.components.RotateTip
 import com.example.photogether.core.render.CameraAspect
 import com.example.photogether.core.render.CameraProfiles
 import com.example.photogether.core.render.FilterCatalog
@@ -96,7 +126,6 @@ import com.example.photogether.ui.components.AspectPanel
 import com.example.photogether.ui.components.CameraAdjustPanel
 import com.example.photogether.ui.components.CameraCircleButton
 import com.example.photogether.ui.components.CameraQuickBar
-import com.example.photogether.ui.components.FilterStrip
 import com.example.photogether.ui.components.CameraToolButtons
 import com.example.photogether.ui.components.FocalPill
 import com.example.photogether.ui.components.FocusIndicator
@@ -139,8 +168,6 @@ fun CameraScreen(
     cameraViewModel: CameraViewModel = koinViewModel(),
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    val exposureTime = remember { mutableLongStateOf(10_000_000L) }
-    val isoValue = remember { mutableIntStateOf(1000) }
     val recipes by cameraViewModel.recipes.collectAsState(initial = emptyList())
     val allSources = remember(recipes) {
         cameraViewModel.catalog.filters + recipes.map { RecipeFilters.toFilterInfo(it) }
@@ -184,6 +211,19 @@ fun CameraScreen(
         finishedListener = { frozenFrame = null },
         label = "viewfinderRatio",
     )
+    // Back from another screen: the frame frozen for the screen change is dropped once the return transition ends.
+    var resumeTick by remember { mutableIntStateOf(0) }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) resumeTick++ }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    LaunchedEffect(resumeTick) {
+        if (frozenFrame != null) {
+            delay(320)
+            frozenFrame = null
+        }
+    }
     val onSelectAspect: (CameraAspect) -> Unit = { aspect ->
         if (aspect != effectiveAspect) {
             frozenFrame = previewView.bitmap?.asImageBitmap()
@@ -205,6 +245,19 @@ fun CameraScreen(
             wanted?.let { cameraViewModel.toggleTool(it) }
         }
     }
+    // Landscape: the white balance card beside the plate. CameraAdjustPanel reads openTool, so it follows this.
+    var wbOpen by remember { mutableStateOf(false) }
+    val setWbOpen: (Boolean) -> Unit = { open ->
+        wbOpen = open
+        if (open) panel = CameraPanel.NONE
+        val wanted = if (open) CameraTool.WHITE_BALANCE else null
+        if (adjust.openTool != wanted) {
+            adjust.openTool?.let { cameraViewModel.toggleTool(it) }
+            wanted?.let { cameraViewModel.toggleTool(it) }
+        }
+    }
+    // The filter fan, open while the filter button is held.
+    var fan by remember { mutableStateOf<FanUiState?>(null) }
     val flashMode by cameraViewModel.flashMode.collectAsStateWithLifecycle()
     var flashFx by remember { mutableStateOf<FlashFx?>(null) }
     // The gallery iris shows the last photo taken this session. captureSeq counts shutter presses, so the
@@ -238,12 +291,15 @@ fun CameraScreen(
     // The shutter sound is set on the Settings screen. Re-read it whenever this screen resumes, so a change made there applies.
     // The grid is set on the Settings screen. Read it on resume so a change made there applies.
     var showGrid by remember { mutableStateOf(GridPrefs.read(context)) }
+    // The round wheel choice is set on the Settings screen too, and read on resume the same way.
+    var roundWheel by remember { mutableStateOf(RoundWheelPrefs.read(context)) }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 cameraViewModel.reloadShutterSound()
                 cameraViewModel.reloadCropZoom()
                 showGrid = GridPrefs.read(context)
+                roundWheel = RoundWheelPrefs.read(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -264,153 +320,315 @@ fun CameraScreen(
         if (!picked.offers(selectedId)) currentOnSelect(picked.filterId)
     }
 
+    // Only this screen follows the sensor; the rest of the app is locked to portrait (manifest).
+    DisposableEffect(context) {
+        val activity = context as? android.app.Activity
+        activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+        onDispose { activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+    }
+    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    // Turning from landscape to portrait hands exposure back to the camera (mode A). The previous orientation is
+    // saved, because a rotation recreates the activity, so only the transition triggers it and a first open in portrait does not.
+    var wasLandscape by rememberSaveable { mutableStateOf(landscape) }
+    LaunchedEffect(landscape) {
+        if (wasLandscape && !landscape) cameraViewModel.setManualMode(false)
+        wasLandscape = landscape
+    }
+    // First-run tip on the portrait camera. Dismissed by a tap or by rotating, and then never shown again.
+    var showTip by remember { mutableStateOf(RotateTipPrefs.shouldShow(context)) }
+    val dismissTip: () -> Unit = {
+        showTip = false
+        RotateTipPrefs.markSeen(context)
+    }
+    LaunchedEffect(landscape) {
+        if (landscape && showTip) dismissTip()
+    }
+    val viewfinderLayers: @Composable BoxScope.() -> Unit = {
+            CameraPreviewViewfinder(
+                navController = navController,
+                modifier = Modifier
+                    .fillMaxSize(),
+                previewView = previewView,
+                previewUseCase = cameraViewModel.preview.value,
+                camera = camera,
+                flash = flash,
+                showGrid = showGrid,
+                aspect = effectiveAspect,
+                cropZoom = cameraViewModel.cropZoom.floatValue,
+                cropZoomOn = cameraViewModel.cropZoomActive.value,
+                zoomMm = cropZoomMm,
+                onStrength = onStrength,
+                onFocusPoint = cameraViewModel::focusAt,
+                onPinch = cameraViewModel::pinchZoom,
+                onPinchEnd = cameraViewModel::endPinch,
+                        landscape = landscape,
+            )
+            // Covers the live view while the ratio changes, so the resize is never seen.
+            frozenFrame?.let { frame ->
+                Image(
+                    bitmap = frame,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(Radius.viewfinder)),
+                )
+            }
+            ScreenFlash(
+                fx = flashFx,
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(Radius.viewfinder)),
+            )
+    }
+    val quickBar: @Composable () -> Unit = {
+        CameraQuickBar(
+            kelvin = adjust.kelvin ?: measuredKelvin,
+            kelvinMeasured = adjust.kelvin == null,
+            ev = adjust.ev,
+            wbOpen = panel == CameraPanel.WB,
+            evOpen = panel == CameraPanel.EV,
+            onWbClick = { openPanel(CameraPanel.WB) },
+            onEvClick = { openPanel(CameraPanel.EV) },
+            focalPill = {
+                camera?.let {
+                    FocalPill(
+                        cameraInfo = it.cameraInfo,
+                        lensMm = cameraViewModel.lensMm.floatValue,
+                        cropZoom = cameraViewModel.cropZoom.floatValue,
+                        selected = panel == CameraPanel.LENS,
+                        onClick = { openPanel(CameraPanel.LENS) },
+                    )
+                }
+            },
+        )
+    }
+    val panelBody: @Composable (CameraPanel) -> Unit = { shown ->
+        when (shown) {
+            CameraPanel.NONE -> Unit
+            CameraPanel.ASPECT -> AspectPanel(
+                selected = effectiveAspect,
+                onSelect = onSelectAspect,
+                onClose = { openPanel(CameraPanel.ASPECT) },
+            )
+            CameraPanel.WB -> Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = (adjust.kelvin?.let { kelvinLabel(it) }
+                        ?: measuredKelvin?.let { "AUTO · ~${it}K" }
+                        ?: kelvinLabel(null)).uppercase(),
+                    style = BinsooType.label,
+                    color = InkColors.textPrimary,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    CameraAdjustPanel(
+                        state = adjust,
+                        measuredKelvin = measuredKelvin,
+                        onKelvinChange = { cameraViewModel.setKelvin(it) },
+                        onKelvinAuto = cameraViewModel::setKelvinAuto,
+                        onEvChange = cameraViewModel::setEv,
+                        onTintChange = cameraViewModel::setTint,
+                        onCommit = cameraViewModel::commitAdjust,
+                        modifier = Modifier.weight(1f),
+                    )
+                    CameraToolButtons(
+                        state = adjust,
+                        onAuto = {
+                            cameraViewModel.setKelvinAuto()
+                            cameraViewModel.commitAdjust()
+                        },
+                        onSun = {
+                            cameraViewModel.setKelvin(SUN_PRESET_KELVIN)
+                            cameraViewModel.commitAdjust()
+                        },
+                        onBulb = {
+                            cameraViewModel.setKelvin(BULB_PRESET_KELVIN)
+                            cameraViewModel.commitAdjust()
+                        },
+                    )
+                }
+            }
+            CameraPanel.EV -> Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = formatEv(adjust.ev),
+                    style = BinsooType.label,
+                    color = InkColors.textPrimary,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    CameraAdjustPanel(
+                        state = adjust,
+                        onKelvinChange = { cameraViewModel.setKelvin(it) },
+                        onKelvinAuto = cameraViewModel::setKelvinAuto,
+                        onEvChange = cameraViewModel::setEv,
+                        onTintChange = cameraViewModel::setTint,
+                        onCommit = cameraViewModel::commitAdjust,
+                        modifier = Modifier.weight(1f),
+                    )
+                    CameraCircleButton(
+                        icon = AppIcons.Undo,
+                        label = stringResource(R.string.camera_reset_ev),
+                        onClick = {
+                            cameraViewModel.resetEv()
+                            cameraViewModel.commitAdjust()
+                        },
+                    )
+                }
+            }
+            CameraPanel.LENS -> LensPanel(
+                options = lensOptions(cameraViewModel.availableLenses.value, cameraViewModel.mainMm.floatValue, maxZoom),
+                currentMm = cropZoomMm.toFloat(),
+                mainMm = cameraViewModel.mainMm.floatValue,
+                onSelect = { cameraViewModel.setFocal(it.roundToInt()) },
+            )
+        }
+    }
+    val onCapture: () -> Unit = {
+            // Flash and iris only play when the press is accepted (a capture in progress ignores it).
+            val accepted = cameraViewModel.takePhotoToGallery(
+                cameraId = cameraProfile?.id ?: FilterCatalog.ORIGINAL_ID,
+                onSaved = { uri -> lastPhoto = uri },
+                onError = { exception ->
+                    Log.e(TAG, "Capture failed", exception)
+                    Toast.makeText(context, context.getString(R.string.camera_save_failed), Toast.LENGTH_SHORT).show()
+                },
+            )
+            if (accepted) {
+                if (flashMode == FlashMode.ON && cameraViewModel.hasFlash.value) {
+                    flashFx = FlashFx(FlashStyle.HARSH)
+                }
+                captureSeq++
+            }
+    }
+
+    // Volume keys shoot only in the landscape body, which is the mode with the physical-style controls.
+    val currentOnCapture by rememberUpdatedState(onCapture)
+    DisposableEffect(landscape) {
+        if (landscape) VolumeKeyCapture.handler = { currentOnCapture() }
+        onDispose { VolumeKeyCapture.handler = null }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(
+      if (landscape) {
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .background(InkColors.background)
-                .statusBarsPadding()
-                .navigationBarsPadding(),
+                .safeDrawingPadding(),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            CameraTopBar(
-                onBack = { navController.popBackStack() },
-                onOpenSettings = { navController.navigate(AppRoutes.SETTINGS) },
-            )
-
-            // The viewfinder takes the space the rest of the screen leaves. Its bottom overlays sit inside it.
-            // Its shape follows the chosen aspect, so the live view shows the same crop as the capture.
+            // Left rail: back, settings, flash, aspect and camera switch, like the buttons on a body's left.
+            Column(
+                modifier = Modifier.fillMaxHeight().width(60.dp),
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                IconButton(onClick = { navController.popBackStackOnce() }) {
+                    Icon(AppIcons.Back, stringResource(R.string.action_back), tint = InkColors.textPrimary)
+                }
+                IconButton(onClick = { navController.navigate(AppRoutes.SETTINGS) }) {
+                    Icon(AppIcons.Menu, stringResource(R.string.settings_title), tint = InkColors.textPrimary)
+                }
+                val flashAvailable = cameraViewModel.hasFlash.value
+                CameraCircleButton(
+                    icon = flashIcon(flashMode),
+                    label = stringResource(R.string.camera_flash_fmt, flashLabel(flashMode)),
+                    onClick = { if (flashAvailable) cameraViewModel.setFlashMode(flashMode.next()) },
+                    buttonSize = CAMERA_BUTTON_SIZE,
+                    contentColor = if (flashAvailable) InkColors.textPrimary else InkColors.textSecondary,
+                )
+                AspectButton(label = effectiveAspect.label, onClick = { openPanel(CameraPanel.ASPECT) })
+                CameraCircleButton(
+                    icon = AppIcons.Temperature,
+                    label = "Cân bằng trắng",
+                    onClick = { setWbOpen(!wbOpen) },
+                    buttonSize = CAMERA_BUTTON_SIZE,
+                    containerColor = if (wbOpen) InkColors.accent else InkColors.surfaceElevated.copy(alpha = 0.7f),
+                    contentColor = if (wbOpen) InkColors.onAccent else InkColors.textPrimary,
+                )
+                CameraCircleButton(
+                    icon = AppIcons.SwitchCamera,
+                    label = stringResource(R.string.camera_switch),
+                    onClick = cameraViewModel::switchFacing,
+                    buttonSize = CAMERA_BUTTON_SIZE,
+                )
+            }
+            // Viewfinder in landscape: the same crop as the capture, so the ratio is the portrait one turned on its side.
             Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = Spacing.lg),
-                // Centred so the frame has the same space above and below it.
+                modifier = Modifier.weight(1f).fillMaxHeight().padding(vertical = Spacing.sm),
                 contentAlignment = Alignment.Center,
             ) {
-                Box(modifier = Modifier.aspectRatio(viewRatio)) {
-                    CameraPreviewViewfinder(
-                        navController = navController,
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        previewView = previewView,
-                        previewUseCase = cameraViewModel.preview.value,
-                        camera = camera,
-                        flash = flash,
-                        showGrid = showGrid,
-                        aspect = effectiveAspect,
-                        cropZoom = cameraViewModel.cropZoom.floatValue,
-                        cropZoomOn = cameraViewModel.cropZoomActive.value,
-                        zoomMm = cropZoomMm,
-                        onStrength = onStrength,
-                        onFocusPoint = cameraViewModel::focusAt,
-                        onPinch = cameraViewModel::pinchZoom,
-                        onPinchEnd = cameraViewModel::endPinch,
-                    )
-                    // Covers the live view while the ratio changes, so the resize is never seen.
-                    frozenFrame?.let { frame ->
-                        Image(
-                            bitmap = frame,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(Radius.viewfinder)),
-                        )
-                    }
-                    ScreenFlash(
-                        fx = flashFx,
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clip(RoundedCornerShape(Radius.viewfinder)),
-                    )
-                    // Overlays the bottom edge of the viewfinder. Kept outside the viewfinder's swipe box so
-                    // slider drags do not also cycle filters.
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = Spacing.md),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        CameraQuickBar(
-                            kelvin = adjust.kelvin ?: measuredKelvin,
-                            kelvinMeasured = adjust.kelvin == null,
-                            ev = adjust.ev,
-                            wbOpen = panel == CameraPanel.WB,
-                            evOpen = panel == CameraPanel.EV,
-                            onWbClick = { openPanel(CameraPanel.WB) },
-                            onEvClick = { openPanel(CameraPanel.EV) },
-                            focalPill = {
-                                camera?.let {
-                                    FocalPill(
-                                        cameraInfo = it.cameraInfo,
-                                        lensMm = cameraViewModel.lensMm.floatValue,
-                                        cropZoom = cameraViewModel.cropZoom.floatValue,
-                                        selected = panel == CameraPanel.LENS,
-                                        onClick = { openPanel(CameraPanel.LENS) },
-                                    )
-                                }
-                            },
-                        )
-                    }
+                Box(modifier = Modifier.aspectRatio(1f / viewRatio)) {
+                    viewfinderLayers()
                 }
             }
-
-            // Panel slot under the viewfinder. Its content follows [panel]. The height is fixed, so the viewfinder never resizes.
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(PANEL_SLOT_HEIGHT)
-                    .padding(start = Spacing.lg, end = Spacing.lg, top = Spacing.md),
-                contentAlignment = Alignment.Center,
-            ) {
-                when (panel) {
-                    CameraPanel.NONE -> Row(
-                        // Top of the slot, right under the frame; the panels below keep their centred layout.
-                        modifier = Modifier.align(Alignment.TopCenter),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm, Alignment.CenterHorizontally),
-                    ) {
-                        // Flash is off on the front camera, so its button is dimmed and does nothing there.
-                        val flashAvailable = cameraViewModel.hasFlash.value
-                        CameraCircleButton(
-                            icon = flashIcon(flashMode),
-                            label = stringResource(R.string.camera_flash_fmt, flashLabel(flashMode)),
-                            onClick = { if (flashAvailable) cameraViewModel.setFlashMode(flashMode.next()) },
-                            buttonSize = 44.dp,
-                            contentColor = if (flashAvailable) InkColors.textPrimary else InkColors.textSecondary,
-                        )
-                        AspectButton(
-                            label = effectiveAspect.label,
-                            onClick = { openPanel(CameraPanel.ASPECT) },
-                        )
-                        CameraCircleButton(
-                            icon = AppIcons.SwitchCamera,
-                            label = stringResource(R.string.camera_switch),
-                            onClick = cameraViewModel::switchFacing,
-                            buttonSize = 44.dp,
-                        )
-                    }
-                    CameraPanel.ASPECT -> AspectPanel(
-                        selected = effectiveAspect,
-                        onSelect = onSelectAspect,
-                        onClose = { openPanel(CameraPanel.ASPECT) },
-                    )
-                    CameraPanel.WB -> Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = (adjust.kelvin?.let { kelvinLabel(it) }
-                                ?: measuredKelvin?.let { "AUTO · ~${it}K" }
-                                ?: kelvinLabel(null)).uppercase(),
-                            style = BinsooType.label,
-                            color = InkColors.textPrimary,
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                        ) {
+            CameraBodyPlate(
+                adjust = adjust,
+                roundWheel = roundWheel,
+                viewRatio = viewRatio,
+                onManualMode = cameraViewModel::setManualMode,
+                onIso = cameraViewModel::setManualIso,
+                onShutter = cameraViewModel::setManualShutter,
+                onEv = { ev ->
+                    cameraViewModel.setEv(ev)
+                    cameraViewModel.commitAdjust()
+                },
+                onCapture = onCapture,
+                onOpenGallery = { navController.navigate(AppRoutes.CAMERA_GALLERY) },
+                onOpenPicker = { navController.navigateOnce(AppRoutes.CAMERA_PICKER) },
+                pickerName = cameraProfile?.name,
+                pickerCameraId = cameraProfile?.id,
+                lastPhoto = lastPhoto,
+                captureSeq = captureSeq,
+                filters = sources,
+                onSelectFilter = onSelect,
+                onFan = { fan = it },
+            )
+        }
+        // Cards beside the plate (its left edge is 260dp from the right). A clickable scrim closes them.
+        if (wbOpen || panel == CameraPanel.ASPECT) {
+            val dismiss: () -> Unit = {
+                if (wbOpen) setWbOpen(false) else openPanel(CameraPanel.ASPECT)
+            }
+            Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+                Box(
+                    modifier = Modifier.fillMaxSize().clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = dismiss,
+                    ),
+                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 260.dp + Spacing.sm)
+                        .width(if (wbOpen) 320.dp else 260.dp)
+                        .background(Color.Black.copy(alpha = 0.8f), RoundedCornerShape(Radius.sm))
+                        // Swallow taps on the card so they do not reach the scrim.
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
+                        .padding(Spacing.sm),
+                ) {
+                    if (wbOpen) {
+                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                            Text(
+                                text = (adjust.kelvin?.let { kelvinLabel(it) }
+                                    ?: measuredKelvin?.let { "AUTO · ~${it}K" }
+                                    ?: kelvinLabel(null)).uppercase(),
+                                style = BinsooType.label,
+                                color = InkColors.textPrimary,
+                            )
                             CameraAdjustPanel(
                                 state = adjust,
                                 measuredKelvin = measuredKelvin,
@@ -419,7 +637,7 @@ fun CameraScreen(
                                 onEvChange = cameraViewModel::setEv,
                                 onTintChange = cameraViewModel::setTint,
                                 onCommit = cameraViewModel::commitAdjust,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxWidth(),
                             )
                             CameraToolButtons(
                                 state = adjust,
@@ -437,85 +655,129 @@ fun CameraScreen(
                                 },
                             )
                         }
+                    } else {
+                        panelBody(CameraPanel.ASPECT)
                     }
-                    CameraPanel.EV -> Column(
-                        modifier = Modifier.fillMaxWidth(),
+                }
+            }
+        }
+      } else {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(InkColors.background)
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+        ) {
+            CameraTopBar(
+                onBack = { navController.popBackStackOnce() },
+                onOpenSettings = { navController.navigate(AppRoutes.SETTINGS) },
+            )
+
+            // The viewfinder takes the space the rest of the screen leaves. Its bottom overlays sit inside it.
+            // Its shape follows the chosen aspect, so the live view shows the same crop as the capture.
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.lg),
+                // Centred so the frame has the same space above and below it.
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(modifier = Modifier.aspectRatio(viewRatio)) {
+                    viewfinderLayers()
+                    // Overlays the bottom edge of the viewfinder. Kept outside the viewfinder's swipe box so
+                    // slider drags do not also cycle filters.
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = Spacing.md),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text(
-                            text = formatEv(adjust.ev),
-                            style = BinsooType.label,
-                            color = InkColors.textPrimary,
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                        ) {
-                            CameraAdjustPanel(
-                                state = adjust,
-                                onKelvinChange = { cameraViewModel.setKelvin(it) },
-                                onKelvinAuto = cameraViewModel::setKelvinAuto,
-                                onEvChange = cameraViewModel::setEv,
-                                onTintChange = cameraViewModel::setTint,
-                                onCommit = cameraViewModel::commitAdjust,
-                                modifier = Modifier.weight(1f),
-                            )
-                            CameraCircleButton(
-                                icon = AppIcons.Undo,
-                                label = stringResource(R.string.camera_reset_ev),
-                                onClick = {
-                                    cameraViewModel.resetEv()
-                                    cameraViewModel.commitAdjust()
-                                },
-                            )
-                        }
+                        quickBar()
                     }
-                    CameraPanel.LENS -> LensPanel(
-                        options = lensOptions(cameraViewModel.availableLenses.value, cameraViewModel.mainMm.floatValue, maxZoom),
-                        currentMm = cropZoomMm.toFloat(),
-                        mainMm = cameraViewModel.mainMm.floatValue,
-                        onSelect = { cameraViewModel.setFocal(it.roundToInt()) },
-                    )
                 }
             }
 
-            FilterStrip(
-                filters = sources,
-                selectedId = selectedId,
-                onSelect = onSelect,
-                modifier = Modifier.padding(vertical = Spacing.sm),
-                dark = true,
-            )
+            // Panel slot under the viewfinder. Its content follows [panel]. The height is fixed, so the viewfinder never resizes.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(PANEL_SLOT_HEIGHT)
+                    .padding(start = Spacing.lg, end = Spacing.lg, top = Spacing.md),
+                contentAlignment = Alignment.Center,
+            ) {
+                // The panel grows out of the pill that opened it, like liquid glass pouring from its entry, and
+                // shrinks back into it on close. Entries sit left (WB), centre (lens) and right (EV) of the bar above.
+                AnimatedContent(
+                    targetState = panel,
+                    transitionSpec = {
+                        val spring = spring<Float>(dampingRatio = 0.72f, stiffness = Spring.StiffnessMediumLow)
+                        val enter = (fadeIn(tween(160)) +
+                            scaleIn(spring, initialScale = 0.35f, transformOrigin = panelOrigin(targetState)) +
+                            slideInVertically(spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow)) { -it / 3 })
+                        val exit = (fadeOut(tween(110)) +
+                            scaleOut(tween(160), targetScale = 0.5f, transformOrigin = panelOrigin(initialState)) +
+                            slideOutVertically(tween(160)) { -it / 4 })
+                        enter.togetherWith(exit).using(SizeTransform(clip = false))
+                    },
+                    label = "cameraPanel",
+                ) { shown ->
+                when (shown) {
+                    CameraPanel.NONE -> Row(
+                        // Top of the slot, right under the frame; the panels below keep their centred layout.
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.md, Alignment.CenterHorizontally),
+                    ) {
+                        // Flash is off on the front camera, so its button is dimmed and does nothing there.
+                        val flashAvailable = cameraViewModel.hasFlash.value
+                        CameraCircleButton(
+                            icon = flashIcon(flashMode),
+                            label = stringResource(R.string.camera_flash_fmt, flashLabel(flashMode)),
+                            onClick = { if (flashAvailable) cameraViewModel.setFlashMode(flashMode.next()) },
+                            buttonSize = CAMERA_BUTTON_SIZE,
+                            contentColor = if (flashAvailable) InkColors.textPrimary else InkColors.textSecondary,
+                        )
+                        AspectButton(
+                            label = effectiveAspect.label,
+                            onClick = { openPanel(CameraPanel.ASPECT) },
+                        )
+                        CameraCircleButton(
+                            icon = AppIcons.SwitchCamera,
+                            label = stringResource(R.string.camera_switch),
+                            onClick = cameraViewModel::switchFacing,
+                            buttonSize = CAMERA_BUTTON_SIZE,
+                        )
+                    }
+                    else -> panelBody(shown)
+                }
+                }
+            }
+
+            // Press and hold to open the filter fan upward over the viewfinder; it replaces the old horizontal strip.
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.sm),
+                contentAlignment = Alignment.Center,
+            ) {
+                FilterFanButton(
+                    filters = sources,
+                    onSelect = onSelect,
+                    onFan = { fan = it },
+                    preferredMidDeg = 270f,
+                    pillName = sources.firstOrNull { it.id == selectedId }?.name ?: stringResource(R.string.camera_filter_fallback),
+                )
+            }
 
             ManualControls(
-                onExposureChange = {
-                    exposureTime.longValue = it
-                    cameraViewModel.setManualExposure(it, isoValue.intValue)
-                },
-                onISOChange = {
-                    isoValue.intValue = it
-                    cameraViewModel.setManualExposure(exposureTime.longValue, it)
-                },
                 onClickCapture = {
-                    // Flash and iris only play when the press is accepted (a capture in progress ignores it).
-                    val accepted = cameraViewModel.takePhotoToGallery(
-                        cameraId = cameraProfile?.id ?: FilterCatalog.ORIGINAL_ID,
-                        onSaved = { uri -> lastPhoto = uri },
-                        onError = { exception ->
-                            Log.e(TAG, "Capture failed", exception)
-                            Toast.makeText(context, context.getString(R.string.camera_save_failed), Toast.LENGTH_SHORT).show()
-                        },
-                    )
-                    if (accepted) {
-                        if (flashMode == FlashMode.ON && cameraViewModel.hasFlash.value) {
-                            flashFx = FlashFx(FlashStyle.HARSH)
-                        }
-                        captureSeq++
-                    }
+                    onCapture()
                 },
                 onOpenGallery = { navController.navigate(AppRoutes.CAMERA_GALLERY) },
-                onOpenPicker = { navController.navigate(AppRoutes.CAMERA_PICKER) },
+                onOpenPicker = {
+                    // Freeze the last frame first, so the live preview cannot stutter while the screen changes.
+                    navController.navigateOnce(AppRoutes.CAMERA_PICKER)
+                },
                 pickerName = cameraProfile?.name,
                 pickerCameraId = cameraProfile?.id,
                 lastPhoto = lastPhoto,
@@ -523,6 +785,15 @@ fun CameraScreen(
                 modifier = Modifier.padding(bottom = Spacing.md),
             )
         }
+      }
+      // The filter fan, open while the filter button (landscape plate or portrait pill) is held.
+      fan?.let { FilterFanOverlay(state = it, filters = sources, selectedId = selectedId) }
+      if (!landscape && showTip) {
+          RotateTip(
+              onDismiss = dismissTip,
+              modifier = Modifier.align(Alignment.Center),
+          )
+      }
     }
 }
 
@@ -598,6 +869,7 @@ fun CameraPreviewViewfinder(
     onFocusPoint: (MeteringPoint) -> Unit = {},
     onPinch: (factor: Float) -> Unit = {},
     onPinchEnd: () -> Unit = {},
+    landscape: Boolean = false,
 ) {
     val currentOnStrength by rememberUpdatedState(onStrength)
     val currentOnFocusPoint by rememberUpdatedState(onFocusPoint)
@@ -662,9 +934,9 @@ fun CameraPreviewViewfinder(
             AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
             FilterNameFlash(flash)
             // In crop-frame mode the frame's own scrim replaces the aspect mask.
-            if (aspect.crops && !cropZoomOn) AspectMask(aspect.widthOverHeight)
+            if (aspect.crops && !cropZoomOn) AspectMask(aspect.widthOverHeight, landscape)
             // At 1x the frame would only outline the whole view, so it shows only once the crop is zoomed in.
-            if (cropZoomOn && cropZoom > 1f) CropZoomFrame(aspect.widthOverHeight.takeIf { aspect.crops }, cropZoom, "${zoomMm}mm")
+            if (cropZoomOn && cropZoom > 1f) CropZoomFrame(aspect.widthOverHeight.takeIf { aspect.crops }, cropZoom, "${zoomMm}mm", landscape)
             if (showGrid) GridOverlay()
             FocusIndicator(position = focusPos, trigger = focusTrigger)
         }
@@ -694,7 +966,7 @@ private fun BoxScope.FilterNameFlash(flash: NameFlash?) {
 @ComposePreview
 @Composable
 fun ManualControlsPreview() {
-    ManualControls(onExposureChange = {}, onISOChange = {}, onClickCapture = {})
+    ManualControls(onClickCapture = {})
 }
 // endregion
 
@@ -703,12 +975,12 @@ fun ManualControlsPreview() {
  * uses for the 3:4 camera frame ([CropMath.visibleCrop]), so the mask matches the capture on any viewfinder size.
  */
 @Composable
-private fun AspectMask(ratio: Float) {
+private fun AspectMask(ratio: Float, landscape: Boolean = false) {
     androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
         if (w <= 0f || h <= 0f) return@Canvas
-        val r = CropMath.visibleCrop(w, h, CameraAspect.FOUR_THREE.widthOverHeight, ratio)
+        val r = CropMath.visibleCrop(w, h, turn(CameraAspect.FOUR_THREE.widthOverHeight, landscape), turn(ratio, landscape))
         val scrim = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f)
         fun band(l: Float, t: Float, rr: Float, b: Float) {
             if (rr > l && b > t) drawRect(scrim, Offset(l, t), androidx.compose.ui.geometry.Size(rr - l, b - t))
@@ -726,7 +998,7 @@ private fun AspectMask(ratio: Float) {
  * whole camera frame) and shrinks about its centre.
  */
 @Composable
-private fun CropZoomFrame(aspectRatio: Float?, cropZoom: Float, mmLabel: String) {
+private fun CropZoomFrame(aspectRatio: Float?, cropZoom: Float, mmLabel: String, landscape: Boolean = false) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val measurer = androidx.compose.ui.text.rememberTextMeasurer()
     val labelStyle = androidx.compose.ui.text.TextStyle(
@@ -738,10 +1010,10 @@ private fun CropZoomFrame(aspectRatio: Float?, cropZoom: Float, mmLabel: String)
         val w = size.width
         val h = size.height
         if (w <= 0f || h <= 0f) return@Canvas
-        val ratio = aspectRatio ?: CameraAspect.FOUR_THREE.widthOverHeight
+        val ratio = turn(aspectRatio ?: CameraAspect.FOUR_THREE.widthOverHeight, landscape)
         // Zoom the unclipped crop (what the capture keeps), then clip to the view.
         val r = CropMath.clipTo(
-            CropMath.zoomCrop(CropMath.unclippedCrop(w, h, CameraAspect.FOUR_THREE.widthOverHeight, ratio), cropZoom),
+            CropMath.zoomCrop(CropMath.unclippedCrop(w, h, turn(CameraAspect.FOUR_THREE.widthOverHeight, landscape), ratio), cropZoom),
             w, h,
         )
         val topLeft = Offset(r.left, r.top)
@@ -784,3 +1056,13 @@ private fun ScreenFlash(fx: FlashFx?, modifier: Modifier = Modifier) {
         Box(modifier.background(color.copy(alpha = alpha.value)))
     }
 }
+
+/** Where a panel grows from: the horizontal position, across the width, of the control that opens it. */
+private fun panelOrigin(panel: CameraPanel): TransformOrigin = when (panel) {
+    CameraPanel.WB -> TransformOrigin(0.3f, 0f)
+    CameraPanel.EV -> TransformOrigin(0.7f, 0f)
+    else -> TransformOrigin(0.5f, 0f)
+}
+
+/** A portrait width/height ratio as seen with the phone on its side. */
+private fun turn(ratio: Float, landscape: Boolean): Float = if (landscape) 1f / ratio else ratio

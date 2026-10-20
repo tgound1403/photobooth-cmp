@@ -8,6 +8,8 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import coil.imageLoader
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.example.photogether.core.moments.Moment
@@ -121,18 +123,23 @@ class PolaroidCards(
                 placeholders[index].isVisible = true
                 continue
             }
-            val request =
-                ImageRequest.Builder(context)
-                    .data(moment.uri)
-                    .size(BITMAP_W)
-                    .allowHardware(false)
-                    .build()
-            val photo = ((context.imageLoader.execute(request) as? SuccessResult)?.drawable)?.let { drawable ->
-                (drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+            // Decoding and drawing the polaroid is the slow part, so it runs off the main thread; only the
+            // Filament node below must be built on it.
+            val front = withContext(Dispatchers.Default) {
+                val request =
+                    ImageRequest.Builder(context)
+                        .data(moment.uri)
+                        .size(BITMAP_W)
+                        .allowHardware(false)
+                        .build()
+                val photo = ((context.imageLoader.execute(request) as? SuccessResult)?.drawable)?.let { drawable ->
+                    (drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                }
+                val caption = SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(moment.takenAt))
+                polaroidBitmap(photo, caption)
             }
-            val caption = SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(moment.takenAt))
             // Setting ImageNode.bitmap on a live node did not refresh its texture, so the front plane is replaced.
-            val fresh = newFront(polaroidBitmap(photo, caption))
+            val fresh = newFront(front)
             cards[index].addChildNode(fresh)
             // Destroying a node the renderer may still draw aborts Filament, so the old front is only hidden.
             photos[index]?.isVisible = false
@@ -146,7 +153,7 @@ class PolaroidCards(
     fun update(timeMs: Long, spin: PickerSpin) {
         ring.rotation = Rotation(x = RING_ELEVATION_DEG + spin.tiltOffset)
         val count = MAX_CARDS
-        val lap = (timeMs % RING_PERIOD_MS).toFloat() / RING_PERIOD_MS + spin.lapOffset
+        val lap = ringLap(timeMs, spin)
         val r = scale
         for (index in 0 until count) {
             val theta = 2f * PI.toFloat() * (lap + index.toFloat() / count)
@@ -157,6 +164,29 @@ class PolaroidCards(
             cards[index].rotation = Rotation(y = yaw, z = if (index % 2 == 0) CARD_TILT_DEG else -CARD_TILT_DEG)
         }
     }
+}
+
+/** Where the ring is in its lap at [timeMs], in laps, with the user's [spin] added. */
+private fun ringLap(timeMs: Long, spin: PickerSpin): Float =
+    (timeMs % RING_PERIOD_MS).toFloat() / RING_PERIOD_MS + spin.lapOffset
+
+/**
+ * Index of the card nearest the viewer at [timeMs] with the user's [spin]. That card has the largest
+ * sine on the ring, so it sits furthest towards the near side and faces the viewer. Same maths as
+ * [PolaroidCards.update], so a tap can be matched to the card on screen without the scene.
+ */
+fun frontCardIndex(timeMs: Long, spin: PickerSpin): Int {
+    val lap = ringLap(timeMs, spin)
+    var best = 0
+    var bestSin = Float.NEGATIVE_INFINITY
+    for (index in 0 until MAX_CARDS) {
+        val s = sin(2f * PI.toFloat() * (lap + index.toFloat() / MAX_CARDS))
+        if (s > bestSin) {
+            bestSin = s
+            best = index
+        }
+    }
+    return best
 }
 
 private fun paperBitmap(): Bitmap =

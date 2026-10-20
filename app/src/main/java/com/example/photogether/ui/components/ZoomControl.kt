@@ -41,7 +41,8 @@ fun FocalPill(
     val zoomState = cameraInfo.zoomState.observeAsState()
     val zoom = zoomState.value?.zoomRatio ?: 1f
     val currentMm = (lensMm * zoom * cropZoom).roundToInt()
-    if (selected) {
+    PillSwap(open = selected) { open ->
+    if (open) {
         CameraCircleButton(
             icon = AppIcons.ChevronDown,
             label = "Đóng tiêu cự",
@@ -54,10 +55,10 @@ fun FocalPill(
     } else {
         Column(
             modifier = modifier
+                .bounceClick(onClick = onClick)
                 .semantics { contentDescription = "Tiêu cự ${currentMm}mm" }
                 .clip(RoundedCornerShape(percent = 50))
                 .background(toolFill(false))
-                .clickable(onClick = onClick)
                 .padding(horizontal = Spacing.md, vertical = Spacing.xs),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -67,5 +68,6 @@ fun FocalPill(
                 color = InkColors.textPrimary,
             )
         }
+    }
     }
 }

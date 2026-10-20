@@ -35,9 +35,10 @@ void main() {
  * The pre-gain runs before the LUT so the filter sees the corrected colour. uWbGain stays after the
  * LUT so recipes saved before Kelvin keep their look. Both gains are 1 when unused.
  *
- * LUT lookup: a 64x64x64 GL_TEXTURE_3D (built from the 512x512 tiled PNG, see GlUtil.uploadLut3D),
- * sampled with hardware trilinear filtering. Grid node n sits at texel centre (n + 0.5) / 64, so
- * the input is mapped with c * 63/64 + 0.5/64; an exact grid input (c = n / 63) returns node n.
+ * LUT lookup: an n x n x n GL_TEXTURE_3D (built from the tiled PNG, see GlUtil.uploadLut3D), with
+ * n = 64 or 32 per LUT (uLutSizeA / uLutSizeB), sampled with hardware trilinear filtering. Grid node
+ * k sits at texel centre (k + 0.5) / n, so the input is mapped with c * (n-1)/n + 0.5/n; an exact
+ * grid input (c = k / (n-1)) returns node k.
  */
 const val ADJUST_FRAGMENT_SHADER = """#version 300 es
 precision highp float;
@@ -51,6 +52,8 @@ uniform highp sampler3D uLutA;
 uniform highp sampler3D uLutB;
 uniform bool uUseLutA;
 uniform bool uUseLutB;
+uniform float uLutSizeA;
+uniform float uLutSizeB;
 uniform float uLutMix;
 uniform vec3 uPreGain;
 uniform float uFilterIntensity;
@@ -70,10 +73,14 @@ uniform float uGrainScale;
 const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
 
 // Crossfade between two LUTs. A side whose flag is false is the identity (no filter).
+// Maps c in 0..1 to the texel centre of an n-node grid: c * (n-1)/n + 0.5/n.
+vec3 lutCoord(vec3 c, float n) {
+    return c * ((n - 1.0) / n) + 0.5 / n;
+}
+
 vec3 applyLut(vec3 c) {
-    vec3 p = c * (63.0 / 64.0) + 0.5 / 64.0;
-    vec3 a = uUseLutA ? clamp(texture(uLutA, p).rgb, 0.0, 1.0) : c;
-    vec3 b = uUseLutB ? clamp(texture(uLutB, p).rgb, 0.0, 1.0) : c;
+    vec3 a = uUseLutA ? clamp(texture(uLutA, lutCoord(c, uLutSizeA)).rgb, 0.0, 1.0) : c;
+    vec3 b = uUseLutB ? clamp(texture(uLutB, lutCoord(c, uLutSizeB)).rgb, 0.0, 1.0) : c;
     return mix(a, b, uLutMix);
 }
 

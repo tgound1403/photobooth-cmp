@@ -87,9 +87,9 @@ private fun FilterChip(name: String, selected: Boolean, onClick: () -> Unit) {
 private fun InkFilterChip(name: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
+            .bounceClick(onClick = onClick)
             .clip(RoundedCornerShape(percent = 50))
             .background(if (selected) InkColors.accent else InkColors.surfaceElevated.copy(alpha = 0.7f))
-            .clickable(onClick = onClick)
             .padding(horizontal = Spacing.md, vertical = Spacing.sm),
         contentAlignment = Alignment.Center,
     ) {

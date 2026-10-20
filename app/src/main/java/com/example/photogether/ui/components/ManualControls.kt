@@ -55,8 +55,6 @@ import com.example.photogether.ui.theme.AppIcons
  */
 @Composable
 fun ManualControls(
-    onExposureChange: (Long) -> Unit,
-    onISOChange: (Int) -> Unit,
     onClickCapture: () -> Unit,
     skin: ViewfinderSkin = ViewfinderSkin.NONE,
     onOpenGallery: () -> Unit = {},
@@ -67,8 +65,6 @@ fun ManualControls(
     captureSeq: Int = 0,
     modifier: Modifier = Modifier,
 ) {
-    var isoValue by remember { mutableIntStateOf(100) }
-
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -116,13 +112,13 @@ private fun Shutter(onClick: () -> Unit, skin: ViewfinderSkin = ViewfinderSkin.N
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     Box(
         modifier = Modifier
+            .bounceClick(onClick = onClick)
             .width(screenWidth * 0.4f)
             .height(64.dp)
             .clip(RoundedCornerShape(percent = 50))
             .background(skin.shutterColor.takeOrElse { InkColors.accent })
             .depth(RoundedCornerShape(percent = 50))
             .then(if (skin.shutterRingColor.isSpecified) Modifier.border(3.dp, skin.shutterRingColor, RoundedCornerShape(percent = 50)) else Modifier)
-            .clickable(onClick = onClick)
             .semantics { contentDescription = "Chụp ảnh" },
         contentAlignment = Alignment.Center,
     ) {
@@ -144,13 +140,13 @@ private fun Shutter(onClick: () -> Unit, skin: ViewfinderSkin = ViewfinderSkin.N
 
 /** Camera selector: a camera icon with the current profile name under it. Opens the picker. */
 @Composable
-private fun PickerButton(name: String?, cameraId: String?, onClick: () -> Unit) {
+internal fun PickerButton(name: String?, cameraId: String?, onClick: () -> Unit) {
     val label = name?.uppercase() ?: "CHỌN MÁY"
     val imageRes = cameraId?.let { cameraImageRes(it) } ?: 0
     Column(
         modifier = Modifier
+            .bounceClick(onClick = onClick)
             .width(72.dp)
-            .clickable(onClick = onClick)
             .semantics { contentDescription = "Chọn máy: $label" },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

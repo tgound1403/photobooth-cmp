@@ -207,7 +207,7 @@ class CameraService(private val catalog: FilterCatalog) {
 
     /**
      * What the opened camera supports: EV compensation range (null when unavailable, so the caller
-     * falls back to software EV) and whether AWB lock is available.
+     * falls back to software EV), whether AWB lock is available, and the manual ISO and shutter ranges.
      */
     fun capabilities(camera: Camera): CameraCapabilities {
         val state = camera.cameraInfo.exposureState
@@ -218,7 +218,17 @@ class CameraService(private val catalog: FilterCatalog) {
         } else {
             null
         }
-        return CameraCapabilities(evRange = evRange, awbLockAvailable = awbLockAvailable(camera))
+        val info = Camera2CameraInfo.from(camera.cameraInfo)
+        val manualSensor = info.getCameraCharacteristic(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)
+            ?.contains(android.hardware.camera2.CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR) == true
+        val iso = info.getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)
+        val exposure = info.getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE)
+        return CameraCapabilities(
+            evRange = evRange,
+            awbLockAvailable = awbLockAvailable(camera),
+            isoRange = if (manualSensor && iso != null) iso.lower..iso.upper else null,
+            exposureRangeNs = if (manualSensor && exposure != null) exposure.lower..exposure.upper else null,
+        )
     }
 
     /**

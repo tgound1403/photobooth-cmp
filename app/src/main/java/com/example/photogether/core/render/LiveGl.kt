@@ -14,6 +14,8 @@ internal class AdjustLocations(program: Int) {
     val lutB = GLES30.glGetUniformLocation(program, "uLutB")
     val useLutA = GLES30.glGetUniformLocation(program, "uUseLutA")
     val useLutB = GLES30.glGetUniformLocation(program, "uUseLutB")
+    val lutSizeA = GLES30.glGetUniformLocation(program, "uLutSizeA")
+    val lutSizeB = GLES30.glGetUniformLocation(program, "uLutSizeB")
     val lutMix = GLES30.glGetUniformLocation(program, "uLutMix")
     val preGain = GLES30.glGetUniformLocation(program, "uPreGain")
     val filterIntensity = GLES30.glGetUniformLocation(program, "uFilterIntensity")

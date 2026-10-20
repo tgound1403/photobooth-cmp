@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -21,6 +22,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.example.photogether.core.moments.Moment
 import io.github.sceneview.Scene
+import java.nio.ByteBuffer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
 import io.github.sceneview.node.CameraNode
@@ -99,10 +103,17 @@ fun CameraModelBody(
     }
     // One engine for the whole picker: switching camera swaps only the model node. Recreating the
     // engine per model (a key() around the whole block) crashed libgltfio on the second model.
-    val modelNode =
-        remember(modelAsset) {
+    // The asset is read off the main thread; the node is built once the bytes arrive.
+    val appContext = LocalContext.current.applicationContext
+    val modelNode by produceState<ModelNode?>(null, modelAsset) {
+        val context = appContext
+        // Only the file read is moved off the main thread; Filament must parse the model on it.
+        val bytes = withContext(Dispatchers.IO) { context.assets.open(modelAsset).use { it.readBytes() } }
+        val buffer = ByteBuffer.allocateDirect(bytes.size).put(bytes).apply { flip() }
+        val instance = modelLoader.createModelInstance(buffer)
+        value =
             ModelNode(
-                modelInstance = modelLoader.createModelInstance(modelAsset),
+                modelInstance = instance,
                 autoAnimate = false,
                 scaleToUnits = MODEL_UNITS,
                 centerOrigin = Position(x = 0f, y = 0f, z = 0f),
@@ -110,9 +121,10 @@ fun CameraModelBody(
                 // The default camera looks down -Z from the origin, so the body sits 3 m ahead.
                 position = Position(z = -SCENE_DISTANCE)
             }
-        }
+    }
     DisposableEffect(modelNode) {
-        onDispose { runCatching { modelNode.destroy() } }
+        val node = modelNode
+        onDispose { node?.let { runCatching { it.destroy() } } }
     }
     val cards =
         remember(engine, materialLoader) {
@@ -120,7 +132,7 @@ fun CameraModelBody(
         }
     val context = LocalContext.current
     LaunchedEffect(cards, moments) { cards.load(context, moments) }
-    val childNodes = remember(modelNode, cards) { listOf<Node>(modelNode) + cards.roots }
+    val childNodes = remember(modelNode, cards) { listOfNotNull<Node>(modelNode) + cards.roots }
 
     val transition = rememberInfiniteTransition(label = "camera_model_sway")
     val angle by transition.animateFloat(
@@ -134,7 +146,7 @@ fun CameraModelBody(
         label = "camera_model_angle",
     )
     val sway = rememberUpdatedState(angle)
-    LaunchedEffect(modelNode, tint) { modelNode.applyTint(tint) }
+    LaunchedEffect(modelNode, tint) { modelNode?.applyTint(tint) }
 
     // The scene is opaque so its surface sits under the Compose content: polaroids in front of the
     // body draw over it. A hole is cleared in the (offscreen) screen layer so the surface shows.
@@ -149,7 +161,7 @@ fun CameraModelBody(
             childNodes = childNodes,
             onFrame = { frameTimeNanos ->
                 // Set here, not in composition, so a drag turns the body on the very next frame.
-                modelNode.rotation = Rotation(x = spin.bodyPitch, y = sway.value + spin.bodyYaw)
+                modelNode?.rotation = Rotation(x = spin.bodyPitch, y = sway.value + spin.bodyYaw)
                 cards.update(frameTimeNanos / 1_000_000L, spin)
             },
         )

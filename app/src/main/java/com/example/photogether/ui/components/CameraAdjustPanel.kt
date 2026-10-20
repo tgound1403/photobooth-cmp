@@ -1,5 +1,13 @@
 package com.example.photogether.ui.components
 
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
@@ -73,7 +81,8 @@ fun CameraQuickBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm, Alignment.CenterHorizontally),
     ) {
-        if (wbOpen) {
+        PillSwap(open = wbOpen) { open ->
+        if (open) {
             CloseChevron(label = "Đóng cân bằng trắng", onClick = onWbClick)
         } else {
             CameraPill(
@@ -84,8 +93,10 @@ fun CameraQuickBar(
                 onClick = onWbClick,
             )
         }
+        }
         focalPill()
-        if (evOpen) {
+        PillSwap(open = evOpen) { open ->
+        if (open) {
             CloseChevron(label = "Đóng phơi sáng", onClick = onEvClick)
         } else {
             CameraPill(
@@ -96,7 +107,25 @@ fun CameraQuickBar(
                 onClick = onEvClick,
             )
         }
+        }
     }
+}
+
+/**
+ * Swaps a pill for its close chevron (and back) with a fade and a small scale, and glides the row to the new
+ * width, so opening a panel does not make the controls jump.
+ */
+@Composable
+internal fun PillSwap(open: Boolean, content: @Composable (Boolean) -> Unit) {
+    AnimatedContent(
+        targetState = open,
+        transitionSpec = {
+            (fadeIn(tween(180, delayMillis = 60)) + scaleIn(tween(220, delayMillis = 60), initialScale = 0.8f))
+                .togetherWith(fadeOut(tween(100)) + scaleOut(tween(100), targetScale = 0.8f))
+                .using(SizeTransform(clip = false))
+        },
+        label = "pillSwap",
+    ) { content(it) }
 }
 
 /**
@@ -194,21 +223,26 @@ fun CameraCircleButton(
     containerColor: Color = InkColors.surfaceElevated.copy(alpha = 0.7f),
     contentColor: Color = InkColors.textPrimary,
 ) {
+    val fill by animateColorAsState(containerColor, tween(200), label = "circleFill")
+    val tint by animateColorAsState(contentColor, tween(200), label = "circleTint")
     Box(
         modifier = modifier
+            .bounceClick(onClick = onClick)
             .size(buttonSize)
             .clip(CircleShape)
-            .background(containerColor)
-            .clickable(onClick = onClick)
+            .background(fill)
             .semantics { if (label != null) contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = contentColor,
-            modifier = Modifier.size(22.dp),
-        )
+        // The icon fades into the next one, so the flash mode and similar changes do not pop.
+        Crossfade(targetState = icon, animationSpec = tween(180), label = "circleIcon") { current ->
+            Icon(
+                imageVector = current,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(22.dp),
+            )
+        }
     }
 }
 
@@ -234,13 +268,14 @@ private fun CameraPill(
     label: String,
     onClick: () -> Unit,
 ) {
-    val content = toolContent(selected)
+    val content by animateColorAsState(toolContent(selected), tween(200), label = "pillContent")
+    val fill by animateColorAsState(toolFill(selected), tween(200), label = "pillFill")
     Row(
         modifier = Modifier
+            .bounceClick(onClick = onClick)
             .semantics { contentDescription = label }
             .clip(RoundedCornerShape(percent = 50))
-            .background(toolFill(selected))
-            .clickable(onClick = onClick)
+            .background(fill)
             .padding(horizontal = Spacing.md, vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -268,10 +303,10 @@ private fun CameraPill(
 private fun AutoWbButton(selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
+            .bounceClick(onClick = onClick)
             .size(48.dp)
             .clip(CircleShape)
             .background(toolFill(selected))
-            .clickable(onClick = onClick)
             .semantics { contentDescription = "Tự động cân bằng trắng" },
         contentAlignment = Alignment.Center,
     ) {

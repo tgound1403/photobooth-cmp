@@ -240,7 +240,7 @@ fun HomeContent(
                         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                         contentPadding = PaddingValues(end = Spacing.lg)
                     ) {
-                        items(recentImages) { path ->
+                        items(recentImages, key = { it }) { path ->
                             RecentThumbnail(path = path, onClick = { onRecentClick(path) })
                         }
                     }

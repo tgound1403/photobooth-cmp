@@ -21,14 +21,6 @@ class CameraProfilesTest {
     }
 
     @Test
-    fun everyProfileFilterIsFree() {
-        CameraProfiles.ALL.forEach { profile ->
-            val info = catalog.first { it.id == profile.filterId }
-            assertEquals("premium ${profile.filterId}", false, info.premium)
-        }
-    }
-
-    @Test
     fun profileIdsAreUniqueAndEveryFilterBelongsToOneCamera() {
         val all = CameraProfiles.ALL
         assertEquals(all.size, all.map { it.id }.toSet().size)
@@ -61,8 +53,8 @@ class CameraProfilesTest {
 
     @Test
     fun allCamerasAreOneListOfProfiles() {
-        // 7 hand-written cameras plus 41 from the Japan pack (Japanese Style 002 split into 5).
-        assertEquals(48, CameraProfiles.ALL.size)
+        // 9 hand-written cameras (Leica M, Ricoh GR, Sunlit and Recipes included) plus 41 from the Japan pack.
+        assertEquals(50, CameraProfiles.ALL.size)
     }
 
     @Test
@@ -77,9 +69,18 @@ class CameraProfilesTest {
     }
 
     @Test
-    fun sunlitCameraHoldsTheMeadowRuinsAndAlpineLooks() {
-        assertEquals(listOf("matte_meadow", "sunlit_ruins", "clear_alpine"), CameraProfiles.byId("sunlit").filterIds)
+    fun sunlitCameraHoldsTheMeadowRuinsAlpineCyanSunTealSeaStreetGreenParkGoldDuskGoldAndSurfTealLooks() {
+        assertEquals(
+            listOf("matte_meadow", "sunlit_ruins", "clear_alpine", "cyan_sun", "turquoise_cream", "teal_sea", "street_green", "park_gold", "dusk_gold", "surf_teal"),
+            CameraProfiles.byId("sunlit").filterIds,
+        )
         assertEquals("sunlit", CameraProfiles.forFilter("clear_alpine")?.id)
+        assertEquals("sunlit", CameraProfiles.forFilter("cyan_sun")?.id)
+        assertEquals("sunlit", CameraProfiles.forFilter("teal_sea")?.id)
+        assertEquals("sunlit", CameraProfiles.forFilter("street_green")?.id)
+        assertEquals("sunlit", CameraProfiles.forFilter("park_gold")?.id)
+        assertEquals("sunlit", CameraProfiles.forFilter("dusk_gold")?.id)
+        assertEquals("sunlit", CameraProfiles.forFilter("surf_teal")?.id)
     }
 
     @Test
