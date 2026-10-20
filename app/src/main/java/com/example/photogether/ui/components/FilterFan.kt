@@ -35,7 +35,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
@@ -46,8 +45,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.clip
-import com.example.photogether.core.camera.Click
-import com.example.photogether.core.camera.SliderTickPlayer
 import com.example.photogether.core.render.FanLayoutMath
 import com.example.photogether.core.render.FilterInfo
 import com.example.photogether.ui.theme.AppIcons
@@ -86,7 +83,6 @@ fun FilterFanButton(
     preferredMidDeg: Float = 180f,
     pillName: String? = null,
 ) {
-    val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     val view = LocalView.current
     val currentFilters by rememberUpdatedState(filters)
@@ -113,7 +109,6 @@ fun FilterFanButton(
                     if (hit != current) {
                         current = hit
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        SliderTickPlayer.play(context, Click.WHEEL)
                         currentFilters.getOrNull(hit)?.let { currentSelect(it.id) }
                         currentFan(FanUiState(pl, hit))
                     }
