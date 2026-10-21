@@ -73,6 +73,16 @@ android {
             matchingFallbacks += listOf("release")
             isDebuggable = false
         }
+        // Release build with its own package name (com.tgound.photogether.preview), so it installs
+        // next to the debug app on the same device. Signed with the debug key.
+        create("preview") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            applicationIdSuffix = ".preview"
+            resValue("string", "app_name", "Photogether Preview")
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

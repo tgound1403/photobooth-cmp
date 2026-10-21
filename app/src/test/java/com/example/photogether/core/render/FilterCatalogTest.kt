@@ -3,6 +3,7 @@ package com.example.photogether.core.render
 import java.io.File
 import java.io.RandomAccessFile
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -40,11 +41,10 @@ class FilterCatalogTest {
     }
 
     @Test
-    fun everyLutIs512x512() {
+    fun everyLutUsesASupportedLayout() {
         filters.mapNotNull { it.lut }.forEach { lut ->
             val (width, height) = readPngSize(File(assetsDir, lut))
-            assertEquals("$lut width", 512, width)
-            assertEquals("$lut height", 512, height)
+            assertNotNull("$lut is ${width}x$height, no supported LUT layout", LutLayout.fromSize(width, height))
         }
     }
 
