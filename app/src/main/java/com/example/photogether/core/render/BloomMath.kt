@@ -50,4 +50,35 @@ object BloomMath {
 
     /** Size of a bloom buffer for a frame dimension. */
     fun bloomSize(full: Int): Int = maxOf(1, full / DOWNSCALE)
+
+    /**
+     * One blurred highlight layer of the editor's bloom pass. [kneeStart]..[kneeEnd] is the smoothstep that
+     * picks what glows, [spread] widens the blur (1 = the live pass), and [gainR]/[gainG]/[gainB] tint and
+     * scale the result. The layers are added together before the screen composite.
+     */
+    data class Layer(
+        val kneeStart: Float,
+        val kneeEnd: Float,
+        val spread: Float,
+        val gainR: Float,
+        val gainG: Float,
+        val gainB: Float,
+    )
+
+    /** Strongest total gain a single layer reaches at slider 1. */
+    private const val BLOOM_GAIN = 0.85f
+    private const val GLOW_GAIN = 0.60f
+    private const val DREAMY_GAIN = 0.45f
+
+    /** Layers for the editor params; empty means no bloom pass at all. Halation keeps the live pass numbers. */
+    fun layersFor(p: EditParams): List<Layer> = buildList {
+        val h = bloomScale(p.halation)
+        if (h > 0f) add(Layer(KNEE_START, KNEE_END, 1f, TINT_R * h, TINT_G * h, TINT_B * h))
+        val b = p.bloom.coerceIn(0f, 1f)
+        if (b > 0f) add(Layer(0.55f, 1.0f, 1.6f, BLOOM_GAIN * b, BLOOM_GAIN * b, BLOOM_GAIN * b))
+        val g = p.glow.coerceIn(0f, 1f)
+        if (g > 0f) add(Layer(0.30f, 0.90f, 2.6f, GLOW_GAIN * g, GLOW_GAIN * 0.92f * g, GLOW_GAIN * 0.78f * g))
+        val d = p.dreamy.coerceIn(0f, 1f)
+        if (d > 0f) add(Layer(0.0f, 0.35f, 3.2f, DREAMY_GAIN * d, DREAMY_GAIN * 0.96f * d, DREAMY_GAIN * d))
+    }
 }

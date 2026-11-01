@@ -153,11 +153,6 @@ fun CameraPickerScreen(
     }
 
     val context = LocalContext.current
-    DisposableEffect(context) {
-        val activity = context as? Activity
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        onDispose { activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
-    }
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     val scene: @Composable BoxScope.() -> Unit = {

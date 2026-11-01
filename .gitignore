@@ -16,3 +16,12 @@ local.properties
 
 # Kotlin compiler output
 .kotlin/
+
+# Local scratch and tool output
+/.claude/worktrees/
+/.idea/.name
+/log_jp.txt
+/macrobenchmark/build
+__pycache__/
+/tools/lut-gen/*_preview.png
+/tools/lut-gen/compare_*.png

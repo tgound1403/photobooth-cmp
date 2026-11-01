@@ -128,7 +128,6 @@ fun PhotoBoothSelectionScreen(
         )
     }
 
-    PhotoBoothPaywallOverlay(viewModel)
 }
 
 /** Stateless selection body. */

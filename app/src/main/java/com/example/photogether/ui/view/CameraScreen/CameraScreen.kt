@@ -12,6 +12,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import com.example.photogether.core.navigation.navigateOnce
 import com.example.photogether.core.navigation.popBackStackOnce
 import com.example.photogether.ui.components.CAMERA_BUTTON_SIZE
@@ -86,6 +92,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalConfiguration
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -111,7 +118,11 @@ import com.example.photogether.core.camera.CameraTool
 import com.example.photogether.core.camera.formatEv
 import com.example.photogether.core.camera.lensOptions
 import com.example.photogether.core.navigation.AppRoutes
+import com.example.photogether.core.camera.ExposureOverlayPrefs
 import com.example.photogether.core.camera.GridPrefs
+import com.example.photogether.core.camera.ManualExposureSteps
+import com.example.photogether.core.camera.CameraAdjustState
+import com.example.photogether.core.camera.MeasuredExposure
 import com.example.photogether.core.camera.RotateTipPrefs
 import com.example.photogether.core.camera.RoundWheelPrefs
 import com.example.photogether.ui.components.FilterFanButton
@@ -124,10 +135,17 @@ import com.example.photogether.core.render.RecipeFilters
 import com.example.photogether.ui.components.AspectButton
 import com.example.photogether.ui.components.AspectPanel
 import com.example.photogether.ui.components.CameraAdjustPanel
+import com.example.photogether.core.tutorial.TutorialScreen
+import com.example.photogether.core.tutorial.TutorialStep
+import com.example.photogether.ui.tutorial.TutorialLayer
+import com.example.photogether.ui.tutorial.TutorialViewModel
+import com.example.photogether.ui.tutorial.tutorialTarget
 import com.example.photogether.ui.components.CameraCircleButton
 import com.example.photogether.ui.components.CameraQuickBar
 import com.example.photogether.ui.components.CameraToolButtons
 import com.example.photogether.ui.components.FocalPill
+import com.example.photogether.ui.components.ExposureReadout
+import com.example.photogether.ui.components.ExposureReadoutValues
 import com.example.photogether.ui.components.FocusIndicator
 import com.example.photogether.ui.components.GridOverlay
 import com.example.photogether.ui.components.LensPanel
@@ -151,6 +169,9 @@ private const val FILTER_NAME_HOLD_MS = 900L
 
 /** Height of the panel slot under the viewfinder. Fixed, so opening a panel never resizes the viewfinder. Sized for the aspect panel. */
 private val PANEL_SLOT_HEIGHT = 120.dp
+
+/** Width of the landscape left rail; the white balance and ratio cards open just to its right. */
+private val RAIL_WIDTH = 60.dp
 
 /** The one panel open under the viewfinder. WB and EV also drive the view model's open tool. */
 private enum class CameraPanel { NONE, ASPECT, WB, LENS, EV }
@@ -187,6 +208,7 @@ fun CameraScreen(
     var flash by remember { mutableStateOf<NameFlash?>(null) }
     val adjust by cameraViewModel.adjust.collectAsStateWithLifecycle()
     val measuredKelvin by cameraViewModel.measuredKelvin.collectAsStateWithLifecycle()
+    val measuredExposure by cameraViewModel.measuredExposure.collectAsStateWithLifecycle()
     val camera = cameraViewModel.camera.value
     val zoomState = camera?.cameraInfo?.zoomState?.observeAsState()?.value
     val cameraZoom = zoomState?.zoomRatio ?: 1f
@@ -198,6 +220,7 @@ fun CameraScreen(
     val effectiveAspect = cameraViewModel.aspectOverride.value ?: CameraAspect.FOUR_THREE
     // One PreviewView for the life of the screen, so its last frame can be captured before a ratio change.
     val context = LocalContext.current
+    val resources = LocalResources.current
     val previewView = remember {
         PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER }
     }
@@ -247,6 +270,9 @@ fun CameraScreen(
     }
     // Landscape: the white balance card beside the plate. CameraAdjustPanel reads openTool, so it follows this.
     var wbOpen by remember { mutableStateOf(false) }
+    // Vertical centres (root px) of the two rail buttons that open a card, so the card opens beside the one pressed.
+    var wbAnchorY by remember { mutableFloatStateOf(0f) }
+    var aspectAnchorY by remember { mutableFloatStateOf(0f) }
     val setWbOpen: (Boolean) -> Unit = { open ->
         wbOpen = open
         if (open) panel = CameraPanel.NONE
@@ -265,6 +291,9 @@ fun CameraScreen(
     // rememberSaveable: the screen leaves composition when the gallery opens, and a plain remember would reset the box.
     var lastPhoto by rememberSaveable { mutableStateOf<Uri?>(null) }
     var captureSeq by remember { mutableIntStateOf(0) }
+    // Guided tour after onboarding. Each step moves on when the user does what its card asks.
+    val tutorial = koinViewModel<TutorialViewModel>()
+    val tutorialStep by tutorial.step.collectAsStateWithLifecycle()
 
     val onSelect: (String) -> Unit = { id ->
         val recipe = RecipeFilters.recipeFor(id, recipes)
@@ -275,6 +304,12 @@ fun CameraScreen(
         }
         selectedId = id
         flash = NameFlash(allSources.firstOrNull { it.id == id }?.name.orEmpty())
+    }
+    // A pick on the fan. Kept apart from onSelect, which also runs when a new camera applies its first filter,
+    // so that automatic pick does not skip the tour's filter step.
+    val onPickFilter: (String) -> Unit = { id ->
+        onSelect(id)
+        tutorial.advance(TutorialStep.LOOK)
     }
     // Vertical drag on the viewfinder sets the strength of the current filter. The fraction is of the viewfinder height.
     val onStrength: (Float) -> Unit = { delta ->
@@ -291,6 +326,8 @@ fun CameraScreen(
     // The shutter sound is set on the Settings screen. Re-read it whenever this screen resumes, so a change made there applies.
     // The grid is set on the Settings screen. Read it on resume so a change made there applies.
     var showGrid by remember { mutableStateOf(GridPrefs.read(context)) }
+    // The exposure readout is set on the Settings screen too, and read on resume the same way.
+    var showExposure by remember { mutableStateOf(ExposureOverlayPrefs.read(context)) }
     // The round wheel choice is set on the Settings screen too, and read on resume the same way.
     var roundWheel by remember { mutableStateOf(RoundWheelPrefs.read(context)) }
     DisposableEffect(lifecycleOwner) {
@@ -299,18 +336,12 @@ fun CameraScreen(
                 cameraViewModel.reloadShutterSound()
                 cameraViewModel.reloadCropZoom()
                 showGrid = GridPrefs.read(context)
+                showExposure = ExposureOverlayPrefs.read(context)
                 roundWheel = RoundWheelPrefs.read(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    // Runs for the first camera and every change after. A ratio picked for the previous camera does not carry over.
-    LaunchedEffect(cameraProfile) {
-        cameraViewModel.aspectOverride.value = null
-        cameraViewModel.setCameraAspect(CameraAspect.FOUR_THREE)
-        cameraViewModel.setFlashMode(FlashMode.OFF)
     }
 
     // A camera saved by the picker (from Home or from here) applies its first filter, unless the current
@@ -320,12 +351,7 @@ fun CameraScreen(
         if (!picked.offers(selectedId)) currentOnSelect(picked.filterId)
     }
 
-    // Only this screen follows the sensor; the rest of the app is locked to portrait (manifest).
-    DisposableEffect(context) {
-        val activity = context as? android.app.Activity
-        activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        onDispose { activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
-    }
+    // Orientation is owned by AppNavigation (camera + picker follow the sensor, the rest is portrait).
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     // Turning from landscape to portrait hands exposure back to the camera (mode A). The previous orientation is
     // saved, because a rotation recreates the activity, so only the transition triggers it and a first open in portrait does not.
@@ -353,6 +379,7 @@ fun CameraScreen(
                 camera = camera,
                 flash = flash,
                 showGrid = showGrid,
+                exposure = if (showExposure) exposureReadoutValues(adjust, measuredExposure) else null,
                 aspect = effectiveAspect,
                 cropZoom = cameraViewModel.cropZoom.floatValue,
                 cropZoomOn = cameraViewModel.cropZoomActive.value,
@@ -383,6 +410,7 @@ fun CameraScreen(
     }
     val quickBar: @Composable () -> Unit = {
         CameraQuickBar(
+            modifier = Modifier.tutorialTarget("quickbar"),
             kelvin = adjust.kelvin ?: measuredKelvin,
             kelvinMeasured = adjust.kelvin == null,
             ev = adjust.ev,
@@ -502,7 +530,7 @@ fun CameraScreen(
                 onSaved = { uri -> lastPhoto = uri },
                 onError = { exception ->
                     Log.e(TAG, "Capture failed", exception)
-                    Toast.makeText(context, context.getString(R.string.camera_save_failed), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, resources.getString(R.string.camera_save_failed), Toast.LENGTH_SHORT).show()
                 },
             )
             if (accepted) {
@@ -510,6 +538,8 @@ fun CameraScreen(
                     flashFx = FlashFx(FlashStyle.HARSH)
                 }
                 captureSeq++
+                tutorial.advance(TutorialStep.CAPTURE)
+                tutorial.advance(TutorialStep.SHOOT_MORE)
             }
     }
 
@@ -520,6 +550,12 @@ fun CameraScreen(
         onDispose { VolumeKeyCapture.handler = null }
     }
 
+    TutorialLayer(
+        step = tutorialStep,
+        screen = TutorialScreen.CAMERA,
+        onNext = { tutorialStep?.let(tutorial::advance) },
+        onSkip = tutorial::skip,
+    ) {
     Box(modifier = Modifier.fillMaxSize()) {
       if (landscape) {
         Row(
@@ -531,7 +567,7 @@ fun CameraScreen(
         ) {
             // Left rail: back, settings, flash, aspect and camera switch, like the buttons on a body's left.
             Column(
-                modifier = Modifier.fillMaxHeight().width(60.dp),
+                modifier = Modifier.fillMaxHeight().width(RAIL_WIDTH),
                 verticalArrangement = Arrangement.SpaceEvenly,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -549,15 +585,23 @@ fun CameraScreen(
                     buttonSize = CAMERA_BUTTON_SIZE,
                     contentColor = if (flashAvailable) InkColors.textPrimary else InkColors.textSecondary,
                 )
-                AspectButton(label = effectiveAspect.label, onClick = { openPanel(CameraPanel.ASPECT) })
-                CameraCircleButton(
-                    icon = AppIcons.Temperature,
-                    label = "Cân bằng trắng",
-                    onClick = { setWbOpen(!wbOpen) },
-                    buttonSize = CAMERA_BUTTON_SIZE,
-                    containerColor = if (wbOpen) InkColors.accent else InkColors.surfaceElevated.copy(alpha = 0.7f),
-                    contentColor = if (wbOpen) InkColors.onAccent else InkColors.textPrimary,
-                )
+                Box(modifier = Modifier.onGloballyPositioned { aspectAnchorY = it.positionInRoot().y + it.size.height / 2f }) {
+                    AspectButton(label = effectiveAspect.label, onClick = { openPanel(CameraPanel.ASPECT) })
+                }
+                Box(
+                    modifier = Modifier
+                        .tutorialTarget("quickbar")
+                        .onGloballyPositioned { wbAnchorY = it.positionInRoot().y + it.size.height / 2f },
+                ) {
+                    CameraCircleButton(
+                        icon = AppIcons.Temperature,
+                        label = "Cân bằng trắng",
+                        onClick = { setWbOpen(!wbOpen) },
+                        buttonSize = CAMERA_BUTTON_SIZE,
+                        containerColor = if (wbOpen) InkColors.accent else InkColors.surfaceElevated.copy(alpha = 0.7f),
+                        contentColor = if (wbOpen) InkColors.onAccent else InkColors.textPrimary,
+                    )
+                }
                 CameraCircleButton(
                     icon = AppIcons.SwitchCamera,
                     label = stringResource(R.string.camera_switch),
@@ -578,6 +622,7 @@ fun CameraScreen(
                 adjust = adjust,
                 roundWheel = roundWheel,
                 viewRatio = viewRatio,
+                measured = measuredExposure,
                 onManualMode = cameraViewModel::setManualMode,
                 onIso = cameraViewModel::setManualIso,
                 onShutter = cameraViewModel::setManualShutter,
@@ -586,23 +631,43 @@ fun CameraScreen(
                     cameraViewModel.commitAdjust()
                 },
                 onCapture = onCapture,
-                onOpenGallery = { navController.navigate(AppRoutes.CAMERA_GALLERY) },
+                onOpenGallery = {
+                    tutorial.advance(TutorialStep.OPEN_GALLERY)
+                    navController.navigate(AppRoutes.CAMERA_GALLERY)
+                },
                 onOpenPicker = { navController.navigateOnce(AppRoutes.CAMERA_PICKER) },
                 pickerName = cameraProfile?.name,
                 pickerCameraId = cameraProfile?.id,
                 lastPhoto = lastPhoto,
                 captureSeq = captureSeq,
                 filters = sources,
-                onSelectFilter = onSelect,
+                onSelectFilter = onPickFilter,
                 onFan = { fan = it },
             )
         }
-        // Cards beside the plate (its left edge is 260dp from the right). A clickable scrim closes them.
-        if (wbOpen || panel == CameraPanel.ASPECT) {
-            val dismiss: () -> Unit = {
-                if (wbOpen) setWbOpen(false) else openPanel(CameraPanel.ASPECT)
-            }
-            Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+        // Card that opens right beside the rail button that was pressed (white balance or ratio), growing out of it.
+        // A clickable scrim closes it.
+        val cardOpen = wbOpen || panel == CameraPanel.ASPECT
+        // Keeps the last kind while the card animates out, so its content does not swap mid-exit.
+        var lastCardWb by remember { mutableStateOf(true) }
+        SideEffect { if (cardOpen) lastCardWb = wbOpen }
+        val cardWb = if (cardOpen) wbOpen else lastCardWb
+        val cardAnchorY by animateFloatAsState(
+            targetValue = if (cardWb) wbAnchorY else aspectAnchorY,
+            animationSpec = tween(220),
+            label = "cardAnchor",
+        )
+        var overlayTop by remember { mutableFloatStateOf(0f) }
+        val dismiss: () -> Unit = {
+            if (wbOpen) setWbOpen(false) else openPanel(CameraPanel.ASPECT)
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .onGloballyPositioned { overlayTop = it.positionInRoot().y },
+        ) {
+            if (cardOpen) {
                 Box(
                     modifier = Modifier.fillMaxSize().clickable(
                         interactionSource = remember { MutableInteractionSource() },
@@ -610,17 +675,29 @@ fun CameraScreen(
                         onClick = dismiss,
                     ),
                 )
+            }
+            AnimatedVisibility(
+                visible = cardOpen,
+                modifier = Modifier.layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints.copy(minWidth = 0, minHeight = 0))
+                    val x = RAIL_WIDTH.roundToPx() + Spacing.sm.roundToPx()
+                    // Centred on the button, kept inside the window.
+                    val y = (cardAnchorY - overlayTop - placeable.height / 2f).roundToInt()
+                        .coerceIn(0, (constraints.maxHeight - placeable.height).coerceAtLeast(0))
+                    layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(x, y) }
+                },
+                enter = fadeIn(tween(180)) + scaleIn(tween(220), initialScale = 0.85f, transformOrigin = TransformOrigin(0f, 0.5f)),
+                exit = fadeOut(tween(140)) + scaleOut(tween(160), targetScale = 0.85f, transformOrigin = TransformOrigin(0f, 0.5f)),
+            ) {
                 Box(
                     modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 260.dp + Spacing.sm)
-                        .width(if (wbOpen) 320.dp else 260.dp)
-                        .background(Color.Black.copy(alpha = 0.8f), RoundedCornerShape(Radius.sm))
+                        .width(if (cardWb) 320.dp else 260.dp)
+                        .background(Color.Black.copy(alpha = 0.8f), RoundedCornerShape(20.dp))
                         // Swallow taps on the card so they do not reach the scrim.
                         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
-                        .padding(Spacing.sm),
+                        .padding(Spacing.md),
                 ) {
-                    if (wbOpen) {
+                    if (cardWb) {
                         Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                             Text(
                                 text = (adjust.kelvin?.let { kelvinLabel(it) }
@@ -762,9 +839,10 @@ fun CameraScreen(
             ) {
                 FilterFanButton(
                     filters = sources,
-                    onSelect = onSelect,
+                    onSelect = onPickFilter,
                     onFan = { fan = it },
                     preferredMidDeg = 270f,
+                    modifier = Modifier.tutorialTarget("filter"),
                     pillName = sources.firstOrNull { it.id == selectedId }?.name ?: stringResource(R.string.camera_filter_fallback),
                 )
             }
@@ -773,7 +851,10 @@ fun CameraScreen(
                 onClickCapture = {
                     onCapture()
                 },
-                onOpenGallery = { navController.navigate(AppRoutes.CAMERA_GALLERY) },
+                onOpenGallery = {
+                    tutorial.advance(TutorialStep.OPEN_GALLERY)
+                    navController.navigate(AppRoutes.CAMERA_GALLERY)
+                },
                 onOpenPicker = {
                     // Freeze the last frame first, so the live preview cannot stutter while the screen changes.
                     navController.navigateOnce(AppRoutes.CAMERA_PICKER)
@@ -788,12 +869,14 @@ fun CameraScreen(
       }
       // The filter fan, open while the filter button (landscape plate or portrait pill) is held.
       fan?.let { FilterFanOverlay(state = it, filters = sources, selectedId = selectedId) }
-      if (!landscape && showTip) {
+      // Held back during the tour, so the two cards do not stack.
+      if (!landscape && showTip && tutorialStep == null) {
           RotateTip(
               onDismiss = dismissTip,
               modifier = Modifier.align(Alignment.Center),
           )
       }
+    }
     }
 }
 
@@ -861,6 +944,7 @@ fun CameraPreviewViewfinder(
     camera: Camera?,
     flash: NameFlash?,
     showGrid: Boolean = false,
+    exposure: ExposureReadoutValues? = null,
     aspect: CameraAspect = CameraAspect.FOUR_THREE,
     cropZoom: Float = 1f,
     cropZoomOn: Boolean = false,
@@ -938,9 +1022,38 @@ fun CameraPreviewViewfinder(
             // At 1x the frame would only outline the whole view, so it shows only once the crop is zoomed in.
             if (cropZoomOn && cropZoom > 1f) CropZoomFrame(aspect.widthOverHeight.takeIf { aspect.crops }, cropZoom, "${zoomMm}mm", landscape)
             if (showGrid) GridOverlay()
+            exposure?.let { ExposureReadout(values = it, modifier = Modifier.align(Alignment.TopCenter).padding(top = Spacing.sm)) }
             FocusIndicator(position = focusPos, trigger = focusTrigger)
         }
     }
+}
+
+/**
+ * Values for the live exposure readout. In manual mode they are the ones the wheels hold (EV does not apply).
+ * In auto they are what the sensor used for the latest frame, snapped to the nearest standard step, and EV.
+ * Before the first frame the auto values show as "--".
+ */
+private fun exposureReadoutValues(adjust: CameraAdjustState, measured: MeasuredExposure?): ExposureReadoutValues {
+    if (adjust.manualExposureActive && adjust.manualAvailable) {
+        return ExposureReadoutValues(
+            tv = ManualExposureSteps.shutterLabel(adjust.manualExposureNs),
+            iso = ManualExposureSteps.isoLabel(adjust.manualIso),
+            ev = null,
+        )
+    }
+    val ev = formatEv(adjust.ev)
+    if (measured == null) return ExposureReadoutValues(tv = "--", iso = "--", ev = ev)
+    val shutterSteps = adjust.exposureRangeNs?.let { ManualExposureSteps.shutterSteps(it) }.orEmpty()
+    val isoSteps = adjust.isoRange?.let { ManualExposureSteps.isoSteps(it) }.orEmpty()
+    val exposureNs = if (shutterSteps.isEmpty()) measured.exposureNs
+        else shutterSteps[ManualExposureSteps.nearestIndex(shutterSteps, measured.exposureNs)]
+    val iso = if (isoSteps.isEmpty()) measured.iso
+        else isoSteps[ManualExposureSteps.nearestIndex(isoSteps, measured.iso)]
+    return ExposureReadoutValues(
+        tv = ManualExposureSteps.shutterLabel(exposureNs),
+        iso = ManualExposureSteps.isoLabel(iso),
+        ev = ev,
+    )
 }
 
 /** Centre-of-preview filter name that fades out after a short hold. */

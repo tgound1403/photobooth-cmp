@@ -28,7 +28,9 @@ import com.example.photogether.core.render.FrameSpec
 import com.example.photogether.core.render.PolaroidMode
 import com.example.photogether.core.render.PolaroidPlacement
 import com.example.photogether.core.render.PosterTextMode
+import com.example.photogether.core.render.PosterFonts
 import com.example.photogether.core.render.PosterTitle
+import com.example.photogether.core.render.PosterTitleAlign
 import com.example.photogether.data.model.FrameThemes
 import com.example.photogether.ui.components.RulerSlider
 import com.example.photogether.ui.view.DeviceImagePicker
@@ -143,6 +145,7 @@ fun FramePanel(
                     selected = frame.borderColor,
                     onSelect = { color -> onFrame(frame.copy(borderColor = color)) },
                 )
+                PosterTitleControls(frame = frame, onFrame = onFrame)
                 RulerSlider(
                     label = "Title size",
                     value = frame.titleScale,
@@ -191,6 +194,36 @@ fun FramePanel(
             },
             onDismiss = { showPicker = false },
         )
+    }
+}
+
+/** Alignment segment and font chips for the poster title. */
+@Composable
+private fun PosterTitleControls(frame: FrameSpec, onFrame: (FrameSpec) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        PosterTitleAlign.values().forEach { align ->
+            EditorChip(
+                label = when (align) {
+                    PosterTitleAlign.START -> "Left"
+                    PosterTitleAlign.CENTER -> "Center"
+                    PosterTitleAlign.END -> "Right"
+                },
+                selected = frame.titleAlign == align,
+                onClick = { onFrame(frame.copy(titleAlign = align)) },
+            )
+        }
+    }
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+        PosterFonts.ALL.forEach { font ->
+            EditorChip(
+                label = font.label,
+                selected = frame.titleFontId == font.id,
+                onClick = { onFrame(frame.copy(titleFontId = font.id)) },
+            )
+        }
     }
 }
 

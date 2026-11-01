@@ -59,6 +59,11 @@ data class EditParams(
     val kelvin: Int? = null,         // 2000..10000 K colour temperature; null = auto (no Kelvin white balance)
     val softwareEv: Float = 0f,      // -2..2 stops, applied in the shader; used when hardware EV is unavailable
     val halation: Float = 0f,        // 0..1, warm-red glow around highlights (bloom pass); 0 = pass skipped
+    val nd: Float = 0f,              // 0..1, neutral density: darkens the whole frame by up to NdMath.MAX_ND_STOPS, colour untouched
+    val gnd: Float = 0f,             // 0..1, graduated ND: darkens the top of the frame, fading out downwards
+    val bloom: Float = 0f,           // 0..1, neutral white bloom around highlights (editor only)
+    val glow: Float = 0f,            // 0..1, wide soft warm glow from mid tones up (editor only)
+    val dreamy: Float = 0f,          // 0..1, soft-focus haze over the whole frame (editor only)
     val leak: Float = 0f,            // 0..1, light leak overlay strength; 0 = off
     val dust: Float = 0f,            // 0..1, dust and scratch overlay strength; 0 = off
     val dateStamp: DateStampStyle = DateStampStyle.NONE, // date stamp style; no camera sets it now
@@ -85,6 +90,11 @@ data class EditParams(
             kelvin = kelvin?.coerceIn(KELVIN_MIN, KELVIN_MAX),
             softwareEv = softwareEv.coerceIn(-2f, 2f),
             halation = halation.coerceIn(0f, 1f),
+            nd = nd.coerceIn(0f, 1f),
+            gnd = gnd.coerceIn(0f, 1f),
+            bloom = bloom.coerceIn(0f, 1f),
+            glow = glow.coerceIn(0f, 1f),
+            dreamy = dreamy.coerceIn(0f, 1f),
             leak = leak.coerceIn(0f, 1f),
             dust = dust.coerceIn(0f, 1f),
         )
@@ -106,6 +116,11 @@ data class EditParams(
                 sharpness == 0f &&
                 grain == 0f &&
                 halation == 0f &&
+                nd == 0f &&
+                gnd == 0f &&
+                bloom == 0f &&
+                glow == 0f &&
+                dreamy == 0f &&
                 leak == 0f &&
                 dust == 0f &&
                 dateStamp == DateStampStyle.NONE &&

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.photogether.core.colors.ColorStories
 import com.example.photogether.core.colors.ColorStory
 import com.example.photogether.core.colors.PendingColorLook
+import com.example.photogether.core.locale.AppLanguage
 import com.example.photogether.core.locale.AppLocale
 import com.example.photogether.core.render.CameraProfiles
 import com.example.photogether.core.render.FilterCatalog
@@ -43,15 +44,19 @@ class ColorStoriesViewModel(
     /** Attribution of every bundled sample, for the credits page. */
     val credits: StateFlow<List<SampleCredit>> = _credits.asStateFlow()
 
-    private var coversStarted = false
+    private var coversLanguage: AppLanguage? = null
 
-    /** Renders the cover of every story, one after another, so tiles fill in as they finish. */
+    /**
+     * Renders the cover of every story, one after another, so tiles fill in as they finish. Called
+     * again after a language switch, it reloads the covers with that language's photos.
+     */
     fun loadCovers(stories: List<ColorStory> = ColorStories.ALL) {
-        if (coversStarted) return
-        coversStarted = true
+        val language = AppLocale.current()
+        if (coversLanguage == language) return
+        coversLanguage = language
         viewModelScope.launch {
             stories.forEach { story ->
-                val cover = repository.cover(story, AppLocale.current()) ?: return@forEach
+                val cover = repository.cover(story, language) ?: return@forEach
                 _covers.update { it + (story.id to cover) }
             }
         }

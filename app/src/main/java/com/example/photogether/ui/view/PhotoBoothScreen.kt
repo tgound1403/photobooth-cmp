@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -79,6 +80,7 @@ fun PhotoBoothScreen(
     val countdown by cameraViewModel.countdown.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val flash = remember { Animatable(0f) }
@@ -137,7 +139,7 @@ fun PhotoBoothScreen(
                 onError = {
                     cameraViewModel.stopCapturing()
                     scope.launch {
-                        snackbarHostState.showSnackbar(context.getString(R.string.booth_capture_failed))
+                        snackbarHostState.showSnackbar(resources.getString(R.string.booth_capture_failed))
                     }
                 }
             )

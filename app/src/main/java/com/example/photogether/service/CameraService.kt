@@ -12,10 +12,12 @@ import android.os.Build
 import android.hardware.camera2.CaptureRequest
 import android.media.ExifInterface
 import android.util.Log
+import androidx.annotation.OptIn
 import androidx.camera.camera2.interop.Camera2CameraControl
 import androidx.camera.camera2.interop.Camera2CameraInfo
 import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.camera2.interop.CaptureRequestOptions
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraControl.OperationCanceledException
 import androidx.camera.core.CameraEffect
@@ -32,6 +34,7 @@ import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.example.photogether.core.camera.MeasuredExposure
 import com.example.photogether.core.camera.estimateKelvin
 import com.example.photogether.core.render.snapKelvin
 import com.example.photogether.core.camera.Camera2Overrides
@@ -79,6 +82,7 @@ data class BoundCamera(val preview: Preview, val imageCapture: ImageCapture, val
  * refuses the capture effect, the service binds with a PREVIEW-only effect and [takePhoto] applies
  * the edit to the saved JPEG with [GlRenderer]. Each capture logs which path was used.
  */
+@OptIn(ExperimentalCamera2Interop::class)
 class CameraService(private val catalog: FilterCatalog) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -119,6 +123,14 @@ class CameraService(private val catalog: FilterCatalog) {
     /** Colour temperature the auto white balance currently measures, or null before the first frame. Approximate. */
     val measuredKelvin: kotlinx.coroutines.flow.StateFlow<Int?> = _measuredKelvin
 
+    /** Unsnapped EMA behind [measuredKelvin]; snapping the state itself would freeze it within ~125 K of the truth. */
+    @Volatile private var smoothedKelvin: Float? = null
+
+    private val _measuredExposure = kotlinx.coroutines.flow.MutableStateFlow<MeasuredExposure?>(null)
+
+    /** ISO and shutter the sensor reports for the latest frame, or null before the first one. Used by the auto-exposure readout. */
+    val measuredExposure: kotlinx.coroutines.flow.StateFlow<MeasuredExposure?> = _measuredExposure
+
     /**
      * Camera2 settings the user chose (manual exposure, AWB lock). Kept here so they survive a
      * rebind; [applyOverrides] re-applies them to every new camera. Touched on the main thread only.
@@ -143,6 +155,10 @@ class CameraService(private val catalog: FilterCatalog) {
         if (physicalId != null) builder.setPhysicalCameraId(physicalId)
         val selector = builder.build()
         val executor = ContextCompat.getMainExecutor(app)
+
+        smoothedKelvin = null
+        _measuredKelvin.value = null
+        _measuredExposure.value = null
 
         provider.unbindAll()
         val bound = try {
@@ -523,6 +539,7 @@ class CameraService(private val catalog: FilterCatalog) {
                     result: TotalCaptureResult,
                 ) {
                     recordMeasuredKelvin(result)
+                    recordMeasuredExposure(result)
                 }
             },
         )
@@ -534,8 +551,18 @@ class CameraService(private val catalog: FilterCatalog) {
         if (result.get(CaptureResult.CONTROL_AWB_LOCK) == true) return
         val gains = result.get(CaptureResult.COLOR_CORRECTION_GAINS) ?: return
         val k = estimateKelvin(gains.red, gains.blue) ?: return
-        val prev = _measuredKelvin.value
-        _measuredKelvin.value = if (prev == null) k else snapKelvin(prev + (k - prev) * MEASURED_SMOOTHING)
+        val prev = smoothedKelvin
+        val next = if (prev == null) k.toFloat() else prev + (k - prev) * MEASURED_SMOOTHING
+        smoothedKelvin = next
+        _measuredKelvin.value = snapKelvin(next)
+    }
+
+    /** Reads the sensor's ISO and shutter for this frame. Unlike the AWB estimate, these are the values the sensor used. */
+    private fun recordMeasuredExposure(result: TotalCaptureResult) {
+        val iso = result.get(CaptureResult.SENSOR_SENSITIVITY) ?: return
+        val exposureNs = result.get(CaptureResult.SENSOR_EXPOSURE_TIME) ?: return
+        val next = MeasuredExposure(iso = iso, exposureNs = exposureNs)
+        if (_measuredExposure.value != next) _measuredExposure.value = next
     }
 
     private fun createImageCapture(): ImageCapture {

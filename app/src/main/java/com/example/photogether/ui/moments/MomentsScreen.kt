@@ -58,8 +58,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.example.photogether.core.moments.Moment
+import com.example.photogether.core.moments.MomentDrawer
 import com.example.photogether.core.moments.MomentQuery
 import com.example.photogether.data.moments.DeleteResult
+import com.example.photogether.ui.view.GaleryScreen.DetailShot
 import com.example.photogether.ui.view.GaleryScreen.ShotDetailDialog
 import com.example.photogether.ui.theme.AppColors
 import com.example.photogether.ui.theme.BinsooType
@@ -78,7 +80,7 @@ private val PILL_CLEARANCE = 96.dp
 private val PILL_SHAPE = RoundedCornerShape(28.dp)
 
 /**
- * Grid of every image the app made, on the paper background. The read permission is requested on entry.
+ * Grid of the images in one drawer ([MomentDrawer]): photobooth strips, or shots and edits. Paper background. The read permission is requested on entry.
  * If it is denied, the images the system still lets us see are shown with a short note.
  * The bottom pill: latest photo (opens the viewer), add-frame and favourites (not wired yet, disabled).
  */
@@ -86,6 +88,7 @@ private val PILL_SHAPE = RoundedCornerShape(28.dp)
 @Composable
 fun MomentsScreen(
     viewModel: MomentsViewModel,
+    drawer: MomentDrawer,
     onBack: () -> Unit,
     onEdit: (uri: String) -> Unit,
 ) {
@@ -94,6 +97,8 @@ fun MomentsScreen(
     val permission = readImagesPermission()
     var granted by remember { mutableStateOf(hasPermission(context, permission)) }
     var selected by remember { mutableStateOf<Moment?>(null) }
+    // Only the photos of the drawer that was opened: photobooth strips, or shots and edits.
+    val shownMoments = remember(moments, drawer) { drawer.filter(moments) }
     // Uris picked in selection mode. Empty means the grid is not in selection mode.
     var selectedUris by remember { mutableStateOf(setOf<String>()) }
     // Uris waiting for the app's own confirm dialog. Only used below API 30; API 30+ asks through the system dialog.
@@ -187,7 +192,10 @@ fun MomentsScreen(
                         )
                     }
                     Text(
-                        text = MomentQuery.countLabel(moments.size),
+                        text = when (drawer) {
+                            MomentDrawer.PHOTOBOOTH -> stringResource(R.string.drawer_photobooth) + " · ${shownMoments.size}"
+                            MomentDrawer.SHOTS -> stringResource(R.string.drawer_shots) + " · ${shownMoments.size}"
+                        },
                         style = BinsooType.title,
                         color = AppColors.textPrimary,
                     )
@@ -209,7 +217,7 @@ fun MomentsScreen(
                 )
             }
 
-            if (moments.isEmpty()) {
+            if (shownMoments.isEmpty()) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -244,7 +252,7 @@ fun MomentsScreen(
                     verticalItemSpacing = Spacing.md,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                 ) {
-                    items(moments, key = { moment -> moment.uri }) { moment ->
+                    items(shownMoments, key = { moment -> moment.uri }) { moment ->
                         MomentTile(
                             moment = moment,
                             isSelected = moment.uri in selectedUris,
@@ -263,8 +271,8 @@ fun MomentsScreen(
         }
 
         MomentsBottomPill(
-            latest = moments.firstOrNull(),
-            onOpenLatest = { selected = moments.firstOrNull() },
+            latest = shownMoments.firstOrNull(),
+            onOpenLatest = { selected = shownMoments.firstOrNull() },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
@@ -274,18 +282,16 @@ fun MomentsScreen(
 
     selected?.let { moment ->
         ShotDetailDialog(
-            uri = moment.uri,
-            takenAt = moment.takenAt,
-            width = moment.width,
-            height = moment.height,
+            shots = shownMoments.map { DetailShot(it.uri, it.takenAt, it.width, it.height) },
+            initialIndex = shownMoments.indexOfFirst { it.uri == moment.uri }.coerceAtLeast(0),
             onDismiss = { selected = null },
-            onEdit = {
+            onEdit = { page ->
                 selected = null
-                onEdit(moment.uri)
+                onEdit(shownMoments[page].uri)
             },
-            onDelete = {
+            onDelete = { page ->
                 selected = null
-                requestDelete(listOf(moment.uri))
+                requestDelete(listOf(shownMoments[page].uri))
             },
         )
     }

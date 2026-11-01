@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.graphics.isSpecified
 import com.example.photogether.core.render.ViewfinderSkin
 import com.example.photogether.ui.camera.cameraImageRes
+import com.example.photogether.ui.tutorial.tutorialTarget
 import com.example.photogether.ui.view.CameraScreen.shutterColor
 import com.example.photogether.ui.view.CameraScreen.shutterRingColor
 import androidx.compose.runtime.getValue
@@ -96,13 +97,19 @@ fun ManualControls(
 //            )
 //        }
 
-        ApertureGalleryButton(
-            lastPhoto = lastPhoto,
-            captureSeq = captureSeq,
-            onClick = onOpenGallery,
-        )
-        Shutter(onClick = onClickCapture, skin = skin)
-        PickerButton(name = pickerName, cameraId = pickerCameraId, onClick = onOpenPicker)
+        Box(modifier = Modifier.tutorialTarget("aperture")) {
+            ApertureGalleryButton(
+                lastPhoto = lastPhoto,
+                captureSeq = captureSeq,
+                onClick = onOpenGallery,
+            )
+        }
+        Box(modifier = Modifier.tutorialTarget("shutter")) {
+            Shutter(onClick = onClickCapture, skin = skin)
+        }
+        Box(modifier = Modifier.tutorialTarget("picker")) {
+            PickerButton(name = pickerName, cameraId = pickerCameraId, onClick = onOpenPicker)
+        }
     }
 }
 

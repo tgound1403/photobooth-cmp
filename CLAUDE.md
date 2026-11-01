@@ -30,7 +30,7 @@ Single-activity Compose app (`MainActivity`, `core/navigation/AppNavigation.kt`)
 
 - `ui/` – Compose screens plus ViewModels: `view/CameraScreen` + `viewmodel/CameraViewModel` (viewfinder), `camera/` (camera picker, "polaroid" cards, 3D camera body), `editor/` (EditorScreen/ViewModel, one panel per tool, undo history), `moments/` (gallery).
 - `domain/` – repository interfaces and use cases.
-- `data/` – Room `AppDatabase` (entities `PhotoBoothEntity`, `RecipeEntity`; migrations in `data/migration/Migrations.kt`, bump `version` and add a migration on schema change), DataStore-backed settings/prefs, Unsplash Retrofit client, Play Billing (`PremiumRules` gates premium filters), `MomentsRepository`.
+- `data/` – Room `AppDatabase` (entities `PhotoBoothEntity`, `RecipeEntity`; migrations in `data/migration/Migrations.kt`, bump `version` and add a migration on schema change), DataStore-backed settings/prefs, Unsplash Retrofit client, `MomentsRepository`.
 - `core/camera/` – Camera2 interop and pure math helpers (exposure, focus, lens selection).
 - `core/moments/` – gallery model and query logic.
 
@@ -42,7 +42,7 @@ Two paths share the same look data:
 2. **Editor / export**: `EditPipeline` (behind the `EditRenderer` interface, faked in tests) always renders from the *original source bitmap* with an `EditSnapshot`; never feed a previous output back in. Order: GPU grade and effects, crop, skin, frame, items/overlays.
 
 Look data:
-- `FilterCatalog` loads `assets/filters/catalog.json` (id, name, group, `lut`, `premium`) and 512x512 3D-LUT PNGs from `assets/filters/luts/` (layout documented in `tools/lut-gen/generate_luts.py`). `assets/filters/fx/` holds effect textures.
+- `FilterCatalog` loads `assets/filters/catalog.json` (id, name, group, `lut`) and 3D-LUT PNGs (512x512, or 256x128 for 32 levels) from `assets/filters/luts/` (layout documented in `tools/lut-gen/generate_luts.py`). `assets/filters/fx/` holds effect textures.
 - `CameraProfiles.kt` defines the selectable camera "bodies" as one `CameraProfile` list (`CameraProfiles.ALL`): each restricts the viewfinder to its own `filterIds`. The Japan pack entries sit between the `BEGIN/END GENERATED` markers, written by `import_cube_pack.py`. `Recipe` / `RecipeCode` encode and share recipes; `RecipeEntity` persists them.
 - `EditParams` / `EditSnapshot` / `EditHistory` hold the full editable state; `*Math.kt` files are pure, JVM-testable logic split out from GL code.
 

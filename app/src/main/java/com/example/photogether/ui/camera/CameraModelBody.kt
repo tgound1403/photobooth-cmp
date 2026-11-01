@@ -1,5 +1,8 @@
 package com.example.photogether.ui.camera
 
+import android.content.res.Configuration
+import android.view.Choreographer
+import android.view.SurfaceView
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -19,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import com.example.photogether.core.moments.Moment
 import io.github.sceneview.Scene
@@ -35,6 +39,12 @@ import io.github.sceneview.rememberMaterialLoader
 import io.github.sceneview.rememberModelLoader
 
 private const val MODEL_SWAY_DEGREES = 25f
+
+/** SceneView's default lens (mm). */
+private const val DEFAULT_FOCAL_LENGTH_MM = 28.0
+
+/** How much longer the lens is in landscape, so the body and its ring of photos fill the shorter scene. */
+private const val LANDSCAPE_ZOOM = 1.7
 
 /**
  * Distance from the camera to the body. The farther the body, the flatter the perspective, so cards
@@ -101,6 +111,12 @@ fun CameraModelBody(
     DisposableEffect(cameraNode) {
         onDispose { runCatching { cameraNode.destroy() } }
     }
+    // Landscape gives the scene far less height than width, and the view's vertical field is fixed, so the body
+    // shrinks with the height. A longer lens zooms in on the same scene without changing the perspective.
+    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    LaunchedEffect(cameraNode, landscape) {
+        cameraNode.focalLength = DEFAULT_FOCAL_LENGTH_MM * if (landscape) LANDSCAPE_ZOOM else 1.0
+    }
     // One engine for the whole picker: switching camera swaps only the model node. Recreating the
     // engine per model (a key() around the whole block) crashed libgltfio on the second model.
     // The asset is read off the main thread; the node is built once the bytes arrive.
@@ -157,6 +173,7 @@ fun CameraModelBody(
             modelLoader = modelLoader,
             materialLoader = materialLoader,
             isOpaque = true,
+            onViewCreated = { keepRedrawingUntilSurface() },
             cameraNode = cameraNode,
             childNodes = childNodes,
             onFrame = { frameTimeNanos ->
@@ -166,4 +183,22 @@ fun CameraModelBody(
             },
         )
     }
+}
+
+/**
+ * A SurfaceView only creates its surface during a window draw pass. This screen is otherwise static (the sway
+ * is applied in the scene's own frame callback, not in a draw), so nothing might draw and the 3D area stays
+ * blank until something else, such as a touch, redraws. Ask for a redraw each frame until the surface exists.
+ */
+private fun SurfaceView.keepRedrawingUntilSurface() {
+    val choreographer = Choreographer.getInstance()
+    val nudge =
+        object : Choreographer.FrameCallback {
+            override fun doFrame(frameTimeNanos: Long) {
+                if (!isAttachedToWindow || holder.surface.isValid) return
+                invalidate()
+                choreographer.postFrameCallback(this)
+            }
+        }
+    choreographer.postFrameCallback(nudge)
 }

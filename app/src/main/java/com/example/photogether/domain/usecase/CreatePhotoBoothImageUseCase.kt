@@ -23,7 +23,6 @@ import com.example.photogether.core.render.EditParams
 import com.example.photogether.core.render.FilterCatalog
 import com.example.photogether.core.render.GlRenderer
 import com.example.photogether.data.model.FrameTheme
-import com.example.photogether.data.billing.shouldShowWatermark
 import com.example.photogether.data.model.ThemePattern
 import com.example.photogether.shared.domain.model.PhotoBoothLayout
 import java.io.IOException
@@ -31,16 +30,12 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 
 /**
- * Builds the photobooth strip or grid. [isPremium] is read at each call, so a purchase made while
- * the app is open takes effect on the next image. Free users get a small watermark.
+ * Builds the photobooth strip or grid.
  */
 class CreatePhotoBoothImageUseCase(
-        private val isPremium: StateFlow<Boolean> = MutableStateFlow(false),
         /** Shared app catalog so the LUT cache is reused. Null builds a catalog per call (tests). */
         private val catalog: FilterCatalog? = null,
 ) {
@@ -216,10 +211,6 @@ class CreatePhotoBoothImageUseCase(
             val textY = totalHeight - (bottomPaddingPx / 2)
             canvas.drawText(displayText, totalWidth / 2f, textY.toFloat(), textPaint)
 
-            if (shouldShowWatermark(isPremium.value)) {
-                drawPhotoBoothWatermark(context, canvas, totalWidth, totalHeight, density, paddingPx, textPaint)
-            }
-
             // Giải phóng bộ nhớ (ảnh kết quả do caller quản lý)
             bitmaps.forEach { it.recycle() }
             backgroundBitmap?.recycle()
@@ -366,35 +357,3 @@ class CreatePhotoBoothImageUseCase(
             }
 }
 
-private const val WATERMARK_TEXT_SIZE = 12f
-private const val WATERMARK_BOTTOM_OFFSET = 14f
-private const val WATERMARK_ALPHA = 150
-
-/**
- * Draws the free-tier watermark in the bottom-right corner. Shared by the photobooth strip and the
- * GIF export so both carry the same mark. The caller decides whether to draw it, through
- * shouldShowWatermark.
- */
-internal fun drawPhotoBoothWatermark(
-        context: Context,
-        canvas: Canvas,
-        width: Int,
-        height: Int,
-        density: Float,
-        paddingPx: Int,
-        base: Paint
-) {
-    val paint =
-            Paint(base).apply {
-                textSize = WATERMARK_TEXT_SIZE * density
-                textAlign = Paint.Align.RIGHT
-                typeface = Typeface.DEFAULT
-                alpha = WATERMARK_ALPHA
-            }
-    canvas.drawText(
-            context.getString(R.string.watermark_text),
-            (width - paddingPx).toFloat(),
-            height - WATERMARK_BOTTOM_OFFSET * density,
-            paint
-    )
-}

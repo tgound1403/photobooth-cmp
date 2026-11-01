@@ -10,6 +10,7 @@ import android.media.ExifInterface
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.util.Log
 import android.provider.MediaStore
 import java.io.File
 import java.io.IOException
@@ -51,6 +52,7 @@ class AndroidEditorImageIo(private val context: Context) : EditorImageIo {
                 }
             }
         } catch (e: Exception) {
+            Log.w(TAG, "Could not decode $uri", e)
             null
         }
 
@@ -129,6 +131,8 @@ class AndroidEditorImageIo(private val context: Context) : EditorImageIo {
         }
     }
 }
+
+private const val TAG = "EditorImageIo"
 
 /** Devices at or below this heap class export at [LOW_MEMORY_EXPORT_SIDE] on the longest side. */
 private const val LOW_MEMORY_CLASS_MB = 256

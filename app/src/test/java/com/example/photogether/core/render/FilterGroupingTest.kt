@@ -25,6 +25,7 @@ class FilterGroupingTest {
                 "group:Korea",
                 "group:Leica",
                 "group:Ricoh",
+                "group:Cinema",
                 "tag:warm",
                 "tag:cool",
                 "tag:soft",
@@ -47,7 +48,7 @@ class FilterGroupingTest {
     fun chipsWithFavoritesPutFavoriteSecond() {
         val chips = FilterGrouping.chips(filters, hasFavorites = true)
 
-        assertEquals(13, chips.size)
+        assertEquals(14, chips.size)
         assertEquals(FilterGrouping.FAVORITE, chips[1].id)
     }
 
@@ -61,12 +62,12 @@ class FilterGroupingTest {
     }
 
     @Test
-    fun fujiGroupHasFiveFujiFiltersPlusOriginalFirst() {
+    fun fujiGroupHasFourteenFujiFiltersPlusOriginalFirst() {
         val fuji = FilterGrouping.filterBy("group:Fuji", filters, emptySet())
 
         assertEquals(FilterCatalog.ORIGINAL_ID, fuji.first().id)
-        assertEquals(5, fuji.count { it.group == "Fuji" })
-        assertEquals(6, fuji.size)
+        assertEquals(14, fuji.count { it.group == "Fuji" })
+        assertEquals(15, fuji.size)
     }
 
     @Test

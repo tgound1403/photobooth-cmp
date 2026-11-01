@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -80,6 +81,7 @@ fun PhotoBoothResultScreen(
     val requiredCount by viewModel.requiredPhotoCount.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     var showDeviceImagePicker by remember { mutableStateOf(false) }
     var selectedDeviceImage by remember { mutableStateOf<Uri?>(null) }
@@ -89,9 +91,9 @@ fun PhotoBoothResultScreen(
     LaunchedEffect(saveState) {
         when (val state = saveState) {
             is PhotoBoothViewModel.SaveState.Success ->
-                snackbarHostState.showSnackbar(context.getString(R.string.booth_saved_toast))
+                snackbarHostState.showSnackbar(resources.getString(R.string.booth_saved_toast))
             is PhotoBoothViewModel.SaveState.Error ->
-                snackbarHostState.showSnackbar(context.getString(R.string.booth_save_error, state.message))
+                snackbarHostState.showSnackbar(resources.getString(R.string.booth_save_error, state.message))
             else -> {}
         }
     }
@@ -99,9 +101,9 @@ fun PhotoBoothResultScreen(
     LaunchedEffect(gifExportState) {
         when (val state = gifExportState) {
             is PhotoBoothViewModel.GifExportState.Success ->
-                snackbarHostState.showSnackbar(context.getString(R.string.booth_gif_saved))
+                snackbarHostState.showSnackbar(resources.getString(R.string.booth_gif_saved))
             is PhotoBoothViewModel.GifExportState.Error ->
-                snackbarHostState.showSnackbar(context.getString(R.string.booth_gif_error, state.message))
+                snackbarHostState.showSnackbar(resources.getString(R.string.booth_gif_error, state.message))
             else -> {}
         }
     }
@@ -128,7 +130,7 @@ fun PhotoBoothResultScreen(
             onBack = { navController.navigateUp() },
             onShare = { path ->
                 runCatching { shareImage(context, path) }.onFailure {
-                    scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.booth_share_failed)) }
+                    scope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.booth_share_failed)) }
                 }
             },
             onShareInstagram = { path -> viewModel.shareToInstagramStories(context, path) },
@@ -149,7 +151,6 @@ fun PhotoBoothResultScreen(
                 photoBooth?.imagePaths?.let { images -> viewModel.exportGif(context, images) }
             }
     )
-    PhotoBoothPaywallOverlay(viewModel)
 }
 
 /**

@@ -85,12 +85,14 @@ class MomentsRepository(private val contentResolver: ContentResolver) {
                         height = cursor.getInt(heightCol),
                         orientation = cursor.getInt(orientationCol),
                     )
+                    val displayName = cursor.getString(nameCol)
                     out += Moment(
                         uri = ContentUris.withAppendedId(imagesUri, cursor.getLong(idCol)).toString(),
                         takenAt = cursor.getLong(dateCol) * 1000L,
                         width = w,
                         height = h,
-                        cameraId = MomentQuery.cameraIdOf(cursor.getString(nameCol)),
+                        cameraId = MomentQuery.cameraIdOf(displayName),
+                        kind = MomentQuery.kindOf(displayName),
                     )
                 }
                 out

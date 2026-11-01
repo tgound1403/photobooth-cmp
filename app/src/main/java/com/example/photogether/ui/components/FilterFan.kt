@@ -191,7 +191,7 @@ fun FilterFanButton(
 }
 
 /**
- * The fan itself, drawn over the whole camera screen: a light scrim, a short code on each entry and, just
+ * The fan itself, drawn over the whole camera screen (no scrim, so the live view keeps showing the filter at full brightness): a short code on each entry and, just
  * above the fan, one readable label with the full name of the highlighted entry (the selected one before the
  * finger reaches any). Composed only while the fan is open. It takes no touches; the button owns the gesture.
  */
@@ -207,8 +207,7 @@ fun FilterFanOverlay(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .onGloballyPositioned { origin = it.positionInRoot() }
-            .background(Color.Black.copy(alpha = 0.35f)),
+            .onGloballyPositioned { origin = it.positionInRoot() },
     ) {
         val half = with(density) { FAN_CHIP_SIZE.toPx() / 2f }
         val points = state.placement.points

@@ -19,9 +19,16 @@ internal class BloomTargets(fullWidth: Int, fullHeight: Int) {
     /** The finished, tinted and scaled bloom (the vertical blur writes into [a]). */
     val result: Int get() = a.texture
 
+    private var sum: RenderTarget? = null
+
+    /** Accumulator for several layers; created on first use so the live path never pays for it. */
+    fun accumulator(): RenderTarget = sum ?: GlUtil.createTarget(width, height).also { sum = it }
+
     fun delete() {
         a.delete()
         b.delete()
+        sum?.delete()
+        sum = null
     }
 }
 
@@ -34,6 +41,7 @@ internal class BloomPass {
     private var thresholdProgram = 0
     private var blurProgram = 0
     private var thresholdTexel = -1
+    private var thresholdKnee = -1
     private var blurDir = -1
     private var blurGain = -1
     private val attachments = intArrayOf(GLES30.GL_COLOR_ATTACHMENT0)
@@ -42,6 +50,7 @@ internal class BloomPass {
         thresholdProgram = buildProgram(VERTEX_SHADER, BLOOM_THRESHOLD_FRAGMENT_SHADER)
         blurProgram = buildProgram(VERTEX_SHADER, BLOOM_BLUR_FRAGMENT_SHADER)
         thresholdTexel = GLES30.glGetUniformLocation(thresholdProgram, "uTexel")
+        thresholdKnee = GLES30.glGetUniformLocation(thresholdProgram, "uKnee")
         blurDir = GLES30.glGetUniformLocation(blurProgram, "uDir")
         blurGain = GLES30.glGetUniformLocation(blurProgram, "uGain")
         GLES30.glUseProgram(thresholdProgram)
@@ -75,6 +84,7 @@ internal class BloomPass {
         GLES30.glUseProgram(thresholdProgram)
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, srcTexture)
         GLES30.glUniform2f(thresholdTexel, 1f / srcWidth, 1f / srcHeight)
+        GLES30.glUniform2f(thresholdKnee, BloomMath.KNEE_START, BloomMath.KNEE_END)
         draw(quadVao)
 
         // B2: A -> B, horizontal.
@@ -97,6 +107,55 @@ internal class BloomPass {
         GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, targets.b.framebuffer)
         GLES30.glInvalidateFramebuffer(GLES30.GL_FRAMEBUFFER, 1, attachments, 0)
         if (BuildConfig.DEBUG) GlUtil.checkGl("bloom pass")
+    }
+
+    /**
+     * Editor path: runs each [BloomMath.Layer] (threshold, blur, tint) and adds them into one accumulator.
+     * Returns the accumulator texture to composite with the same screen blend as [run]'s result.
+     */
+    fun runLayers(
+        srcTexture: Int,
+        srcWidth: Int,
+        srcHeight: Int,
+        layers: List<BloomMath.Layer>,
+        targets: BloomTargets,
+        quadVao: Int,
+    ): Int {
+        val w = targets.width
+        val h = targets.height
+        val sum = targets.accumulator()
+        GLES30.glViewport(0, 0, w, h)
+        GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
+        GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, sum.framebuffer)
+        GLES30.glClearColor(0f, 0f, 0f, 0f)
+        GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
+        for (layer in layers) {
+            bind(targets.a)
+            GLES30.glUseProgram(thresholdProgram)
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, srcTexture)
+            GLES30.glUniform2f(thresholdTexel, 1f / srcWidth, 1f / srcHeight)
+            GLES30.glUniform2f(thresholdKnee, layer.kneeStart, layer.kneeEnd)
+            draw(quadVao)
+
+            bind(targets.b)
+            GLES30.glUseProgram(blurProgram)
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, targets.a.texture)
+            GLES30.glUniform2f(blurDir, layer.spread / w, 0f)
+            GLES30.glUniform3f(blurGain, 1f, 1f, 1f)
+            draw(quadVao)
+
+            // Vertical pass adds its tinted result on top of what earlier layers left in the accumulator.
+            GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, sum.framebuffer)
+            GLES30.glEnable(GLES30.GL_BLEND)
+            GLES30.glBlendFunc(GLES30.GL_ONE, GLES30.GL_ONE)
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, targets.b.texture)
+            GLES30.glUniform2f(blurDir, 0f, layer.spread / h)
+            GLES30.glUniform3f(blurGain, layer.gainR, layer.gainG, layer.gainB)
+            draw(quadVao)
+            GLES30.glDisable(GLES30.GL_BLEND)
+        }
+        if (BuildConfig.DEBUG) GlUtil.checkGl("bloom layers")
+        return sum.texture
     }
 
     /** Hints that the bloom result was consumed. Call after the composite has read it. */

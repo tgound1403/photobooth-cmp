@@ -1,6 +1,7 @@
 package com.example.photogether.core.render
 
 import android.graphics.Bitmap
+import android.os.Build
 import android.os.Trace
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.Dispatchers
@@ -39,11 +40,15 @@ class EditPipeline(private val catalog: FilterCatalog) : EditRenderer {
         // Async section: the render hops between the GL, IO and Default threads, so a sync
         // beginSection/endSection pair would land on different threads.
         val cookie = traceCookies.incrementAndGet()
-        Trace.beginAsyncSection(TRACE_RENDER, cookie)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            Trace.beginAsyncSection(TRACE_RENDER, cookie)
+        }
         try {
             return renderChain(source, snapshot, background, density, maxSize)
         } finally {
-            Trace.endAsyncSection(TRACE_RENDER, cookie)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                Trace.endAsyncSection(TRACE_RENDER, cookie)
+            }
         }
     }
 

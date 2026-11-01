@@ -55,40 +55,109 @@ object FrameRenderer {
                 Bitmap.Config.ARGB_8888,
             )
         val canvas = Canvas(result)
-        canvas.drawColor(frame.borderColor)
+        paintPaper(canvas, layout.frameWidth, layout.frameHeight, frame.borderColor)
 
         val sr = layout.sourceRect
         val srcRect = Rect(sr.left.roundToInt(), sr.top.roundToInt(), sr.right.roundToInt(), sr.bottom.roundToInt())
         val d = layout.photoDest
+        val area = layout.photoArea
+        // FIT leaves bars around the photo inside the square window; fill them with a darker paper tone
+        // so the window reads as a print window, not as a hole.
+        if (mode == PolaroidMode.FIT) {
+            canvas.drawRect(
+                area.left, area.top, area.right, area.bottom,
+                Paint().apply { color = shade(frame.borderColor, 0.9f) },
+            )
+        }
         canvas.drawBitmap(
             src,
             srcRect,
             RectF(d.left, d.top, d.right, d.bottom),
             Paint().apply { isFilterBitmap = true },
         )
+        paintInnerShadow(canvas, area, layout.frameWidth)
 
-        val text = frame.caption?.takeIf { it.isNotBlank() } ?: today()
+        val raw = frame.caption?.takeIf { it.isNotBlank() } ?: today()
+        val text = if (style.uppercase) raw.uppercase(Locale.getDefault()) else raw
         val box = layout.captionBox
         val textPaint =
             Paint().apply {
-                color = FrameColors.textColorOn(frame.borderColor)
+                color = shade(FrameColors.textColorOn(frame.borderColor), 1f, alpha = 0.82f)
                 textSize = box.height * style.captionSizeRatio
                 typeface = Typeface.create(style.fontFamily, if (style.bold) Typeface.BOLD else Typeface.NORMAL)
                 textAlign = Paint.Align.CENTER
+                letterSpacing = style.letterSpacing
                 isAntiAlias = true
             }
-        val maxWidth = box.width * 0.9f
+        val maxWidth = box.width * 0.86f
         val measured = textPaint.measureText(text)
         if (measured > maxWidth) textPaint.textSize *= maxWidth / measured
         canvas.drawText(
             text,
             layout.frameWidth / 2f,
-            box.top + box.height * 0.6f,
+            box.top + box.height * style.baselineRatio,
             textPaint,
         )
-        addPolaroidTexture(canvas, layout.frameWidth, layout.frameHeight)
+        paintPaperEdge(canvas, layout.frameWidth, layout.frameHeight)
         return result
     }
+
+    /** Paper: a faint top-to-bottom gradient of the border colour plus fine speckle so it is not a flat fill. */
+    private fun paintPaper(canvas: Canvas, w: Float, h: Float, color: Int) {
+        canvas.drawRect(
+            0f, 0f, w, h,
+            Paint().apply {
+                shader = LinearGradient(0f, 0f, 0f, h, shade(color, 1.02f), shade(color, 0.94f), Shader.TileMode.CLAMP)
+            },
+        )
+        val speck = Paint().apply { style = Paint.Style.FILL; isAntiAlias = false }
+        val rnd = Random(PAPER_SEED)
+        val count = (w * h / 900f).toInt().coerceIn(200, 6000)
+        val r = (w / 1500f).coerceAtLeast(0.6f)
+        repeat(count) {
+            speck.color = if (rnd.nextBoolean()) Color.argb(9, 0, 0, 0) else Color.argb(10, 255, 255, 255)
+            canvas.drawCircle(rnd.nextFloat() * w, rnd.nextFloat() * h, rnd.nextFloat() * r + 0.3f, speck)
+        }
+    }
+
+    /** Soft dark edge just inside the photo window, as if the picture sat slightly below the paper. */
+    private fun paintInnerShadow(canvas: Canvas, area: FloatRect, frameW: Float) {
+        val depth = frameW * 0.012f
+        val steps = 6
+        val paint = Paint().apply { style = Paint.Style.STROKE; isAntiAlias = true }
+        canvas.save()
+        canvas.clipRect(area.left, area.top, area.right, area.bottom)
+        for (i in 0 until steps) {
+            val f = i / steps.toFloat()
+            paint.strokeWidth = depth / steps * 2f
+            paint.color = Color.argb(((1f - f) * 34f).toInt(), 0, 0, 0)
+            val inset = depth / steps * i
+            canvas.drawRect(area.left + inset, area.top + inset, area.right - inset, area.bottom - inset, paint)
+        }
+        canvas.restore()
+        canvas.drawRect(
+            area.left, area.top, area.right, area.bottom,
+            Paint().apply { style = Paint.Style.STROKE; strokeWidth = (frameW / 900f).coerceAtLeast(1f); color = Color.argb(40, 0, 0, 0) },
+        )
+    }
+
+    /** Faint darker rim around the sheet so a white border stays visible on a white background. */
+    private fun paintPaperEdge(canvas: Canvas, w: Float, h: Float) {
+        val t = (w / 600f).coerceAtLeast(1.5f)
+        canvas.drawRect(
+            t / 2f, t / 2f, w - t / 2f, h - t / 2f,
+            Paint().apply { style = Paint.Style.STROKE; strokeWidth = t; color = Color.argb(30, 0, 0, 0) },
+        )
+    }
+
+    /** Scales the RGB of [color] by [factor] (clamped); [alpha] overrides the alpha when given. */
+    private fun shade(color: Int, factor: Float, alpha: Float? = null): Int {
+        fun ch(v: Int) = (v * factor).roundToInt().coerceIn(0, 255)
+        val a = alpha?.let { (it * 255).roundToInt().coerceIn(0, 255) } ?: Color.alpha(color)
+        return Color.argb(a, ch(Color.red(color)), ch(Color.green(color)), ch(Color.blue(color)))
+    }
+
+    private const val PAPER_SEED = 7
 
     /**
      * Poster frame ("masthead"): header line and hairline, a title stretched across the photo
@@ -148,12 +217,26 @@ object FrameRenderer {
             Paint().apply {
                 color = ink
                 textSize = maxH / 0.72f
-                typeface = Typeface.create("sans-serif-black", Typeface.BOLD)
+                val font = PosterFonts.byId(frame.titleFontId)
+                typeface = Typeface.create(
+                    font.family,
+                    when {
+                        font.bold && font.italic -> Typeface.BOLD_ITALIC
+                        font.bold -> Typeface.BOLD
+                        font.italic -> Typeface.ITALIC
+                        else -> Typeface.NORMAL
+                    },
+                )
                 isAntiAlias = true
             }
         titlePaint.textSize *= maxW / titlePaint.measureText(title)
         if (titlePaint.textSize * 0.72f > maxH) titlePaint.textSize = maxH / 0.72f
-        val titleX = d.left + (d.width - titlePaint.measureText(title)) / 2f
+        val titleWidth = titlePaint.measureText(title)
+        val titleX = when (frame.titleAlign) {
+            PosterTitleAlign.START -> d.left
+            PosterTitleAlign.CENTER -> d.left + (d.width - titleWidth) / 2f
+            PosterTitleAlign.END -> d.right - titleWidth
+        }
 
         val paint = Paint().apply { isFilterBitmap = true }
         val photo = Path().apply { addRoundRect(RectF(d.left, d.top, d.right, d.bottom), layout.cornerRadius, layout.cornerRadius, Path.Direction.CW) }
@@ -186,14 +269,6 @@ object FrameRenderer {
     }
 
     private fun posterDate(): String = SimpleDateFormat("MMM dd yyyy", Locale.US).format(Date()).uppercase(Locale.US)
-
-    private fun addPolaroidTexture(canvas: Canvas, width: Float, height: Float) {
-        val paint = Paint().apply { style = Paint.Style.FILL; color = Color.argb(5, 0, 0, 0) }
-        val random = Random
-        for (i in 0..200) {
-            canvas.drawCircle(random.nextFloat() * width, random.nextFloat() * height, random.nextFloat() * 2f, paint)
-        }
-    }
 
     /** Theme or background image around the photo, with an optional caption at the bottom. */
     private fun themedFrame(

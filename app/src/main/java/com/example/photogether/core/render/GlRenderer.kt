@@ -161,13 +161,13 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
             first = createTarget(outW, outH)
             if (p.sharpness > 0f) second = createTarget(outW, outH)
             drawAdjust(p, srcTex, lutTex, lutLevels, first, outW, outH)
-            val useBloom = BloomMath.bloomScale(p.halation) > 0f
+            val bloomLayers = BloomMath.layersFor(p)
+            val useBloom = bloomLayers.isNotEmpty()
             var bloomTex = 0
             if (useBloom) {
                 val targets = bloomTargetsFor(outW, outH)
-                bloomPass.run(first.texture, outW, outH, p.halation, targets, quadVao)
+                bloomTex = bloomPass.runLayers(first.texture, outW, outH, bloomLayers, targets, quadVao)
                 checkGl("bloom pass")
-                bloomTex = targets.result
             }
             val fx = FxValues(p, p.fxSeed)
             val stamp = StampValues(p.dateStamp, p.dateStampMillis, stampQuarterTurns)
@@ -269,7 +269,8 @@ class GlRenderer(private val assets: AssetManager? = null) : AutoCloseable {
         GLES30.glActiveTexture(GLES30.GL_TEXTURE2)
         GLES30.glBindTexture(GLES30.GL_TEXTURE_3D, lutTex)
 
-        GlUtil.applyAdjustUniforms(adjustProgram, p, useLut = lutTex != 0, lutLevels = lutLevels, outputHeight = h)
+        GlUtil.applyAdjustUniforms(adjustProgram, p, useLut = lutTex != 0, lutLevels = lutLevels, outputHeight = h,
+            gndMap = if (p.gnd > 0f) GndMapMath.map(w, h, p.crop) else null)
 
         drawQuad()
         checkGl("adjust pass")

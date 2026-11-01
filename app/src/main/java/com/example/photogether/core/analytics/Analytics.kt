@@ -7,8 +7,6 @@ enum class AnalyticsEvent(val eventName: String) {
     PHOTO_CAPTURED("photo_captured"),
     FILTER_APPLIED("filter_applied"),
     IMAGE_SAVED("image_saved"),
-    PAYWALL_SHOWN("paywall_shown"),
-    PURCHASE_COMPLETED("purchase_completed"),
 }
 
 /**

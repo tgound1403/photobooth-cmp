@@ -56,8 +56,6 @@ class EditorViewModel(
     /** Filter list for the filter strip, supplied by DI. */
     val filters: List<FilterInfo> = emptyList(),
     private val recipeRepository: RecipeRepository,
-    /** Premium entitlement. Saving a premium filter while this is false opens the paywall. */
-    val isPremium: StateFlow<Boolean> = MutableStateFlow(false),
     private val analytics: Analytics = NoOpAnalytics,
     uiDispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
     /** Ids of favorited filters. Empty unless the app supplies the favorites store. */
@@ -123,8 +121,9 @@ class EditorViewModel(
         scope.launch {
             val bitmap = withContext(Dispatchers.IO) { io.decode(uri, SOURCE_MAX_SIDE) }
             if (bitmap == null) {
+                Log.w(TAG, "Decode returned null for $uri")
                 loadStarted = false
-                _state.update { it.copy(isLoading = false, error = "Could not open image") }
+                _state.update { it.copy(isLoading = false, loadFailed = true, error = "Could not open image") }
                 return@launch
             }
             source = bitmap
@@ -298,11 +297,6 @@ class EditorViewModel(
                 _notices.tryEmit("Recipe imported")
             }
         }
-    }
-
-    /** Closes the paywall. Nothing is saved until the user taps Save again. */
-    fun dismissPaywall() {
-        _state.update { it.copy(showPaywall = false) }
     }
 
     fun clearError() {

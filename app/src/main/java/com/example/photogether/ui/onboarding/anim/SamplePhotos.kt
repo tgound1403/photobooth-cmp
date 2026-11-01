@@ -4,12 +4,14 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -61,7 +63,10 @@ private val VIETNAMESE_PHOTOS = listOf(
 @Composable
 fun rememberSamplePhotos(vararg numbers: Int): List<ImageBitmap?> {
     val context = LocalContext.current.applicationContext
-    val language = AppLocale.current()
+    // The activity handles locale changes itself, so reading the configuration is what makes this
+    // recompose (and reload the other language's photos) when the language switches.
+    val configuration = LocalConfiguration.current
+    val language = remember(configuration) { AppLocale.current() }
     val key = numbers.toList()
     return produceState<List<ImageBitmap?>>(initialValue = List(key.size) { null }, key, language) {
         value = withContext(Dispatchers.IO) {

@@ -78,4 +78,12 @@ object MomentQuery {
         if (underscore <= 0) return null
         return name.substring(0, underscore)
     }
+
+    /** Kind of image for a display name: "PhotoBooth_..." and "Edited_..." files, camera shots otherwise. */
+    fun kindOf(displayName: String?): MomentKind = when {
+        displayName == null -> MomentKind.CAMERA
+        displayName.startsWith("PhotoBooth_") -> MomentKind.PHOTOBOOTH
+        displayName.startsWith("Edited_") -> MomentKind.EDITED
+        else -> MomentKind.CAMERA
+    }
 }

@@ -58,6 +58,9 @@ uniform float uLutMix;
 uniform vec3 uPreGain;
 uniform float uFilterIntensity;
 uniform float uExposureGain;
+uniform float uNdStops;     // NdMath.ndStops; 0 = off
+uniform float uGndStops;    // NdMath.gndStops at the top edge; 0 = off
+uniform vec3 uGndMap;       // GndMapMath: fromTop = dot(uGndMap, vec3(vUv, 1)); all zero (unset) = vUv.y
 uniform vec3 uWbGain;
 uniform float uContrastFactor;
 uniform float uSaturationFactor;
@@ -109,6 +112,19 @@ void main() {
 
     // 2. Exposure: linear gain on the (sRGB-encoded) values.
     c = clamp(c * uExposureGain, 0.0, 1.0);
+
+    // 2b. ND and graduated ND: neutral darkening in linear light. fromTop is 0 at the top of the final image.
+    //     The 0.15 / 0.5 are NdMath.GRAD_START and GRAD_END - GRAD_START (a const val cannot interpolate them).
+    float ndStops = uNdStops;
+    if (uGndStops > 0.0) {
+        // The grade runs before the crop/rotate/flip, so uGndMap maps the source UV to the visible top.
+        float fromTop = (uGndMap == vec3(0.0)) ? vUv.y : dot(uGndMap, vec3(vUv, 1.0));
+        float t = clamp((fromTop - 0.15) / 0.5, 0.0, 1.0);
+        ndStops += uGndStops * (1.0 - t * t * (3.0 - 2.0 * t));
+    }
+    if (ndStops > 0.0) {
+        c = pow(pow(c, vec3(2.2)) * exp2(-ndStops), vec3(1.0 / 2.2));
+    }
 
     // 3. White balance: small per-channel gains.
     c = clamp(c * uWbGain, 0.0, 1.0);
@@ -397,6 +413,7 @@ out vec4 fragColor;
 
 uniform sampler2D uSrc;
 uniform vec2 uTexel; // 1 / source size
+uniform vec2 uKnee;  // smoothstep edges of the highlight weight (BloomMath.KNEE_START..KNEE_END for halation)
 
 const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
 
@@ -407,7 +424,7 @@ void main() {
         + texture(uSrc, vUv + uTexel * vec2(-1.0, 1.0)).rgb
         + texture(uSrc, vUv + uTexel * vec2(1.0, 1.0)).rgb);
     float l = dot(c, LUMA);
-    float w = smoothstep(${BloomMath.KNEE_START.glsl()}, ${BloomMath.KNEE_END.glsl()}, l);
+    float w = smoothstep(uKnee.x, uKnee.y, l);
     fragColor = vec4(c * w, 1.0);
 }
 """

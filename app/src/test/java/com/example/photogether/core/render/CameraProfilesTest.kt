@@ -53,8 +53,8 @@ class CameraProfilesTest {
 
     @Test
     fun allCamerasAreOneListOfProfiles() {
-        // 9 hand-written cameras (Leica M, Ricoh GR, Sunlit and Recipes included) plus 41 from the Japan pack.
-        assertEquals(50, CameraProfiles.ALL.size)
+        // 12 hand-written cameras (Leica M, Ricoh GR, Sunlit, Cinema and Recipes included) plus 41 from the Japan pack.
+        assertEquals(53, CameraProfiles.ALL.size)
     }
 
     @Test

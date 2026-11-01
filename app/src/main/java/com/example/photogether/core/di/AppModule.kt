@@ -3,7 +3,6 @@ package com.example.photogether.core.di
 import com.example.photogether.core.analytics.Analytics
 import com.example.photogether.core.analytics.NoOpAnalytics
 import com.example.photogether.data.AppDatabase
-import com.example.photogether.data.billing.BillingRepository
 import com.example.photogether.data.repository.PhotoBoothRepository
 import com.example.photogether.data.settings.CameraSettingsRepository
 import com.example.photogether.data.repository.RecipeRepository
@@ -17,7 +16,6 @@ import org.koin.dsl.module
 
 val appModule = module {
     single<Analytics> { NoOpAnalytics }
-    single { BillingRepository(androidContext(), get()) }
     single { PhotoBoothRepository(androidContext()) }
     single { AppDatabase.getDatabase(androidApplication()) }
     single { RecipeRepository(get<AppDatabase>().recipeDao(), File(androidContext().filesDir, "recipes")) }
@@ -27,10 +25,12 @@ val appModule = module {
     single { com.example.photogether.data.prefs.ThemeRepository.create(androidContext()) }
     single<com.example.photogether.data.prefs.OnboardingStatus> { get<com.example.photogether.data.prefs.OnboardingRepository>() }
     viewModel { com.example.photogether.ui.onboarding.OnboardingViewModel(get()) }
+    single { com.example.photogether.data.prefs.TutorialRepository.create(androidContext()) }
+    viewModel { com.example.photogether.ui.tutorial.TutorialViewModel(get()) }
     single { com.example.photogether.data.moments.MomentsRepository(androidContext().contentResolver) }
     viewModel { com.example.photogether.ui.moments.MomentsViewModel(get()) }
-    single { CreatePhotoBoothImageUseCase(get<BillingRepository>().isPremium, get()) }
-    single { com.example.photogether.domain.usecase.GifExportUseCase(get<BillingRepository>().isPremium) }
+    single { CreatePhotoBoothImageUseCase(catalog = get()) }
+    single { com.example.photogether.domain.usecase.GifExportUseCase() }
     viewModel {
         PhotoBoothViewModel(
             repository = get(),
@@ -38,7 +38,6 @@ val appModule = module {
             createPhotoBoothImageUseCase = get(),
             gifExportUseCase = get(),
             recipeRepository = get(),
-            isPremium = get<BillingRepository>().isPremium,
             analytics = get(),
             catalog = get(),
         )
@@ -81,7 +80,6 @@ val appModule = module {
             renderer = com.example.photogether.core.render.EditPipeline(get()),
             filters = get<com.example.photogether.core.render.FilterCatalog>().filters,
             recipeRepository = get(),
-            isPremium = get<com.example.photogether.data.billing.BillingRepository>().isPremium,
             analytics = get(),
             favorites = get<com.example.photogether.data.prefs.FavoriteFiltersRepository>().favorites,
             onToggleFavorite = { id ->

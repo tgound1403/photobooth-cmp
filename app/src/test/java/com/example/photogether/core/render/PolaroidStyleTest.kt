@@ -128,7 +128,7 @@ class PolaroidStyleTest {
 
     @Test
     fun byIdFindsEveryStyle() {
-        assertEquals(4, PolaroidStyles.ALL.size)
+        assertEquals(6, PolaroidStyles.ALL.size)
         assertEquals(PolaroidStyles.ALL.size, PolaroidStyles.ALL.map { it.id }.toSet().size)
         for (style in PolaroidStyles.ALL) {
             assertEquals(style, PolaroidStyles.byId(style.id))

@@ -7,6 +7,7 @@ import com.adamglin.phosphoricons.bold.ArrowCounterClockwise
 import com.adamglin.phosphoricons.bold.ArrowLeft
 import com.adamglin.phosphoricons.bold.ArrowUUpLeft
 import com.adamglin.phosphoricons.bold.ArrowUUpRight
+import com.adamglin.phosphoricons.bold.Bell
 import com.adamglin.phosphoricons.bold.Camera
 import com.adamglin.phosphoricons.bold.CameraRotate
 import com.adamglin.phosphoricons.bold.CaretDown
@@ -18,6 +19,7 @@ import com.adamglin.phosphoricons.bold.Crop
 import com.adamglin.phosphoricons.bold.DownloadSimple
 import com.adamglin.phosphoricons.bold.FileText
 import com.adamglin.phosphoricons.bold.Flashlight
+import com.adamglin.phosphoricons.bold.FilmStrip
 import com.adamglin.phosphoricons.bold.Flower
 import com.adamglin.phosphoricons.bold.FrameCorners
 import com.adamglin.phosphoricons.bold.Image
@@ -63,6 +65,9 @@ object AppIcons {
     val Lightbulb: ImageVector
         get() = PhosphorIcons.Bold.Lightbulb
 
+    val Bell: ImageVector
+        get() = PhosphorIcons.Bold.Bell
+
     val Menu: ImageVector
         get() = PhosphorIcons.Bold.ListBullets
 
@@ -80,6 +85,9 @@ object AppIcons {
 
     val Reset: ImageVector
         get() = PhosphorIcons.Bold.ArrowCounterClockwise
+
+    val FilmStrip: ImageVector
+        get() = PhosphorIcons.Bold.FilmStrip
 
     val Library: ImageVector
         get() = PhosphorIcons.Bold.Images

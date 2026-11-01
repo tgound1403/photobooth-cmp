@@ -8,6 +8,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.example.photogether.core.render.EditParams
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -34,91 +38,151 @@ import com.example.photogether.core.render.OverlaySpec
 import com.example.photogether.core.render.ViewfinderSkin
 import com.example.photogether.ui.theme.Spacing
 
+/** Top-level groups of the overlay tab. One group is shown at a time so the panel keeps a fixed height. */
+private enum class OverlayGroup(val label: String) {
+    EFFECTS("Effects"),
+    LEAK("Light leak"),
+    SCRATCH("Scratch"),
+    LENS("Lens"),
+    SKIN("Skin"),
+    STICKERS("Stickers"),
+    TEXT("Text"),
+}
+
+private val EFFECT_TOOLS = listOf(
+    ParamTool("Grain", 0f..1f, { it.grain }, { p, v -> p.copy(grain = v) }),
+    ParamTool("Bloom", 0f..1f, { it.bloom }, { p, v -> p.copy(bloom = v) }),
+    ParamTool("Glow", 0f..1f, { it.glow }, { p, v -> p.copy(glow = v) }),
+    ParamTool("Dreamy", 0f..1f, { it.dreamy }, { p, v -> p.copy(dreamy = v) }),
+    ParamTool("Halation", 0f..1f, { it.halation }, { p, v -> p.copy(halation = v) }),
+)
+
+/** Panel height cap, so opening the tab never pushes the photo off the screen. */
+private val OVERLAY_PANEL_HEIGHT = 168.dp
+
 /**
- * Light leak, scratch, distortion and camera skin presets, plus stickers and text placed at the centre.
- * Tapping an item removes it.
+ * Overlay tab. A row of group chips (Effects, Light leak, Scratch, Lens, Skin, Stickers, Text) sits on top and the
+ * chosen group fills a fixed-height area below, so the preview above keeps its size. Effects holds the strength
+ * sliders; the other groups are one row of presets or an add field. Tapping an added item removes it.
  */
 @Composable
 fun OverlayPanel(
+    params: EditParams,
     overlays: OverlaySpec,
+    onLive: (ParamsEdit) -> Unit,
+    onCommit: () -> Unit,
     onOverlays: (OverlaySpec) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var group by rememberSaveable { mutableStateOf(OverlayGroup.EFFECTS) }
     var text by remember { mutableStateOf("") }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+            .height(OVERLAY_PANEL_HEIGHT)
+            .padding(vertical = Spacing.sm),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        PresetRow("Light leak", OverlayCatalog.lightLeaks, overlays.lightLeak, PresetKind.LEAK) { id ->
-            onOverlays(overlays.copy(lightLeak = id))
-        }
-        PresetRow("Scratch", OverlayCatalog.scratches, overlays.scratch, PresetKind.SCRATCH) { id ->
-            onOverlays(overlays.copy(scratch = id))
-        }
-        PresetRow("Distortion", OverlayCatalog.distortions, overlays.distortion, PresetKind.DISTORTION) { id ->
-            onOverlays(overlays.copy(distortion = id))
-        }
-        SkinRow(overlays.skin) { skin -> onOverlays(overlays.copy(skin = skin)) }
-
-        SectionLabel("Stickers")
         Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            modifier = Modifier
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.lg),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            OverlayCatalog.stickers.forEach { emoji ->
-                StyleTile(label = emoji, selected = false, onClick = {
-                    onOverlays(overlays.copy(items = overlays.items + OverlayItem(kind = OverlayKind.STICKER, content = emoji)))
-                }) { ink ->
-                    Text(text = emoji, fontSize = 22.sp, color = ink)
+            OverlayGroup.entries.forEach { g ->
+                EditorChip(label = g.label, selected = g == group, onClick = { group = g })
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            when (group) {
+                OverlayGroup.EFFECTS -> ParamToolStrip(
+                    tools = EFFECT_TOOLS,
+                    params = params,
+                    selectionKey = "overlay_effects",
+                    onLive = onLive,
+                    onCommit = onCommit,
+                    sidePadding = 0.dp,
+                )
+                OverlayGroup.LEAK -> PresetRow(OverlayCatalog.lightLeaks, overlays.lightLeak, PresetKind.LEAK) { id ->
+                    onOverlays(overlays.copy(lightLeak = id))
                 }
-            }
-        }
-
-        SectionLabel("Text")
-        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                placeholder = { Text(stringResource(R.string.overlay_type_text)) },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-            )
-            Button(
-                onClick = {
-                    val content = text.trim()
-                    if (content.isNotEmpty()) {
-                        onOverlays(overlays.copy(items = overlays.items + OverlayItem(kind = OverlayKind.TEXT, content = content)))
-                        text = ""
+                OverlayGroup.SCRATCH -> PresetRow(OverlayCatalog.scratches, overlays.scratch, PresetKind.SCRATCH) { id ->
+                    onOverlays(overlays.copy(scratch = id))
+                }
+                OverlayGroup.LENS -> PresetRow(OverlayCatalog.distortions, overlays.distortion, PresetKind.DISTORTION) { id ->
+                    onOverlays(overlays.copy(distortion = id))
+                }
+                OverlayGroup.SKIN -> SkinRow(overlays.skin) { skin -> onOverlays(overlays.copy(skin = skin)) }
+                OverlayGroup.STICKERS -> {
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                    ) {
+                        OverlayCatalog.stickers.forEach { emoji ->
+                            StyleTile(label = emoji, selected = false, onClick = {
+                                onOverlays(overlays.copy(items = overlays.items + OverlayItem(kind = OverlayKind.STICKER, content = emoji)))
+                            }) { ink ->
+                                Text(text = emoji, fontSize = 22.sp, color = ink)
+                            }
+                        }
                     }
-                },
-                modifier = Modifier.padding(start = Spacing.sm),
-            ) {
-                Text(stringResource(R.string.overlay_add))
-            }
-        }
-
-        if (overlays.items.isNotEmpty()) {
-            SectionLabel("Items (tap to remove)")
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-            ) {
-                overlays.items.forEach { item ->
-                    StyleTile(
-                        label = item.content,
-                        selected = item.kind == OverlayKind.TEXT,
-                        onClick = { onOverlays(overlays.copy(items = overlays.items.filterNot { it.id == item.id })) },
-                    ) { ink ->
-                        Text(
-                            text = if (item.kind == OverlayKind.STICKER) item.content else "Aa",
-                            fontSize = 20.sp,
-                            color = ink,
+                    ItemsRow(overlays, onOverlays, OverlayKind.STICKER)
+                }
+                OverlayGroup.TEXT -> {
+                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = text,
+                            onValueChange = { text = it },
+                            placeholder = { Text(stringResource(R.string.overlay_type_text)) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
                         )
+                        Button(
+                            onClick = {
+                                val content = text.trim()
+                                if (content.isNotEmpty()) {
+                                    onOverlays(overlays.copy(items = overlays.items + OverlayItem(kind = OverlayKind.TEXT, content = content)))
+                                    text = ""
+                                }
+                            },
+                            modifier = Modifier.padding(start = Spacing.sm),
+                        ) {
+                            Text(stringResource(R.string.overlay_add))
+                        }
                     }
+                    ItemsRow(overlays, onOverlays, OverlayKind.TEXT)
                 }
+            }
+        }
+    }
+}
+
+/** The added items of one kind; tapping one removes it. */
+@Composable
+private fun ItemsRow(overlays: OverlaySpec, onOverlays: (OverlaySpec) -> Unit, kind: OverlayKind) {
+    val shown = overlays.items.filter { it.kind == kind }
+    if (shown.isEmpty()) return
+    SectionLabel("Added (tap to remove)")
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+    ) {
+        shown.forEach { item ->
+            StyleTile(
+                label = item.content,
+                selected = kind == OverlayKind.TEXT,
+                onClick = { onOverlays(overlays.copy(items = overlays.items.filterNot { it.id == item.id })) },
+            ) { ink ->
+                Text(text = if (kind == OverlayKind.STICKER) item.content else "Aa", fontSize = 20.sp, color = ink)
             }
         }
     }
@@ -130,7 +194,6 @@ private enum class PresetKind { NONE, LEAK, SCRATCH, DISTORTION, SKIN }
 /** Camera body skins painted over the photo. Tapping the active skin keeps it; "None" turns it off. */
 @Composable
 private fun SkinRow(selected: ViewfinderSkin, onSelect: (ViewfinderSkin) -> Unit) {
-    SectionLabel("Skin")
     Row(
         modifier = Modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
@@ -157,13 +220,11 @@ private fun ViewfinderSkin.label(): String = when (this) {
 /** One row of presets; tapping the active preset turns it off. */
 @Composable
 private fun PresetRow(
-    title: String,
     presets: List<String>,
     selected: String?,
     kind: PresetKind,
     onSelect: (String?) -> Unit,
 ) {
-    SectionLabel(title)
     Row(
         modifier = Modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),

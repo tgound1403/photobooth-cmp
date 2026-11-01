@@ -22,6 +22,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewModelScope
 import com.example.photogether.core.camera.CameraAdjustState
 import com.example.photogether.core.camera.CameraTool
+import com.example.photogether.core.camera.MeasuredExposure
 import com.example.photogether.core.colors.PendingColorLook
 import com.example.photogether.core.camera.CropZoomPrefs
 import com.example.photogether.core.camera.Lens
@@ -64,6 +65,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -125,6 +128,9 @@ class CameraViewModel(
     /** Kelvin the auto white balance measures right now. Approximate; null before the first frame. */
     val measuredKelvin: StateFlow<Int?> get() = cameraService.measuredKelvin
 
+    /** ISO and shutter the sensor reports right now. Null before the first frame. */
+    val measuredExposure: StateFlow<MeasuredExposure?> get() = cameraService.measuredExposure
+
     /** The camera body last picked (DataStore). Null until one is picked. */
     val savedCameraId: Flow<String?> = settingsRepository.settings.map { it.cameraId }
 
@@ -175,6 +181,22 @@ class CameraViewModel(
 
     /** Aspect picked on the camera screen. Null means the camera body's own aspect. Reset when the camera changes. */
     val aspectOverride = mutableStateOf<CameraAspect?>(null)
+
+    init {
+        // Declared after aspectOverride on purpose (init order). The first emission is the value persisted when
+        // this ViewModel was created (possibly null), so it is skipped. Every later one is a camera picked in the
+        // picker. Rotation keeps this ViewModel and returning to the screen re-emits nothing, so neither resets.
+        viewModelScope.launch {
+            savedCameraId.distinctUntilChanged().drop(1).collect { resetForCameraChange() }
+        }
+    }
+
+    /** A ratio and flash mode picked for the previous camera do not carry over. */
+    private fun resetForCameraChange() {
+        aspectOverride.value = null
+        setCameraAspect(CameraAspect.FOUR_THREE)
+        setFlashMode(FlashMode.OFF)
+    }
 
     /** True when zoom shows a crop frame on the preview instead of magnifying it. Read from [CropZoomPrefs]. */
     private var cropZoomEnabled = CropZoomPrefs.read(application)

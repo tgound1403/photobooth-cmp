@@ -57,20 +57,16 @@ import androidx.compose.ui.unit.dp
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.navigation.NavController
-import com.example.photogether.core.extension.findActivity
 import com.example.photogether.core.render.PolaroidGesture
 import com.example.photogether.core.render.PolaroidMode
 import com.example.photogether.core.render.PolaroidStyle
 import com.example.photogether.core.render.PolaroidStyles
 import com.example.photogether.core.render.RecipeCode
 import com.example.photogether.core.share.launch as launchShareTarget
-import com.example.photogether.data.billing.BillingRepository
 import com.example.photogether.ui.components.GlassButton
 import com.example.photogether.ui.components.ShareSheet
-import com.example.photogether.ui.view.PaywallScreen
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Box
-import org.koin.androidx.compose.get
 import com.example.photogether.ui.theme.AppColors
 import com.example.photogether.ui.theme.IconSize
 import com.example.photogether.ui.theme.InkColors
@@ -101,17 +97,12 @@ fun EditorScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val recipes by viewModel.recipes.collectAsStateWithLifecycle()
-    val isPremium by viewModel.isPremium.collectAsStateWithLifecycle()
-    val billing: BillingRepository = get()
-    val prices by billing.prices.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val activity = context.findActivity()
     val density = LocalDensity.current.density
     val snackbar = remember { SnackbarHostState() }
     var tab by rememberSaveable { mutableStateOf(EditorTab.FILTER) }
 
     LaunchedEffect(imagePath, density) { viewModel.load(imagePath, density) }
-    LaunchedEffect(isPremium) { if (isPremium) viewModel.dismissPaywall() }
     LaunchedEffect(viewModel) {
         viewModel.notices.collect { snackbar.showSnackbar(it) }
     }
@@ -177,7 +168,13 @@ fun EditorScreen(
                             onFrameLive = { frame -> viewModel.updateFrameLive { frame } },
                             onCommit = viewModel::commitFrame,
                         )
-                        EditorTab.OVERLAY -> OverlayPanel(overlays = state.snapshot.overlays, onOverlays = viewModel::setOverlays)
+                        EditorTab.OVERLAY -> OverlayPanel(
+                            params = params,
+                            overlays = state.snapshot.overlays,
+                            onLive = viewModel::updateParams,
+                            onCommit = viewModel::commitParams,
+                            onOverlays = viewModel::setOverlays,
+                        )
                     }
                 }
             }
@@ -196,16 +193,6 @@ fun EditorScreen(
             )
         }
 
-        if (state.showPaywall) {
-            PaywallScreen(
-                before = state.original,
-                after = state.preview,
-                monthlyPrice = prices[BillingRepository.MONTHLY_PRODUCT_ID],
-                yearlyPrice = prices[BillingRepository.YEARLY_PRODUCT_ID],
-                onPurchase = { productId -> activity?.let { billing.launchPurchase(it, productId) } },
-                onDismiss = viewModel::dismissPaywall,
-            )
-        }
     }
 }
 
@@ -320,6 +307,9 @@ private fun PreviewArea(
                     .padding(Spacing.lg)
                     .onSizeChanged { imageSize = it },
             )
+        } else if (state.loadFailed) {
+            // Decoding failed: nothing will ever render, so say so instead of spinning forever.
+            Text(text = stringResource(R.string.editor_open_failed), color = AppColors.textSecondary)
         } else {
             CircularProgressIndicator(color = AppColors.accent)
         }

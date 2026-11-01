@@ -3,17 +3,6 @@
     <string name="take_photo">Chụp ảnh</string>
     <string name="start_capture">Bắt đầu chụp</string>
     <string name="stop_capture">Dừng chụp</string>
-    <string name="watermark_text">Làm bằng Photogether</string>
-    <string name="paywall_title">Mở khóa bộ lọc Premium</string>
-    <string name="paywall_body">Giữ nguyên màu bạn vừa chọn. Premium còn gỡ watermark khỏi ảnh photobooth.</string>
-    <string name="paywall_before">Trước</string>
-    <string name="paywall_after">Sau</string>
-    <string name="paywall_yearly">Theo năm</string>
-    <string name="paywall_monthly">Theo tháng</string>
-    <string name="paywall_best_value">Tiết kiệm nhất</string>
-    <string name="paywall_subscribe">Đăng ký</string>
-    <string name="paywall_price_loading">Đang tải giá</string>
-    <string name="paywall_not_now">Để sau</string>
 
     <!-- Settings -->
     <string name="settings_title">Cài đặt</string>
@@ -25,6 +14,8 @@
     <string name="settings_crop_zoom_desc">Giữ nguyên khung ngắm, hiện khung ảnh sẽ chụp thay vì phóng to</string>
     <string name="settings_grid">Hiện lưới</string>
     <string name="settings_grid_desc">Đường lưới chia 3 phần trên khung ngắm</string>
+    <string name="settings_exposure_overlay">Hiện thông số phơi sáng</string>
+    <string name="settings_exposure_overlay_desc">Hiện TV, ISO và EV trên khung ngắm, như máy ảnh thật</string>
     <string name="settings_section_general">Chung</string>
     <string name="settings_language">Ngôn ngữ</string>
     <string name="settings_language_current">Tiếng Việt</string>
@@ -37,6 +28,51 @@
     <string name="settings_feedback">Gửi phản hồi</string>
     <string name="settings_rate_app">Đánh giá ứng dụng</string>
     <string name="settings_coming_soon">Sắp có</string>
+    <string name="legal_terms_title">Điều khoản sử dụng</string>
+    <string name="legal_terms_body">Cập nhật lần cuối: tháng 10 năm 2026
+
+1. Sử dụng ứng dụng
+Photogether là ứng dụng chụp ảnh và chỉnh sửa ảnh. Bạn được dùng ứng dụng cho mục đích cá nhân, phi thương mại. Không dùng ứng dụng cho mục đích trái pháp luật, và không được can thiệp vào ứng dụng hay cơ chế cấp phép của ứng dụng.
+
+2. Ảnh của bạn
+Ảnh bạn chụp và chỉnh sửa thuộc về bạn. Ảnh được lưu trên thiết bị của bạn. Chúng tôi không truy cập vào ảnh và không tải ảnh lên máy chủ của chúng tôi.
+
+3. Ảnh mẫu
+Ảnh mẫu lấy từ Unsplash theo Giấy phép Unsplash. Xem mục Ghi công ảnh trong Cài đặt.
+
+4. Không bảo đảm
+Ứng dụng được cung cấp như hiện có. Chúng tôi cố gắng giữ ứng dụng hoạt động ổn định, nhưng không đảm bảo không có lỗi hoặc phù hợp với mọi thiết bị.
+
+5. Thay đổi
+Chúng tôi có thể cập nhật điều khoản này. Nếu bạn tiếp tục dùng ứng dụng sau khi cập nhật, bạn đồng ý với điều khoản mới.
+
+6. Liên hệ
+Gửi câu hỏi qua mục Gửi phản hồi trong Cài đặt.</string>
+    <string name="legal_privacy_title">Chính sách quyền riêng tư</string>
+    <string name="legal_privacy_body">Cập nhật lần cuối: tháng 10 năm 2026
+
+Photogether được thiết kế để giữ dữ liệu của bạn trên thiết bị.
+
+1. Dữ liệu lưu trên thiết bị
+Ảnh, chỉnh sửa, công thức và cài đặt của bạn chỉ được lưu trên thiết bị. Bao gồm thư mục ảnh trong thư viện, cơ sở dữ liệu của ứng dụng và kho tùy chọn. Khi gỡ cài đặt ứng dụng, các dữ liệu này sẽ bị xóa.
+
+2. Quyền Camera và bộ nhớ
+Ứng dụng xin quyền camera để hiển thị khung ngắm và chụp ảnh. Ứng dụng xin quyền truy cập ảnh để bạn mở ảnh từ thư viện trong trình chỉnh sửa. Bạn có thể thay đổi quyền bất cứ lúc nào trong cài đặt của thiết bị.
+
+3. Kết nối Internet
+Ứng dụng kết nối tới dịch vụ Unsplash để tải ảnh mẫu. Các yêu cầu này có kèm khóa truy cập của ứng dụng và được Unsplash xử lý theo chính sách quyền riêng tư của họ.
+
+4. Phân tích sử dụng
+Hiện tại ứng dụng không thu thập dữ liệu phân tích sử dụng và không gửi dữ liệu cá nhân cho chúng tôi.
+
+5. Trẻ em
+Ứng dụng không hướng tới trẻ em dưới 13 tuổi.
+
+6. Thay đổi
+Nếu chính sách này thay đổi, chúng tôi sẽ cập nhật ngày ở trên.
+
+7. Liên hệ
+Gửi câu hỏi qua mục Gửi phản hồi trong Cài đặt.</string>
 
     <!-- Screens -->
     <string name="home_camera">Máy ảnh</string>
@@ -50,6 +86,23 @@
     <string name="home_photobooth">PHOTOBOOTH</string>
     <string name="booth_share_instagram">Chia sẻ Instagram</string>
     <string name="credits_title">GHI CÔNG ẢNH</string>
+    <string name="licenses_title">Giấy phép mã nguồn mở</string>
+    <string name="licenses_body">Photogether được xây dựng với các thư viện mã nguồn mở sau. Mỗi thư viện được sử dụng theo giấy phép riêng của nó.
+
+Apache License 2.0
+- AndroidX (Core, AppCompat, Activity, Compose, CameraX, Room, DataStore, Lifecycle, Navigation, Media3)
+- Kotlin và kotlinx (Coroutines, Serialization)
+- Jetpack Compose Material 3 và Accompanist Permissions
+- Koin
+- Retrofit, Gson converter và OkHttp logging interceptor
+- Coil
+- Lottie for Compose
+- SceneView
+
+MIT License
+- Phosphor Icons
+
+Toàn văn giấy phép có trên trang dự án của từng thư viện.</string>
     <string name="booth_camera_starting">Đang khởi tạo camera...</string>
     <string name="frame_option_single">1 ảnh</string>
     <string name="frame_option_strip2">2 ảnh · Dải dọc</string>
@@ -92,7 +145,6 @@
     <string name="booth_discard_body">Các ảnh đã chụp trong phiên này sẽ bị mất.</string>
     <string name="booth_discard_confirm">Bỏ</string>
     <string name="booth_discard_keep">Tiếp tục chỉnh sửa</string>
-    <string name="home_recent">Gần đây</string>
     <string name="home_edit_photo">CHỈNH ẢNH</string>
     <string name="detail_analyzing_colors">Đang phân tích màu...</string>
     <string name="credits_photo_label">Ảnh:</string>
@@ -110,7 +162,6 @@
     <string name="dialog_delete_photo_body">Ảnh sẽ bị xóa khỏi thiết bị.</string>
     <string name="dialog_delete_photo_confirm">Bạn có chắc muốn xóa ảnh này không?</string>
     <string name="dialog_delete_photo_title_short">Xóa ảnh?</string>
-    <string name="home_recent_photo">Ảnh gần đây</string>
     <string name="share_recipe_code">MÃ CÔNG THỨC</string>
     <string name="picker_choose_photo">Chọn ảnh</string>
     <string name="booth_background">Nền</string>
@@ -131,6 +182,9 @@
     <string name="share_saved">ĐÃ LƯU VÀO THIẾT BỊ</string>
     <string name="detail_delete">XÓA</string>
     <string name="detail_edit">CHỈNH SỬA</string>
+    <string name="detail_open_fullscreen">Mở ảnh toàn màn hình</string>
+    <string name="gallery_selected_count">Đã chọn %d</string>
+    <string name="dialog_delete_photos_title">Xóa %d ảnh?</string>
     <string name="booth_share">Chia sẻ</string>
     <string name="picker_select_camera">Chọn máy này</string>
     <string name="recipe_save">Lưu recipe</string>
@@ -145,12 +199,15 @@
     <string name="booth_edit">Chỉnh Sửa</string>
     <string name="story_keep_filter">Giữ nguyên màu bộ lọc</string>
     <string name="editor_original">Gốc</string>
+    <string name="editor_open_failed">Không mở được ảnh này</string>
     <string name="action_delete">Xóa</string>
     <string name="booth_edit_title">Chỉnh Sửa Photo Booth</string>
 
     <!-- Camera descriptions, resolved by id in CameraProfile.subtitleText -->
     <string name="camera_classic35_subtitle">Màu film ấm, hạt nhẹ, khung ngày cam. Hợp chân dung, đường phố, kỷ niệm</string>
     <string name="camera_fuji_mini_subtitle">Xanh lá tươi, bão hòa nhẹ, rò sáng mềm. Hợp du lịch, cây cối, bạn bè</string>
+    <string name="camera_kodak_pro_subtitle">Portra mềm, Ektar rực, T-Max đen trắng. Hợp chân dung, phong cảnh</string>
+    <string name="camera_indie_film_subtitle">CineStill đêm teal, Agfa ấm, Lomo gắt, Polaroid mờ mơ. Hợp phố đêm, đồ cũ, ảnh ngẫu hứng</string>
     <string name="camera_leica_m_subtitle">Rangefinder đen chrome. Màu Leica chuẩn, sống động, tự nhiên và đen trắng</string>
     <string name="camera_ricoh_gr_subtitle">Compact đường phố tương phản gắt. Positive, negative, bleach bypass, cross process</string>
     <string name="camera_golden_subtitle">Nắng vàng ấm, rò sáng, nâng bóng nhẹ. Hợp hoàng hôn, picnic, chân dung ngoài trời</string>
@@ -261,6 +318,7 @@
     <string name="onboarding_permission_done_desc">Giờ tới lượt bạn tạo dáng.</string>
     <string name="onboarding_start">Bắt đầu chụp</string>
     <string name="settings_replay_onboarding">Xem lại hướng dẫn</string>
+    <string name="settings_replay_tour">Xem lại tour hướng dẫn</string>
     <string name="empty_state_title">Chưa có dữ liệu</string>
     <string name="empty_state_message">Hãy thử lại sau</string>
     <string name="camera_save_failed">Không lưu được ảnh, thử lại</string>
@@ -269,4 +327,52 @@
     <string name="camera_rotate_tip">Xoay ngang điện thoại để vào chế độ Pro</string>
     <string name="camera_rotate_tip_dismiss">Đã hiểu</string>
     <string name="camera_filter_fallback">Bộ lọc</string>
+    <string name="tutorial_skip">Bỏ qua</string>
+    <string name="tutorial_next">Tiếp</string>
+    <string name="tutorial_done">Bắt đầu</string>
+    <string name="tutorial_home_camera_title">Chụp tấm ảnh đầu tiên</string>
+    <string name="tutorial_home_camera_body">Chạm nút máy ảnh để mở khung ngắm.</string>
+    <string name="tutorial_capture_title">Bấm nút chụp</string>
+    <string name="tutorial_capture_body">Hướng vào bất cứ thứ gì rồi bấm chụp. Không cần hoàn hảo.</string>
+    <string name="tutorial_first_title">Khung phim đầu tiên của bạn</string>
+    <string name="tutorial_first_body">Đẹp lắm. Hạt phim, màu và tông bạn thấy đến từ chiếc máy đã chọn, không phải chỉnh sửa sau.</string>
+    <string name="tutorial_look_title">Chọn máy và màu</string>
+    <string name="tutorial_look_body">Chạm vào đây để đổi dòng máy. Sau đó giữ nút bộ lọc rồi trượt để thử các màu.</string>
+    <string name="tutorial_adjust_title">Temp và EV</string>
+    <string name="tutorial_adjust_body">Temp chỉnh ánh sáng ấm (vàng) hoặc lạnh (xanh). EV làm ảnh sáng hơn hoặc tối hơn. Mẹo này tự đóng.</string>
+    <string name="tutorial_gallery_title">Xem ảnh vừa chụp</string>
+    <string name="tutorial_gallery_body">Ảnh mới nhất nằm ở đây. Chạm để mở gallery.</string>
+    <string name="tutorial_shoot_title">Thêm một tấm nữa</string>
+    <string name="tutorial_shoot_body">Chụp thêm một tấm. Mỗi tấm được ghim vào đúng ngày trên lịch của bạn.</string>
+    <string name="tutorial_calendar_title">Lịch ảnh của bạn</string>
+    <string name="tutorial_calendar_body">Những ngày bạn chụp được ghim ở đây. Chạm một ngày để xem ảnh.</string>
+    <string name="tutorial_finish_title">Bắt đầu câu chuyện nhiếp ảnh phim của bạn ngay bây giờ</string>
+    <string name="tutorial_finish_body">Bạn đã nắm những điều cơ bản. Đi lấp đầy cuốn lịch nào.</string>
+    <string name="home_notifications">Thông báo</string>
+    <string name="notifications_title">THÔNG BÁO</string>
+    <string name="notifications_whats_new">CÓ GÌ MỚI</string>
+    <string name="calendar_title">KỶ NIỆM</string>
+    <string name="drawer_photobooth">PHOTOBOOTH</string>
+    <string name="drawer_shots">ẢNH CHỤP</string>
+    <plurals name="calendar_photo_count">
+        <item quantity="other">%1$d ẢNH</item>
+    </plurals>
+    <string name="calendar_film_roll">Cuộn phim</string>
+    <string name="calendar_older">Tháng trước</string>
+    <string name="calendar_newer">Tháng sau</string>
+    <string name="settings_calendar_color">Màu lịch</string>
+    <string name="settings_calendar_color_desc">Màu nền của lịch trên màn hình chính. Chọn màu gợi ý hoặc tự chọn màu bất kỳ.</string>
+    <string name="settings_calendar_custom">Màu tùy chọn</string>
+    <string name="settings_calendar_pick_title">Chọn màu</string>
+    <string name="settings_calendar_apply">Áp dụng</string>
+    <string-array name="calendar_color_names">
+        <item>Than chì</item>
+        <item>Xanh đêm</item>
+        <item>Xanh rừng</item>
+        <item>Đỏ rượu</item>
+        <item>Tím mận</item>
+        <item>Đất nung</item>
+        <item>Kem</item>
+        <item>Xanh xô thơm</item>
+    </string-array>
 </resources>

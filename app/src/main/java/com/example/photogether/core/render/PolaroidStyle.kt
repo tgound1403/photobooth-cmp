@@ -19,6 +19,12 @@ data class PolaroidStyle(
     val captionPlacement: CaptionPlacement,
     val fontFamily: String,
     val bold: Boolean,
+    /** Extra tracking in em (0 = none). Wide tracking suits small upper-case captions. */
+    val letterSpacing: Float = 0f,
+    /** Draw the caption in capitals. */
+    val uppercase: Boolean = false,
+    /** Share of the caption strip height at which the text baseline sits. */
+    val baselineRatio: Float = 0.6f,
 )
 
 object PolaroidStyles {
@@ -31,8 +37,9 @@ object PolaroidStyles {
         bottomRatio = 0.26f,
         captionSizeRatio = 0.35f,
         captionPlacement = CaptionPlacement.BOTTOM,
-        fontFamily = "sans-serif-bold",
+        fontFamily = "cursive",
         bold = false,
+        baselineRatio = 0.58f,
     )
 
     /** Tall bottom strip with large caption text. */
@@ -74,8 +81,38 @@ object PolaroidStyles {
         bold = true,
     )
 
+    /** Small tracked capitals, like the date line under a gallery print. */
+    val MODERN = PolaroidStyle(
+        id = "modern",
+        label = "M1",
+        sideRatio = 0.05f,
+        topRatio = 0.05f,
+        bottomRatio = 0.20f,
+        captionSizeRatio = 0.17f,
+        captionPlacement = CaptionPlacement.BOTTOM,
+        fontFamily = "sans-serif-medium",
+        bold = false,
+        letterSpacing = 0.28f,
+        uppercase = true,
+        baselineRatio = 0.55f,
+    )
+
+    /** Even, generous border all round with a handwritten caption. */
+    val GALLERY = PolaroidStyle(
+        id = "gallery",
+        label = "G1",
+        sideRatio = 0.12f,
+        topRatio = 0.12f,
+        bottomRatio = 0.30f,
+        captionSizeRatio = 0.28f,
+        captionPlacement = CaptionPlacement.BOTTOM,
+        fontFamily = "serif",
+        bold = false,
+        baselineRatio = 0.5f,
+    )
+
     /** All styles, in the order the picker shows them. */
-    val ALL: List<PolaroidStyle> = listOf(CLASSIC, BIG_TEXT, THIN, TITLE_TOP)
+    val ALL: List<PolaroidStyle> = listOf(CLASSIC, MODERN, GALLERY, BIG_TEXT, THIN, TITLE_TOP)
 
     /** Style for [id]. Null or unknown ids give [CLASSIC]. */
     fun byId(id: String?): PolaroidStyle = ALL.firstOrNull { it.id == id } ?: CLASSIC

@@ -45,8 +45,6 @@ class PhotoBoothViewModel(
         private val createPhotoBoothImageUseCase: CreatePhotoBoothImageUseCase,
         private val gifExportUseCase: com.example.photogether.domain.usecase.GifExportUseCase,
         private val recipeRepository: RecipeRepository,
-        /** Premium entitlement. Saving a premium filter while this is false opens the paywall. */
-        val isPremium: StateFlow<Boolean> = MutableStateFlow(false),
         private val analytics: Analytics = NoOpAnalytics,
         catalog: FilterCatalog,
         /** Decodes captured shots for the selection thumbnails. */
@@ -61,15 +59,6 @@ class PhotoBoothViewModel(
     val filteredThumbs: StateFlow<Map<String, Bitmap>> = _filteredThumbs.asStateFlow()
     private var thumbParams: EditParams? = null
     private var thumbJob: Job? = null
-
-    private val _showPaywall = MutableStateFlow(false)
-    /** True after a save was blocked by a premium filter. The paywall closes on purchase or dismiss. */
-    val showPaywall: StateFlow<Boolean> = _showPaywall.asStateFlow()
-
-    fun dismissPaywall() {
-        _showPaywall.value = false
-    }
-
 
     private val _gifExportState = MutableStateFlow<GifExportState>(GifExportState.Idle)
     val gifExportState: StateFlow<GifExportState> = _gifExportState

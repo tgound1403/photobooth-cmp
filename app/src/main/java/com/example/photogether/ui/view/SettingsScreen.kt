@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import com.example.photogether.core.camera.RoundWheel
+import com.example.photogether.core.moments.CalendarColors
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -59,11 +60,14 @@ import com.example.photogether.ui.theme.AppIcons
 @Composable
 fun SettingsScreen(navController: NavController) {
     val viewModel = koinViewModel<SettingsViewModel>()
+    val tutorial = koinViewModel<com.example.photogether.ui.tutorial.TutorialViewModel>()
     val context = LocalContext.current
     val shutterSoundOn by viewModel.shutterSoundEnabled.collectAsStateWithLifecycle()
     val cropZoomOn by viewModel.cropZoomEnabled.collectAsStateWithLifecycle()
     val gridOn by viewModel.gridEnabled.collectAsStateWithLifecycle()
+    val exposureOverlayOn by viewModel.exposureOverlayEnabled.collectAsStateWithLifecycle()
     val darkThemeOn by viewModel.darkThemeEnabled.collectAsStateWithLifecycle()
+    val calendarColor by viewModel.calendarColor.collectAsStateWithLifecycle()
     val roundWheel by viewModel.roundWheel.collectAsStateWithLifecycle()
     val comingSoon = stringResource(R.string.settings_coming_soon)
     val soon = { Toast.makeText(context, comingSoon, Toast.LENGTH_SHORT).show() }
@@ -75,19 +79,54 @@ fun SettingsScreen(navController: NavController) {
         onCropZoomChange = viewModel::setCropZoomEnabled,
         gridOn = gridOn,
         onGridChange = viewModel::setGridEnabled,
+        exposureOverlayOn = exposureOverlayOn,
+        onExposureOverlayChange = viewModel::setExposureOverlayEnabled,
         roundWheel = roundWheel,
         onRoundWheelChange = viewModel::setRoundWheel,
         darkThemeOn = darkThemeOn,
         onDarkThemeChange = viewModel::setDarkThemeEnabled,
+        calendarColor = calendarColor,
+        onCalendarColorChange = viewModel::setCalendarColor,
         versionName = BuildConfig.VERSION_NAME,
         onReplayTutorial = { navController.navigate(AppRoutes.ONBOARDING) },
-        onTerms = soon,
-        onPrivacy = soon,
-        onLicenses = soon,
+        onReplayTour = {
+            tutorial.replay()
+            navController.popBackStack(AppRoutes.HOME, inclusive = false)
+        },
+        onTerms = { navController.navigate(AppRoutes.TERMS) },
+        onPrivacy = { navController.navigate(AppRoutes.PRIVACY) },
+        onLicenses = { navController.navigate(AppRoutes.LICENSES) },
         onPhotoCredits = { navController.navigate(AppRoutes.PHOTO_CREDITS) },
-        onFeedback = soon,
-        onRateApp = soon,
+        onFeedback = { sendFeedbackEmail(context, comingSoon) },
+        onRateApp = { openPlayStoreListing(context, comingSoon) },
     )
+}
+
+/** Opens an email draft to the support address. Falls back to a toast when no mail app is installed. */
+private fun sendFeedbackEmail(context: android.content.Context, comingSoon: String) {
+    val email = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:ntduong1432@gmail.com"))
+        .putExtra(Intent.EXTRA_SUBJECT, "Photogether feedback")
+    try {
+        context.startActivity(email)
+    } catch (_: android.content.ActivityNotFoundException) {
+        Toast.makeText(context, comingSoon, Toast.LENGTH_SHORT).show()
+    }
+}
+
+/** Opens the Play Store listing so the user can rate the app. Falls back to the web page, then to a toast. */
+private fun openPlayStoreListing(context: android.content.Context, comingSoon: String) {
+    val packageName = "com.tgound.photogether"
+    val market = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName"))
+    val web = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName"))
+    try {
+        context.startActivity(market)
+    } catch (_: android.content.ActivityNotFoundException) {
+        try {
+            context.startActivity(web)
+        } catch (_: android.content.ActivityNotFoundException) {
+            Toast.makeText(context, comingSoon, Toast.LENGTH_SHORT).show()
+        }
+    }
 }
 
 /** Stateless settings body. */
@@ -100,12 +139,17 @@ fun SettingsContent(
     onCropZoomChange: (Boolean) -> Unit = {},
     gridOn: Boolean = false,
     onGridChange: (Boolean) -> Unit = {},
+    exposureOverlayOn: Boolean = false,
+    onExposureOverlayChange: (Boolean) -> Unit = {},
     roundWheel: RoundWheel = RoundWheel.DEFAULT,
     onRoundWheelChange: (RoundWheel) -> Unit = {},
     darkThemeOn: Boolean = false,
     onDarkThemeChange: (Boolean) -> Unit = {},
+    calendarColor: Int = CalendarColors.DEFAULT,
+    onCalendarColorChange: (Int) -> Unit = {},
     versionName: String = "1.0",
     onReplayTutorial: () -> Unit = {},
+    onReplayTour: () -> Unit = {},
     onTerms: () -> Unit = {},
     onPrivacy: () -> Unit = {},
     onLicenses: () -> Unit = {},
@@ -114,6 +158,14 @@ fun SettingsContent(
     onRateApp: () -> Unit = {},
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var showCalendarColorSheet by remember { mutableStateOf(false) }
+    if (showCalendarColorSheet) {
+        CalendarColorSheet(
+            selected = calendarColor,
+            onSelect = onCalendarColorChange,
+            onDismiss = { showCalendarColorSheet = false },
+        )
+    }
     val language = AppLocale.current()
     if (showLanguageDialog) {
         AlertDialog(
@@ -175,6 +227,24 @@ fun SettingsContent(
 
             Spacer(modifier = Modifier.height(Spacing.md))
 
+            // One short row: the name and the current colour. Tapping it opens the colour sheet.
+            SettingsCard(modifier = Modifier.clickable { showCalendarColorSheet = true }) {
+                Text(
+                    text = stringResource(R.string.settings_calendar_color),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = AppColors.textPrimary,
+                    modifier = Modifier.weight(1f)
+                )
+                CalendarColorDot(color = calendarColor, modifier = Modifier.padding(end = Spacing.sm))
+                Icon(
+                    imageVector = AppIcons.ChevronRight,
+                    contentDescription = null,
+                    tint = AppColors.textSecondary,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+
             SettingsCard {
                 Text(
                     text = stringResource(R.string.settings_shutter_sound),
@@ -226,6 +296,24 @@ fun SettingsContent(
             SettingsCard {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
+                        text = stringResource(R.string.settings_exposure_overlay),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AppColors.textPrimary,
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_exposure_overlay_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.textSecondary,
+                    )
+                }
+                Switch(checked = exposureOverlayOn, onCheckedChange = onExposureOverlayChange)
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+
+            SettingsCard {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
                         text = stringResource(R.string.settings_round_wheel),
                         style = MaterialTheme.typography.bodyLarge,
                         color = AppColors.textPrimary,
@@ -264,6 +352,11 @@ fun SettingsContent(
             SettingsEntry(
                 title = stringResource(R.string.settings_replay_onboarding),
                 onClick = onReplayTutorial,
+            )
+            Spacer(modifier = Modifier.height(Spacing.md))
+            SettingsEntry(
+                title = stringResource(R.string.settings_replay_tour),
+                onClick = onReplayTour,
             )
 
             SectionTitle(stringResource(R.string.settings_section_about), topPadding = Spacing.xl)

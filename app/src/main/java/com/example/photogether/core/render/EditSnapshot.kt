@@ -46,10 +46,35 @@ data class FrameSpec(
     val poster: PosterTextMode? = null,
     /** Poster title size as a fraction of the full photo width, from [PosterTitle.MIN_SCALE] to 1. */
     val titleScale: Float = 1f,
+    /** Horizontal alignment of the poster title inside the photo width. */
+    val titleAlign: PosterTitleAlign = PosterTitleAlign.CENTER,
+    /** Poster title font id from [PosterFonts]. Unknown ids give the default. */
+    val titleFontId: String = PosterFonts.DEFAULT.id,
 )
 
 object PosterTitle {
     const val MIN_SCALE = 0.3f
+}
+
+/** Where the poster title sits across the photo width. */
+enum class PosterTitleAlign { START, CENTER, END }
+
+/** A font choice for the poster title. [family] and [style] go to Typeface.create. */
+data class PosterFont(val id: String, val label: String, val family: String, val bold: Boolean, val italic: Boolean = false)
+
+object PosterFonts {
+    val DEFAULT = PosterFont("black", "Black", "sans-serif-black", bold = true)
+    val ALL: List<PosterFont> = listOf(
+        DEFAULT,
+        PosterFont("condensed", "Condensed", "sans-serif-condensed", bold = true),
+        PosterFont("serif", "Serif", "serif", bold = true),
+        PosterFont("serif_italic", "Serif italic", "serif", bold = true, italic = true),
+        PosterFont("thin", "Light", "sans-serif-light", bold = false),
+        PosterFont("mono", "Mono", "monospace", bold = true),
+        PosterFont("cursive", "Script", "cursive", bold = false),
+    )
+
+    fun byId(id: String?): PosterFont = ALL.firstOrNull { it.id == id } ?: DEFAULT
 }
 
 /**

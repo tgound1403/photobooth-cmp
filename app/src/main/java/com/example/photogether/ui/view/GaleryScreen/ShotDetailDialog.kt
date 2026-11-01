@@ -61,6 +61,13 @@ import com.example.photogether.ui.theme.AppIcons
 import com.example.photogether.ui.components.photoOpenLayer
 import com.example.photogether.ui.components.rememberPhotoOpenState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import com.example.photogether.ui.components.ZoomablePhotoDialog
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 
@@ -71,10 +78,10 @@ private val BUTTON_HEIGHT = 52.dp
 private val SWATCH_SIZE = 32.dp
 private val PALETTE_WIDTH = 96.dp
 
-/**
- * Detail of one camera shot, shown as a dialog over the camera gallery: when it was taken, its colours,
- * the settings saved with it, and the delete and edit actions. A setting that was not saved is left out.
- */
+/** What the detail dialog needs to show one photo. */
+data class DetailShot(val uri: String, val takenAt: Long, val width: Int, val height: Int)
+
+/** Single-photo form of [ShotDetailDialog]. */
 @Composable
 fun ShotDetailDialog(
     uri: String,
@@ -83,21 +90,31 @@ fun ShotDetailDialog(
     height: Int,
     onDismiss: () -> Unit,
     onEdit: () -> Unit,
-    onDelete: () -> Unit,
+    onDelete: (() -> Unit)? = null,
+) = ShotDetailDialog(
+    shots = listOf(DetailShot(uri, takenAt, width, height)),
+    initialIndex = 0,
+    onDismiss = onDismiss,
+    onEdit = { onEdit() },
+    onDelete = onDelete?.let { delete -> { _: Int -> delete() } },
+)
+
+/**
+ * Detail of camera shots, shown as a dialog: swipe left or right to move between [shots], starting at [initialIndex].
+ * Each page shows when the shot was taken, its colours, the settings saved with it, and the delete and edit actions
+ * (given the page's index). A setting that was not saved is left out. Tapping the photo opens it full screen with zoom.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ShotDetailDialog(
+    shots: List<DetailShot>,
+    initialIndex: Int,
+    onDismiss: () -> Unit,
+    onEdit: (Int) -> Unit,
+    onDelete: ((Int) -> Unit)? = null,
 ) {
-    val context = LocalContext.current
-    // Null while the photo is being read, empty when it could not be read.
-    val palette by produceState<List<Int>?>(initialValue = null, uri) {
-        value = extractPalette(context, uri)
-    }
-    // Null while the EXIF is being read, and when the shot has no saved settings.
-    val settings by produceState<ShotSettings?>(initialValue = null, uri) {
-        value = withContext(Dispatchers.IO) { ShotSettingsStore.read(context, uri) }
-    }
-    val takenAtLabel = remember(takenAt) {
-        SimpleDateFormat("dd/MM/yyyy  HH:mm", Locale.forLanguageTag("vi-VN")).format(Date(takenAt))
-    }
-    val shape = RoundedCornerShape(Radius.sm)
+    val pagerState = rememberPagerState(initialPage = initialIndex.coerceIn(0, (shots.size - 1).coerceAtLeast(0))) { shots.size }
+    var zoomUri by remember { mutableStateOf<String?>(null) }
     // Opens like every other photo: slides up from the bottom and bends as it settles.
     val openState = rememberPhotoOpenState()
     val scope = rememberCoroutineScope()
@@ -110,63 +127,109 @@ fun ShotDetailDialog(
     }
 
     Dialog(onDismissRequest = dismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .photoOpenLayer(openState)
-                .padding(horizontal = Spacing.lg)
-                .clip(shape)
-                .background(AppColors.background)
-                .border(Stroke.border, AppColors.outline, shape)
-                .verticalScroll(rememberScrollState())
-                .padding(Spacing.lg),
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth().photoOpenLayer(openState),
+            contentPadding = PaddingValues(horizontal = Spacing.lg),
+            pageSpacing = Spacing.md,
+            verticalAlignment = Alignment.CenterVertically,
+            key = { shots[it].uri },
+        ) { page ->
+            val shot = shots[page]
+            DetailCard(
+                shot = shot,
+                position = "${page + 1} / ${shots.size}",
+                onClose = dismiss,
+                onZoom = { zoomUri = shot.uri },
+                onEdit = { onEdit(page) },
+                onDelete = onDelete?.let { delete -> { delete(page) } },
+            )
+        }
+    }
+
+    zoomUri?.let { ZoomablePhotoDialog(uri = it, onDismiss = { zoomUri = null }) }
+}
+
+@Composable
+private fun DetailCard(
+    shot: DetailShot,
+    position: String,
+    onClose: () -> Unit,
+    onZoom: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: (() -> Unit)?,
+) {
+    val context = LocalContext.current
+    // Null while the photo is being read, empty when it could not be read.
+    val palette by produceState<List<Int>?>(initialValue = null, shot.uri) {
+        value = extractPalette(context, shot.uri)
+    }
+    // Null while the EXIF is being read, and when the shot has no saved settings.
+    val settings by produceState<ShotSettings?>(initialValue = null, shot.uri) {
+        value = withContext(Dispatchers.IO) { ShotSettingsStore.read(context, shot.uri) }
+    }
+    val takenAtLabel = remember(shot.takenAt) {
+        SimpleDateFormat("dd/MM/yyyy  HH:mm", Locale.forLanguageTag("vi-VN")).format(Date(shot.takenAt))
+    }
+    val shape = RoundedCornerShape(Radius.sm)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(AppColors.background)
+            .border(Stroke.border, AppColors.outline, shape)
+            .verticalScroll(rememberScrollState())
+            .padding(Spacing.lg),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.detail_title),
+                style = BinsooType.title,
+                color = AppColors.textPrimary,
+                modifier = Modifier.weight(1f),
+            )
+            Text(text = position, style = BinsooType.label, color = AppColors.textSecondary)
+            IconButton(onClick = onClose) {
+                Icon(AppIcons.Close, contentDescription = stringResource(R.string.action_close), tint = AppColors.textPrimary)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(Spacing.sm))
+        val ratio = if (shot.width > 0 && shot.height > 0) shot.width.toFloat() / shot.height else 3f / 4f
+        // The photo and its colours share one row: the colours run down beside the photo.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            verticalAlignment = Alignment.Top,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = stringResource(R.string.detail_title),
-                    style = BinsooType.title,
-                    color = AppColors.textPrimary,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = dismiss) {
-                    Icon(AppIcons.Close, contentDescription = stringResource(R.string.action_close), tint = AppColors.textPrimary)
-                }
-            }
+            AsyncImage(
+                model = shot.uri,
+                contentDescription = stringResource(R.string.detail_open_fullscreen),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .weight(1f)
+                    .aspectRatio(ratio)
+                    .clip(shape)
+                    .border(Stroke.border, AppColors.outline, shape)
+                    .clickable(onClick = onZoom),
+            )
+            PaletteColumn(palette)
+        }
 
-            Spacer(modifier = Modifier.height(Spacing.sm))
-            val ratio = if (width > 0 && height > 0) width.toFloat() / height else 3f / 4f
-            // The photo and its colours share one row: the colours run down beside the photo.
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-                verticalAlignment = Alignment.Top,
-            ) {
-                AsyncImage(
-                    model = uri,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .weight(1f)
-                        .aspectRatio(ratio)
-                        .clip(shape)
-                        .border(Stroke.border, AppColors.outline, shape),
-                )
-                PaletteColumn(palette)
-            }
+        DetailSection(title = stringResource(R.string.detail_capture_time)) {
+            Text(text = takenAtLabel, style = BinsooType.title, color = AppColors.textPrimary)
+        }
 
-            DetailSection(title = stringResource(R.string.detail_capture_time)) {
-                Text(text = takenAtLabel, style = BinsooType.title, color = AppColors.textPrimary)
+        val rows = settingRows(settings)
+        if (rows.isNotEmpty()) {
+            DetailSection(title = stringResource(R.string.detail_params)) {
+                rows.forEach { (label, value) -> DetailRow(label = label, value = value) }
             }
+        }
 
-            val rows = settingRows(settings)
-            if (rows.isNotEmpty()) {
-                DetailSection(title = stringResource(R.string.detail_params)) {
-                    rows.forEach { (label, value) -> DetailRow(label = label, value = value) }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(Spacing.xl))
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        Spacer(modifier = Modifier.height(Spacing.xl))
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            if (onDelete != null) {
                 DetailButton(
                     label = stringResource(R.string.detail_delete),
                     onClick = onDelete,
@@ -174,13 +237,13 @@ fun ShotDetailDialog(
                     danger = true,
                     modifier = Modifier.weight(1f),
                 )
-                DetailButton(
-                    label = stringResource(R.string.detail_edit),
-                    onClick = onEdit,
-                    filled = true,
-                    modifier = Modifier.weight(1f),
-                )
             }
+            DetailButton(
+                label = stringResource(R.string.detail_edit),
+                onClick = onEdit,
+                filled = true,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }

@@ -216,7 +216,8 @@ fun RotaryWheel(
                 ),
             )
         }
-        ReadoutLcd(text = valueText, modifier = Modifier.padding(top = 5.dp))
+        // Left-aligned: the thumb turns the wheel from the right, so a centred readout would sit under it.
+        ReadoutLcd(text = valueText, modifier = Modifier.align(Alignment.Start).padding(top = 5.dp))
     }
 }
 

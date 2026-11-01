@@ -517,7 +517,7 @@ private fun stepIndex(value: Float, start: Float, step: Float): Int =
     ((value - start) / step).roundToInt()
 
 /** Default readout: the value as a whole percentage of the range, with a sign for bipolar ranges. */
-private fun defaultRulerFormat(value: Float, range: ClosedFloatingPointRange<Float>): String {
+internal fun defaultRulerFormat(value: Float, range: ClosedFloatingPointRange<Float>): String {
     val n = (value * 100f).roundToInt()
     return if (range.start < 0f && n > 0) "+$n" else "$n"
 }

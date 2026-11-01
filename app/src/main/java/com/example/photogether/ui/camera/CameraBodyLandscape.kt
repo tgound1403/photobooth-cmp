@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import com.example.photogether.ui.tutorial.tutorialTarget
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.example.photogether.core.camera.CameraAdjustState
 import com.example.photogether.core.camera.Click
 import com.example.photogether.core.camera.ManualExposureSteps
+import com.example.photogether.core.camera.MeasuredExposure
 import com.example.photogether.core.camera.SliderTickPlayer
 import com.example.photogether.core.camera.formatEv
 import com.example.photogether.ui.components.ApertureGalleryButton
@@ -79,6 +81,10 @@ private class ControlSpec(
  * Height budget on a 360dp phone (328dp usable): padding 16 + top row 68 (shutter) + dials 2 x 46 + 4 + bottom
  * row about 140 (112 wheel + 5 + LCD ~22; the left column is shorter) = 320dp.
  *
+ * In auto mode the ISO and shutter controls are locked but show what the sensor used for the latest frame
+ * ([measured], snapped to the nearest standard step), like a real body's display. They read "N/A" only when
+ * there is neither manual control nor a measurement yet.
+ *
  * [viewRatio] is the viewfinder's portrait width over height; the gallery frame uses its inverse, like the live view.
  */
 @Composable
@@ -86,6 +92,7 @@ fun CameraBodyPlate(
     adjust: CameraAdjustState,
     roundWheel: RoundWheel,
     viewRatio: Float,
+    measured: MeasuredExposure?,
     onManualMode: (Boolean) -> Unit,
     onIso: (Int) -> Unit,
     onShutter: (Long) -> Unit,
@@ -111,19 +118,29 @@ fun CameraBodyPlate(
     val evIndex = ev.indexFor(adjust.ev) - ev.minIndex
     val evCount = ev.maxIndex - ev.minIndex + 1
 
+    // What the dial shows: the wheel's value in manual, the sensor's latest frame in auto.
+    val shownNs = if (!manual && measured != null) measured.exposureNs else adjust.manualExposureNs
+    val shownIso = if (!manual && measured != null) measured.iso else adjust.manualIso
+    val hasShutter = shutterSteps.isNotEmpty() || (!manual && measured != null)
+    val hasIso = isoSteps.isNotEmpty() || (!manual && measured != null)
+
     fun specFor(which: RoundWheel): ControlSpec = when (which) {
         RoundWheel.TV -> ControlSpec(
             label = "TV",
-            valueText = if (shutterSteps.isEmpty()) "N/A" else ManualExposureSteps.shutterLabel(adjust.manualExposureNs),
-            index = if (shutterSteps.isEmpty()) 0 else ManualExposureSteps.nearestIndex(shutterSteps, adjust.manualExposureNs),
+            valueText = if (!hasShutter) "N/A" else ManualExposureSteps.shutterLabel(
+                if (shutterSteps.isEmpty()) shownNs else shutterSteps[ManualExposureSteps.nearestIndex(shutterSteps, shownNs)],
+            ),
+            index = if (shutterSteps.isEmpty()) 0 else ManualExposureSteps.nearestIndex(shutterSteps, shownNs),
             count = shutterSteps.size.coerceAtLeast(1),
             onIndexChange = { onShutter(shutterSteps[it.coerceIn(shutterSteps.indices)]) },
             enabled = manual && shutterSteps.isNotEmpty(),
         )
         RoundWheel.ISO -> ControlSpec(
             label = "ISO",
-            valueText = if (isoSteps.isEmpty()) "N/A" else ManualExposureSteps.isoLabel(adjust.manualIso),
-            index = if (isoSteps.isEmpty()) 0 else ManualExposureSteps.nearestIndex(isoSteps, adjust.manualIso),
+            valueText = if (!hasIso) "N/A" else ManualExposureSteps.isoLabel(
+                if (isoSteps.isEmpty()) shownIso else isoSteps[ManualExposureSteps.nearestIndex(isoSteps, shownIso)],
+            ),
+            index = if (isoSteps.isEmpty()) 0 else ManualExposureSteps.nearestIndex(isoSteps, shownIso),
             count = isoSteps.size.coerceAtLeast(1),
             onIndexChange = { onIso(isoSteps[it.coerceIn(isoSteps.indices)]) },
             enabled = manual && isoSteps.isNotEmpty(),
@@ -154,7 +171,7 @@ fun CameraBodyPlate(
         ) {
             ModeSwitch(manual = manual, enabled = adjust.manualAvailable, onChange = onManualMode)
             FilterFanButton(filters = filters, onSelect = onSelectFilter, onFan = onFan)
-            ShutterButton(onClick = onCapture)
+            Box(modifier = Modifier.tutorialTarget("shutter")) { ShutterButton(onClick = onCapture) }
         }
         // Two knurled dials swiped sideways, the two controls that are not the round wheel.
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -181,13 +198,17 @@ fun CameraBodyPlate(
         ) {
             // Heights: picker ~44 + gap 4 + gallery frame up to 64 (a 1:1 view) = ~112dp.
             Column(verticalArrangement = Arrangement.spacedBy(4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                PickerButton(name = pickerName, cameraId = pickerCameraId, onClick = onOpenPicker)
-                ApertureGalleryButton(
-                    lastPhoto = lastPhoto,
-                    captureSeq = captureSeq,
-                    onClick = onOpenGallery,
-                    frameRatio = 1f / viewRatio,
-                )
+                Box(modifier = Modifier.tutorialTarget("picker")) {
+                    PickerButton(name = pickerName, cameraId = pickerCameraId, onClick = onOpenPicker)
+                }
+                Box(modifier = Modifier.tutorialTarget("aperture")) {
+                    ApertureGalleryButton(
+                        lastPhoto = lastPhoto,
+                        captureSeq = captureSeq,
+                        onClick = onOpenGallery,
+                        frameRatio = 1f / viewRatio,
+                    )
+                }
             }
             val w = specFor(roundWheel)
             key(roundWheel) {

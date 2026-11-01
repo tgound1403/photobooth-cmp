@@ -3,17 +3,6 @@
     <string name="take_photo">Take Photo</string>
     <string name="start_capture">Start Capture</string>
     <string name="stop_capture">Stop Capture</string>
-    <string name="watermark_text">Made with Photogether</string>
-    <string name="paywall_title">Unlock Premium filters</string>
-    <string name="paywall_body">Keep the look you just chose. Premium also removes the watermark from photobooth images.</string>
-    <string name="paywall_before">Before</string>
-    <string name="paywall_after">After</string>
-    <string name="paywall_yearly">Yearly</string>
-    <string name="paywall_monthly">Monthly</string>
-    <string name="paywall_best_value">Best value</string>
-    <string name="paywall_subscribe">Subscribe</string>
-    <string name="paywall_price_loading">Loading price</string>
-    <string name="paywall_not_now">Not now</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -25,6 +14,8 @@
     <string name="settings_crop_zoom_desc">Keep the viewfinder as is and show the frame that will be captured instead of zooming in</string>
     <string name="settings_grid">Show grid</string>
     <string name="settings_grid_desc">Rule-of-thirds lines over the viewfinder</string>
+    <string name="settings_exposure_overlay">Show exposure readout</string>
+    <string name="settings_exposure_overlay_desc">Shutter, ISO and EV over the live view, like a camera\'s viewfinder</string>
     <string name="settings_section_general">General</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_current">English</string>
@@ -37,6 +28,51 @@
     <string name="settings_feedback">Send feedback</string>
     <string name="settings_rate_app">Rate the app</string>
     <string name="settings_coming_soon">Coming soon</string>
+    <string name="legal_terms_title">Terms of service</string>
+    <string name="legal_terms_body">Last updated: October 2026
+
+1. Using the app
+Photogether is a camera and photo editing app. You may use it for personal and non-commercial purposes. Do not use it for anything illegal, and do not try to tamper with the app or its licensing.
+
+2. Your photos
+The photos you take and edit belong to you. They are stored on your device. We do not have access to them, and we do not upload them to our servers.
+
+3. Sample photos
+Sample photos come from Unsplash under the Unsplash License. See Photo credits in Settings.
+
+4. No warranty
+The app is provided as is. We do our best to keep it working, but we do not guarantee that it will be free of errors or suit every device.
+
+5. Changes
+We may update these terms. If you keep using the app after an update, you accept the new terms.
+
+6. Contact
+Send questions through Send feedback in Settings.</string>
+    <string name="legal_privacy_title">Privacy policy</string>
+    <string name="legal_privacy_body">Last updated: October 2026
+
+Photogether is built to keep your data on your device.
+
+1. Data stored on your device
+Your photos, edits, recipes and settings are saved on your device only. This includes the photo folder in your gallery, the app database and the preference store. Uninstalling the app removes this data.
+
+2. Camera and storage permissions
+The app asks for camera access to show the viewfinder and take photos. It asks for access to images so you can open photos from your gallery in the editor. You can change permissions at any time in your device settings.
+
+3. Internet access
+The app connects to the Unsplash service to load sample photos. Those requests include the app access key and are handled by Unsplash under its own privacy policy.
+
+4. Analytics
+The app does not currently collect usage analytics or send personal data to us.
+
+5. Children
+The app is not directed at children under 13.
+
+6. Changes
+If this policy changes, we will update the date above.
+
+7. Contact
+Send questions through Send feedback in Settings.</string>
 
     <!-- Screens -->
     <string name="moments_viewer_empty">No photos left</string>
@@ -65,6 +101,23 @@
     <string name="error_generic">Something went wrong</string>
     <string name="action_retry">Try again</string>
     <string name="credits_title">PHOTO CREDITS</string>
+    <string name="licenses_title">Open-source licenses</string>
+    <string name="licenses_body">Photogether is built with these open-source libraries. Each one is used under its own license.
+
+Apache License 2.0
+- AndroidX (Core, AppCompat, Activity, Compose, CameraX, Room, DataStore, Lifecycle, Navigation, Media3)
+- Kotlin and kotlinx (Coroutines, Serialization)
+- Jetpack Compose Material 3 and Accompanist Permissions
+- Koin
+- Retrofit, Gson converter and OkHttp logging interceptor
+- Coil
+- Lottie for Compose
+- SceneView
+
+MIT License
+- Phosphor Icons
+
+Full license texts are available on each library\'s project page.</string>
     <string name="credits_body">Sample photos from Unsplash (unsplash.com), under the Unsplash License.</string>
     <string name="credits_photo_label">Photo:</string>
     <string name="dialog_delete_photo_title_short">Delete photo?</string>
@@ -85,12 +138,11 @@
     <string name="booth_generating_preview">Generating preview...</string>
     <string name="booth_remove_background">Remove background photo</string>
     <string name="editor_original">Original</string>
+    <string name="editor_open_failed">Could not open this photo</string>
     <string name="home_photobooth">PHOTOBOOTH</string>
     <string name="home_edit_photo">EDIT PHOTO</string>
-    <string name="home_recent">Recent</string>
     <string name="home_edit_from_device">Edit a photo from device</string>
     <string name="home_camera">Camera</string>
-    <string name="home_recent_photo">Recent photo</string>
     <string name="booth_share">Share</string>
     <string name="booth_save">Save photo</string>
     <string name="booth_retake">Retake</string>
@@ -143,6 +195,9 @@
     <string name="detail_params">SETTINGS</string>
     <string name="detail_delete">DELETE</string>
     <string name="detail_edit">EDIT</string>
+    <string name="detail_open_fullscreen">Open photo full screen</string>
+    <string name="gallery_selected_count">%d selected</string>
+    <string name="dialog_delete_photos_title">Delete %d photos?</string>
     <string name="detail_analyzing_colors">Analyzing colors...</string>
     <string name="detail_colors_failed">Couldn\'t read colors</string>
     <string name="polaroid_text_hint">Add text, leave empty to print the date</string>
@@ -151,6 +206,8 @@
     <!-- Camera descriptions, resolved by id in CameraProfile.subtitleText -->
     <string name="camera_classic35_subtitle">Warm film color, light grain, orange date stamp. Great for portraits, street, keepsakes</string>
     <string name="camera_fuji_mini_subtitle">Fresh greens, gentle saturation, soft light leaks. Great for travel, plants, friends</string>
+    <string name="camera_kodak_pro_subtitle">Soft Portra, vivid Ektar, T-Max mono. Great for portraits, landscapes</string>
+    <string name="camera_indie_film_subtitle">Teal CineStill nights, warm Agfa, punchy Lomo, dreamy Polaroid. Great for night streets, throwbacks, spontaneous shots</string>
     <string name="camera_leica_m_subtitle">Black-chrome rangefinder. Classic Leica colour, vivid, natural and mono</string>
     <string name="camera_ricoh_gr_subtitle">Gritty street compact. Positive, negative, bleach bypass, cross process</string>
     <string name="camera_golden_subtitle">Warm golden sun, light leaks, slightly lifted shadows. Great for sunsets, picnics, outdoor portraits</string>
@@ -261,6 +318,7 @@
     <string name="onboarding_permission_done_desc">The camera is ready.</string>
     <string name="onboarding_start">Start shooting</string>
     <string name="settings_replay_onboarding">Replay the tutorial</string>
+    <string name="settings_replay_tour">Replay the guided tour</string>
     <string name="empty_state_title">Nothing here yet</string>
     <string name="empty_state_message">Try again later</string>
     <string name="camera_save_failed">Could not save the photo, try again</string>
@@ -269,4 +327,53 @@
     <string name="camera_rotate_tip">Rotate your phone sideways for Pro mode</string>
     <string name="camera_rotate_tip_dismiss">Got it</string>
     <string name="camera_filter_fallback">Filter</string>
+    <string name="tutorial_skip">Skip</string>
+    <string name="tutorial_next">Next</string>
+    <string name="tutorial_done">Let\'s go</string>
+    <string name="tutorial_home_camera_title">Take your first photo</string>
+    <string name="tutorial_home_camera_body">Tap the camera button to open the viewfinder.</string>
+    <string name="tutorial_capture_title">Press the shutter</string>
+    <string name="tutorial_capture_body">Point at anything and tap the shutter. No need to make it perfect.</string>
+    <string name="tutorial_first_title">Your first film frame</string>
+    <string name="tutorial_first_body">Nice shot. The grain, colour and tone you see come from the camera you chose, not an edit afterwards.</string>
+    <string name="tutorial_look_title">Pick a camera and colour</string>
+    <string name="tutorial_look_body">Tap here to change camera body. Then hold the filter button and slide to try its looks.</string>
+    <string name="tutorial_adjust_title">Temp and EV</string>
+    <string name="tutorial_adjust_body">Temp sets the light warm (golden) or cool (blue). EV makes the photo brighter or darker. This tip closes by itself.</string>
+    <string name="tutorial_gallery_title">See your photo</string>
+    <string name="tutorial_gallery_body">Your last shot lands here. Tap to open the gallery.</string>
+    <string name="tutorial_shoot_title">One more</string>
+    <string name="tutorial_shoot_body">Take one more photo. Every shot is saved to its day on your calendar.</string>
+    <string name="tutorial_calendar_title">Your photo calendar</string>
+    <string name="tutorial_calendar_body">Days you shoot are pinned here. Tap a day to see its photos.</string>
+    <string name="tutorial_finish_title">Start your film photography story now</string>
+    <string name="tutorial_finish_body">You know the basics. Go fill your calendar.</string>
+    <string name="home_notifications">Notifications</string>
+    <string name="notifications_title">NOTIFICATIONS</string>
+    <string name="notifications_whats_new">WHAT\'S NEW</string>
+    <string name="calendar_title">MEMORIES</string>
+    <string name="drawer_photobooth">PHOTOBOOTH</string>
+    <string name="drawer_shots">PHOTOS</string>
+    <plurals name="calendar_photo_count">
+        <item quantity="one">%1$d PHOTO</item>
+        <item quantity="other">%1$d PHOTOS</item>
+    </plurals>
+    <string name="calendar_film_roll">Film roll</string>
+    <string name="calendar_older">Older month</string>
+    <string name="calendar_newer">Newer month</string>
+    <string name="settings_calendar_color">Calendar color</string>
+    <string name="settings_calendar_color_desc">Background of the calendar on Home. Pick a suggestion or choose any color.</string>
+    <string name="settings_calendar_custom">Custom color</string>
+    <string name="settings_calendar_pick_title">Choose a color</string>
+    <string name="settings_calendar_apply">Apply</string>
+    <string-array name="calendar_color_names">
+        <item>Charcoal</item>
+        <item>Midnight blue</item>
+        <item>Forest</item>
+        <item>Burgundy</item>
+        <item>Plum</item>
+        <item>Terracotta</item>
+        <item>Cream</item>
+        <item>Sage</item>
+    </string-array>
 </resources>

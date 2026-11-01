@@ -3,6 +3,7 @@ package com.example.photogether.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.example.photogether.core.camera.CropZoomPrefs
+import com.example.photogether.core.camera.ExposureOverlayPrefs
 import com.example.photogether.core.camera.GridPrefs
 import com.example.photogether.core.camera.RoundWheel
 import com.example.photogether.core.camera.RoundWheelPrefs
@@ -23,6 +24,11 @@ class SettingsViewModel(
 
     /** Saves the dark theme setting. Every paper screen follows it at once. */
     fun setDarkThemeEnabled(enabled: Boolean) = themeRepository.setDarkTheme(enabled)
+
+    /** ARGB colour of the home calendar sheet. */
+    val calendarColor: StateFlow<Int> = themeRepository.calendarColor
+
+    fun setCalendarColor(argb: Int) = themeRepository.setCalendarColor(argb)
 
     private val _shutterSoundEnabled = MutableStateFlow(ShutterSoundPrefs.read(application))
 
@@ -55,6 +61,17 @@ class SettingsViewModel(
     fun setGridEnabled(enabled: Boolean) {
         _gridEnabled.value = enabled
         GridPrefs.write(getApplication(), enabled)
+    }
+
+    private val _exposureOverlayEnabled = MutableStateFlow(ExposureOverlayPrefs.read(application))
+
+    /** Whether TV, ISO and EV show over the live view, as on a camera's viewfinder. */
+    val exposureOverlayEnabled: StateFlow<Boolean> = _exposureOverlayEnabled.asStateFlow()
+
+    /** Saves the exposure readout setting. The camera re-reads it when its screen resumes. */
+    fun setExposureOverlayEnabled(enabled: Boolean) {
+        _exposureOverlayEnabled.value = enabled
+        ExposureOverlayPrefs.write(getApplication(), enabled)
     }
 
     private val _roundWheel = MutableStateFlow(RoundWheelPrefs.read(application))

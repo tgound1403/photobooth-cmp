@@ -18,6 +18,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.photogether.core.permissions.AppPermissions
 import com.example.photogether.data.prefs.OnboardingStatus
 import com.example.photogether.ui.onboarding.OnboardingScreen
+import com.example.photogether.ui.tutorial.TutorialViewModel
+import org.koin.androidx.compose.koinViewModel
 import com.example.photogether.ui.theme.AppColors
 import com.example.photogether.ui.view.NoPermissionGrantedScreen
 import kotlinx.coroutines.flow.map
@@ -31,10 +33,12 @@ import org.koin.androidx.compose.get
 fun AppRoot(status: OnboardingStatus = get()) {
     val completed by remember { status.completed.map<Boolean, Boolean?> { it } }
         .collectAsStateWithLifecycle(initialValue = null)
+    val tutorial = koinViewModel<TutorialViewModel>()
 
     when (completed) {
         null -> Box(Modifier.fillMaxSize().background(AppColors.background))
-        false -> OnboardingScreen(replay = false, onFinished = {})
+        // The guided tour starts once, right after the first onboarding.
+        false -> OnboardingScreen(replay = false, onFinished = tutorial::start)
         true -> PermissionGate { AppNavigation() }
     }
 }

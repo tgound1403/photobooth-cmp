@@ -4,36 +4,27 @@ import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Paint
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
-import com.example.photogether.data.billing.shouldShowWatermark
 import java.io.ByteArrayOutputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 
 /**
- * Use case for exporting a list of images as an animated GIF. Free users get the same watermark as
- * the photobooth strip. [isPremium] is read per export.
+ * Use case for exporting a list of images as an animated GIF.
  */
-class GifExportUseCase(
-        private val isPremium: StateFlow<Boolean> = MutableStateFlow(false),
-) {
+class GifExportUseCase {
     
     companion object {
         private const val TAG = "GifExportUseCase"
         private const val DEFAULT_DELAY_MS = 500
         private const val MAX_GIF_WIDTH = 480 // Max width to optimize file size and performance
         private const val GIF_QUALITY = 256 // Color quality (256 colors)
-        private const val WATERMARK_PADDING_DP = 8
     }
 
     /**
@@ -65,8 +56,6 @@ class GifExportUseCase(
                     encoder.setDelay(delayMs)
                     encoder.setRepeat(0) // 0 = infinite repeat
 
-                    val showWatermark = shouldShowWatermark(isPremium.value)
-
                     // Process each image
                     val processedCount = imagePaths.count { imagePath ->
                         try {
@@ -74,7 +63,7 @@ class GifExportUseCase(
                             if (bitmap != null) {
                                 // Resize bitmap if too large to save memory and processing time
                                 val scaledBitmap = scaleBitmap(bitmap, MAX_GIF_WIDTH)
-                                val frame = if (showWatermark) withWatermark(context, scaledBitmap) else scaledBitmap
+                                val frame = scaledBitmap
 
                                 // Add frame to GIF
                                 encoder.addFrame(frame)
@@ -131,25 +120,6 @@ class GifExportUseCase(
         val height = (maxWidth * aspectRatio).toInt()
         
         return Bitmap.createScaledBitmap(bitmap, maxWidth, height, true)
-    }
-
-    /**
-     * Returns a mutable copy of [frame] with the shared photobooth watermark drawn on it. The source
-     * may be immutable, so it is never drawn on directly.
-     */
-    private fun withWatermark(context: Context, frame: Bitmap): Bitmap {
-        val out = frame.copy(Bitmap.Config.ARGB_8888, true)
-        val density = context.resources.displayMetrics.density
-        drawPhotoBoothWatermark(
-                context,
-                Canvas(out),
-                out.width,
-                out.height,
-                density,
-                (WATERMARK_PADDING_DP * density).toInt(),
-                Paint()
-        )
-        return out
     }
 
     /**

@@ -162,6 +162,7 @@ internal object GlUtil {
         lutLevels: Int = LUT_LEVELS,
         grainSeed: Float = GrainMath.CAPTURE_SEED,
         outputHeight: Int = 1080,
+        gndMap: GndMap? = null,
     ) {
         val (wr, wg, wb) = whiteBalanceGains(p.temperature, p.tint)
         val (kr, kg, kb) = kelvinGains(p.kelvin)
@@ -177,6 +178,11 @@ internal object GlUtil {
         setUniform3f(program, "uPreGain", kr * evGain, kg * evGain, kb * evGain)
         setUniform1f(program, "uFilterIntensity", p.filterIntensity)
         setUniform1f(program, "uExposureGain", exposureGain(p.exposure))
+        setUniform1f(program, "uNdStops", NdMath.ndStops(p.nd))
+        setUniform1f(program, "uGndStops", NdMath.gndStops(p.gnd))
+        // Null (live viewfinder) uploads zeros, which the shader reads as "fromTop = vUv.y".
+        val gm = gndMap?.takeIf { it != GndMap.IDENTITY }
+        setUniform3f(program, "uGndMap", gm?.du ?: 0f, gm?.dv ?: 0f, gm?.offset ?: 0f)
         setUniform3f(program, "uWbGain", wr, wg, wb)
         setUniform1f(program, "uContrastFactor", contrastFactor(p.contrast))
         setUniform1f(program, "uSaturationFactor", saturationFactor(p.saturation))

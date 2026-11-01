@@ -39,6 +39,9 @@ data class CameraAdjustState(
     val manualAvailable: Boolean get() = isoRange != null && exposureRangeNs != null
 }
 
+/** ISO and shutter time the sensor reported for a frame. */
+data class MeasuredExposure(val iso: Int, val exposureNs: Long)
+
 const val DEFAULT_MANUAL_ISO = 400
 
 /** 1/125 s. */

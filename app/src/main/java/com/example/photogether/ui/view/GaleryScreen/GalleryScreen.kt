@@ -14,7 +14,20 @@ import java.io.File
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.Alignment
+import com.example.photogether.ui.theme.AppIcons
+import com.example.photogether.ui.theme.BinsooType
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,7 +46,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import androidx.compose.ui.Modifier
@@ -56,24 +68,29 @@ import com.example.photogether.ui.theme.IconSize
 import com.example.photogether.ui.theme.PhotogetherTheme
 import com.example.photogether.ui.theme.Radius
 import com.example.photogether.ui.theme.Spacing
-import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 /**
  * [cameraOnly] lists just the photos taken on the camera screen; otherwise every image on the device.
- * In camera mode a tap opens the shot's detail dialog. Otherwise a tap opens the editor.
+ * In camera mode a tap opens the shot's detail (swipe to move between shots) and a long press starts
+ * selecting several shots to delete. Otherwise a tap opens the editor.
  */
 @Composable
 fun GalleryScreen(navController: NavController, cameraOnly: Boolean = false) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val momentsViewModel: MomentsViewModel = koinViewModel()
     var shots by remember { mutableStateOf(listOf<CameraShot>()) }
     val images = remember(shots) { shots.map { it.path } }
-    var selected by remember { mutableStateOf<CameraShot?>(null) }
-    var confirmDelete by remember { mutableStateOf<CameraShot?>(null) }
-    // The shot whose delete is waiting on the system dialog (API 29 and up).
-    var pendingConsent by remember { mutableStateOf<CameraShot?>(null) }
+    // Index in [shots] of the shot whose detail is open.
+    var detailIndex by remember { mutableStateOf<Int?>(null) }
+    // Paths picked in selection mode. Empty means the grid is not in selection mode.
+    var checked by remember { mutableStateOf(setOf<String>()) }
+    // Uris waiting for the app's own confirm dialog. Only used below API 30; API 30+ asks through the system dialog.
+    var confirmUris by remember { mutableStateOf<List<String>?>(null) }
+    // A delete asked for by the UI. A new instance each time, so LaunchedEffect runs again.
+    var deleteRequest by remember { mutableStateOf<DeleteRequest?>(null) }
+    // The delete waiting on the system dialog (API 29 and up).
+    var pendingConsent by remember { mutableStateOf<DeleteRequest?>(null) }
 
     val readPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         Manifest.permission.READ_MEDIA_IMAGES
@@ -105,89 +122,110 @@ fun GalleryScreen(navController: NavController, cameraOnly: Boolean = false) {
         if (granted) shots = fetchShots(context, cameraOnly)
     }
 
-    fun removeShot(shot: CameraShot) {
-        shots = shots.filterNot { it.path == shot.path }
-        if (selected?.path == shot.path) selected = null
-    }
-
-    // Result of the system delete dialog. Only a confirmed delete removes the shot from the list.
+    // Result of the system delete dialog. A confirmed one deletes the rest; a cancel keeps the selection.
     val consentLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
     ) { result ->
-        val shot = pendingConsent
+        val request = pendingConsent
         pendingConsent = null
-        if (shot != null && result.resultCode == Activity.RESULT_OK) {
-            scope.launch {
-                if (momentsViewModel.deleteAfterConsent(shot.uri) == DeleteResult.Deleted) removeShot(shot)
-            }
+        if (request != null && result.resultCode == Activity.RESULT_OK) {
+            deleteRequest = DeleteRequest(request.all, request.pending, afterConsent = true)
         }
     }
 
-    fun deleteShot(shot: CameraShot) {
-        scope.launch {
-            when (val result = momentsViewModel.delete(shot.uri)) {
-                DeleteResult.Deleted -> removeShot(shot)
-                is DeleteResult.NeedsConfirmation -> {
-                    pendingConsent = shot
-                    consentLauncher.launch(IntentSenderRequest.Builder(result.intentSender).build())
-                }
-                DeleteResult.Failed -> Toast.makeText(context, "Không xóa được ảnh", Toast.LENGTH_SHORT).show()
+    LaunchedEffect(deleteRequest) {
+        val request = deleteRequest ?: return@LaunchedEffect
+        val result = if (request.afterConsent) {
+            momentsViewModel.deleteAfterConsent(request.pending)
+        } else {
+            momentsViewModel.delete(request.pending)
+        }
+        when (result) {
+            DeleteResult.Deleted -> {
+                shots = shots.filterNot { it.uri in request.all }
+                checked = emptySet()
+                detailIndex = null
             }
+            is DeleteResult.NeedsConfirmation -> {
+                pendingConsent = DeleteRequest(request.all, result.pending, afterConsent = false)
+                consentLauncher.launch(IntentSenderRequest.Builder(result.intentSender).build())
+            }
+            DeleteResult.Failed -> Toast.makeText(context, "Không xóa được ảnh", Toast.LENGTH_SHORT).show()
         }
     }
+
+    /**
+     * The only confirmation the user sees. API 30+ goes straight to the system dialog, which already asks.
+     * Older versions ask in the app first, then delete.
+     */
+    fun requestDelete(uris: List<String>) {
+        if (uris.isEmpty()) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            deleteRequest = DeleteRequest(uris, uris, afterConsent = false)
+        } else {
+            confirmUris = uris
+        }
+    }
+
+    BackHandler(enabled = checked.isNotEmpty()) { checked = emptySet() }
 
     GalleryPickerContent(
         images = images,
         onBack = { navController.popBackStackOnce() },
         onImageClick = { imagePath ->
-            if (cameraOnly) {
-                selected = shots.firstOrNull { it.path == imagePath }
-            } else {
-                navController.navigate(AppRoutes.imageDetail(Uri.encode(imagePath)))
+            when {
+                cameraOnly && checked.isNotEmpty() -> checked = checked.toggle(imagePath)
+                cameraOnly -> detailIndex = shots.indexOfFirst { it.path == imagePath }.takeIf { it >= 0 }
+                else -> navController.navigate(AppRoutes.imageDetail(Uri.encode(imagePath)))
             }
-        }
+        },
+        checked = checked,
+        onImageLongClick = if (cameraOnly) { imagePath -> checked = checked.toggle(imagePath) } else null,
+        onClearSelection = { checked = emptySet() },
+        onDeleteSelected = {
+            requestDelete(shots.filter { it.path in checked }.map { it.uri })
+        },
     )
 
-    selected?.let { shot ->
+    detailIndex?.let { index ->
         ShotDetailDialog(
-            uri = shot.uri,
-            takenAt = shot.takenAt,
-            width = shot.width,
-            height = shot.height,
-            onDismiss = { selected = null },
-            onEdit = {
-                selected = null
+            shots = shots.map { DetailShot(it.uri, it.takenAt, it.width, it.height) },
+            initialIndex = index,
+            onDismiss = { detailIndex = null },
+            onEdit = { page ->
+                val shot = shots[page]
+                detailIndex = null
                 navController.navigate(AppRoutes.imageDetail(Uri.encode(shot.path)))
             },
-            onDelete = {
-                // API 30+: the system dialog is the only confirmation. Older versions ask in the app first.
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    selected = null
-                    deleteShot(shot)
-                } else {
-                    confirmDelete = shot
-                }
-            },
+            onDelete = { page -> requestDelete(listOf(shots[page].uri)) },
         )
     }
 
-    confirmDelete?.let { shot ->
+    confirmUris?.let { uris ->
         AlertDialog(
-            onDismissRequest = { confirmDelete = null },
-            title = { Text(stringResource(R.string.dialog_delete_photo_title)) },
+            onDismissRequest = { confirmUris = null },
+            title = {
+                Text(
+                    if (uris.size == 1) {
+                        stringResource(R.string.dialog_delete_photo_title)
+                    } else {
+                        stringResource(R.string.dialog_delete_photos_title, uris.size)
+                    },
+                )
+            },
             text = { Text(stringResource(R.string.dialog_delete_photo_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        confirmDelete = null
-                        deleteShot(shot)
+                        confirmUris = null
+                        deleteRequest = DeleteRequest(uris, uris, afterConsent = false)
                     },
                 ) {
                     Text(stringResource(R.string.action_delete))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = null }) {
+                TextButton(onClick = { confirmUris = null }) {
                     Text(stringResource(R.string.action_cancel))
                 }
             },
@@ -195,15 +233,37 @@ fun GalleryScreen(navController: NavController, cameraOnly: Boolean = false) {
     }
 }
 
-/** Stateless picker grid. */
+/**
+ * A delete the UI has asked for. [all] are the uris to drop from the list once it is done; [pending] are the
+ * ones still to delete. Plain class, so every request is a new key for LaunchedEffect.
+ */
+private class DeleteRequest(val all: List<String>, val pending: List<String>, val afterConsent: Boolean)
+
+private fun Set<String>.toggle(path: String): Set<String> = if (path in this) this - path else this + path
+
+/**
+ * Stateless picker grid. With [checked] not empty the grid is in selection mode and the top bar shows the count
+ * with clear and delete actions. [onImageLongClick] null turns selecting off.
+ */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GalleryPickerContent(
     images: List<String>,
     onBack: () -> Unit,
-    onImageClick: (String) -> Unit
+    onImageClick: (String) -> Unit,
+    checked: Set<String> = emptySet(),
+    onImageLongClick: ((String) -> Unit)? = null,
+    onClearSelection: () -> Unit = {},
+    onDeleteSelected: () -> Unit = {},
 ) {
     Scaffold(
-        topBar = { DefaultAppBar(onBack = onBack, title = stringResource(R.string.picker_choose_photo)) },
+        topBar = {
+            if (checked.isEmpty()) {
+                DefaultAppBar(onBack = onBack, title = stringResource(R.string.picker_choose_photo))
+            } else {
+                SelectionBar(count = checked.size, onClose = onClearSelection, onDelete = onDeleteSelected)
+            }
+        },
         containerColor = AppColors.background
     ) { innerPadding ->
         LazyVerticalGrid(
@@ -212,20 +272,56 @@ fun GalleryPickerContent(
             contentPadding = PaddingValues(Spacing.sm),
             content = {
                 items(images, key = { it }) { imagePath ->
-                    ImageItem(imagePath = imagePath, onClick = { onImageClick(imagePath) })
+                    ImageItem(
+                        imagePath = imagePath,
+                        isSelected = imagePath in checked,
+                        onClick = { onImageClick(imagePath) },
+                        onLongClick = onImageLongClick?.let { longClick -> { longClick(imagePath) } },
+                    )
                 }
             }
         )
     }
 }
 
+/** Top bar while selecting: clear the selection on the left, the count, and delete the selected photos on the right. */
 @Composable
-private fun ImageItem(imagePath: String, onClick: () -> Unit) {
+private fun SelectionBar(count: Int, onClose: () -> Unit, onDelete: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onClose) {
+            Icon(AppIcons.Close, contentDescription = stringResource(R.string.moments_deselect), tint = AppColors.textPrimary)
+        }
+        Text(
+            text = stringResource(R.string.gallery_selected_count, count),
+            style = BinsooType.title,
+            color = AppColors.textPrimary,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = onDelete) {
+            Icon(AppIcons.Delete, contentDescription = stringResource(R.string.moments_delete_selected), tint = AppColors.danger)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ImageItem(
+    imagePath: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
+) {
     Box(
         modifier = Modifier
             .padding(Spacing.xs)
             .clip(RoundedCornerShape(Radius.sm))
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
     ) {
         AsyncImage(
             // A File, not the raw string: Coil reads a bare string as a URL, not a file path.
@@ -234,6 +330,24 @@ private fun ImageItem(imagePath: String, onClick: () -> Unit) {
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(AppColors.textPrimary.copy(alpha = 0.25f)),
+            )
+            Icon(
+                imageVector = AppIcons.Check,
+                contentDescription = stringResource(R.string.moments_selected),
+                tint = AppColors.onAccent,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(Spacing.sm)
+                    .size(IconSize.md)
+                    .background(AppColors.accent, CircleShape)
+                    .padding(Spacing.xs),
+            )
+        }
     }
 }
 

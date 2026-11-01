@@ -17,7 +17,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.083
+      "difficulty": 0.103
     },
     {
       "id": "fuji_classic_chrome",
@@ -27,7 +27,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.257
+      "difficulty": 0.278
     },
     {
       "id": "fuji_superia",
@@ -37,7 +37,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.033
+      "difficulty": 0.047
     },
     {
       "id": "fuji_classic_neg",
@@ -47,7 +47,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.207
+      "difficulty": 0.235
     },
     {
       "id": "fuji_forest",
@@ -57,7 +57,96 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.14
+      "difficulty": 0.164
+    },
+    {
+      "id": "fuji_provia",
+      "name": "Fuji Provia",
+      "group": "Fuji",
+      "lut": "luts/fuji_provia.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.01
+    },
+    {
+      "id": "fuji_astia",
+      "name": "Fuji Astia",
+      "group": "Fuji",
+      "lut": "luts/fuji_astia.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.023
+    },
+    {
+      "id": "fuji_pro_neg_std",
+      "name": "Fuji Pro Neg Std",
+      "group": "Fuji",
+      "lut": "luts/fuji_pro_neg_std.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.05
+    },
+    {
+      "id": "fuji_pro_neg_hi",
+      "name": "Fuji Pro Neg Hi",
+      "group": "Fuji",
+      "lut": "luts/fuji_pro_neg_hi.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.041
+    },
+    {
+      "id": "fuji_eterna",
+      "name": "Fuji Eterna",
+      "group": "Fuji",
+      "lut": "luts/fuji_eterna.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.194
+    },
+    {
+      "id": "fuji_eterna_bleach",
+      "name": "Fuji Eterna Bleach",
+      "group": "Fuji",
+      "lut": "luts/fuji_eterna_bleach.png",
+      "tags": [],
+      "difficulty": 0.353
+    },
+    {
+      "id": "fuji_nostalgic_neg",
+      "name": "Fuji Nostalgic Neg",
+      "group": "Fuji",
+      "lut": "luts/fuji_nostalgic_neg.png",
+      "tags": [
+        "warm",
+        "soft"
+      ],
+      "difficulty": 0.297
+    },
+    {
+      "id": "fuji_reala_ace",
+      "name": "Fuji Reala Ace",
+      "group": "Fuji",
+      "lut": "luts/fuji_reala_ace.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.006
+    },
+    {
+      "id": "fuji_acros",
+      "name": "Fuji Acros",
+      "group": "Fuji",
+      "lut": "luts/fuji_acros.png",
+      "tags": [
+        "mono"
+      ],
+      "difficulty": 0.489
     },
     {
       "id": "kodak_colorplus",
@@ -68,7 +157,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.205
+      "difficulty": 0.225
     },
     {
       "id": "kodak_portra",
@@ -79,7 +168,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.177
+      "difficulty": 0.208
     },
     {
       "id": "kodak_gold",
@@ -90,7 +179,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.227
+      "difficulty": 0.246
     },
     {
       "id": "kodachrome",
@@ -101,7 +190,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.163
+      "difficulty": 0.186
     },
     {
       "id": "vsco_faded_warm",
@@ -112,7 +201,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.135
+      "difficulty": 0.164
     },
     {
       "id": "seoul_soft",
@@ -123,7 +212,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.253
+      "difficulty": 0.281
     },
     {
       "id": "airy_cream",
@@ -134,7 +223,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.247
+      "difficulty": 0.279
     },
     {
       "id": "pastel_sea",
@@ -145,7 +234,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.258
+      "difficulty": 0.287
     },
     {
       "id": "vsco_soft_film",
@@ -155,7 +244,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.084
+      "difficulty": 0.104
     },
     {
       "id": "vsco_cool_fade",
@@ -166,7 +255,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.182
+      "difficulty": 0.202
     },
     {
       "id": "neon_night",
@@ -177,7 +266,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.284
+      "difficulty": 0.313
     },
     {
       "id": "tokyo_rain",
@@ -188,7 +277,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.153
+      "difficulty": 0.182
     },
     {
       "id": "matte_meadow",
@@ -198,7 +287,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.144
+      "difficulty": 0.181
     },
     {
       "id": "sunlit_ruins",
@@ -208,7 +297,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.227
+      "difficulty": 0.258
     },
     {
       "id": "clear_alpine",
@@ -218,7 +307,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.134
+      "difficulty": 0.169
     },
     {
       "id": "leica_standard",
@@ -228,7 +317,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.073
+      "difficulty": 0.11
     },
     {
       "id": "leica_vivid",
@@ -238,7 +327,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.114
+      "difficulty": 0.149
     },
     {
       "id": "leica_natural",
@@ -248,7 +337,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.064
+      "difficulty": 0.088
     },
     {
       "id": "leica_mono",
@@ -258,7 +347,7 @@
       "tags": [
         "mono"
       ],
-      "difficulty": 0.494
+      "difficulty": 0.502
     },
     {
       "id": "ricoh_positive_film",
@@ -268,7 +357,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.061
+      "difficulty": 0.092
     },
     {
       "id": "ricoh_negative_film",
@@ -278,7 +367,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.091
+      "difficulty": 0.107
     },
     {
       "id": "ricoh_bleach_bypass",
@@ -288,7 +377,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.21
+      "difficulty": 0.23
     },
     {
       "id": "ricoh_cross_process",
@@ -299,7 +388,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.248
+      "difficulty": 0.263
     },
     {
       "id": "ricoh_hicon_bw",
@@ -309,7 +398,7 @@
       "tags": [
         "mono"
       ],
-      "difficulty": 0.523
+      "difficulty": 0.531
     },
     {
       "id": "bw_tri_x",
@@ -319,7 +408,7 @@
       "tags": [
         "mono"
       ],
-      "difficulty": 0.488
+      "difficulty": 0.495
     },
     {
       "id": "bw_noir",
@@ -329,7 +418,7 @@
       "tags": [
         "mono"
       ],
-      "difficulty": 0.575
+      "difficulty": 0.581
     },
     {
       "id": "cyan_sun",
@@ -339,7 +428,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.395
+      "difficulty": 0.423
     },
     {
       "id": "turquoise_cream",
@@ -350,7 +439,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.19
+      "difficulty": 0.218
     },
     {
       "id": "teal_sea",
@@ -358,7 +447,7 @@
       "group": "Vintage",
       "lut": "luts/teal_sea.png",
       "tags": [],
-      "difficulty": 0.43
+      "difficulty": 0.469
     },
     {
       "id": "street_green",
@@ -368,7 +457,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.156
+      "difficulty": 0.183
     },
     {
       "id": "park_gold",
@@ -379,7 +468,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.397
+      "difficulty": 0.428
     },
     {
       "id": "dusk_gold",
@@ -390,7 +479,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.476
+      "difficulty": 0.504
     },
     {
       "id": "surf_teal",
@@ -400,7 +489,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.167
+      "difficulty": 0.192
     },
     {
       "id": "bw_soft_mono",
@@ -410,7 +499,237 @@
       "tags": [
         "mono"
       ],
-      "difficulty": 0.529
+      "difficulty": 0.53
+    },
+    {
+      "id": "cine_teal_orange",
+      "name": "Teal & Orange",
+      "group": "Cinema",
+      "lut": "luts/cine_teal_orange.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.137
+    },
+    {
+      "id": "cine_night_blue",
+      "name": "Night Blue",
+      "group": "Cinema",
+      "lut": "luts/cine_night_blue.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.122
+    },
+    {
+      "id": "cine_vision_500t",
+      "name": "Vision 500T",
+      "group": "Cinema",
+      "lut": "luts/cine_vision_500t.png",
+      "tags": [
+        "warm",
+        "soft"
+      ],
+      "difficulty": 0.164
+    },
+    {
+      "id": "cine_silver_screen",
+      "name": "Silver Screen",
+      "group": "Cinema",
+      "lut": "luts/cine_silver_screen.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.261
+    },
+    {
+      "id": "cine_pastel_dream",
+      "name": "Pastel Dream",
+      "group": "Cinema",
+      "lut": "luts/cine_pastel_dream.png",
+      "tags": [],
+      "difficulty": 0.359
+    },
+    {
+      "id": "cine_neo_green",
+      "name": "Neo Green",
+      "group": "Cinema",
+      "lut": "luts/cine_neo_green.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.053
+    },
+    {
+      "id": "cine_old_cinema",
+      "name": "Old Cinema",
+      "group": "Cinema",
+      "lut": "luts/cine_old_cinema.png",
+      "tags": [
+        "warm",
+        "bold"
+      ],
+      "difficulty": 0.623
+    },
+    {
+      "id": "cine_sunset_pink",
+      "name": "Sunset Pink",
+      "group": "Cinema",
+      "lut": "luts/cine_sunset_pink.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.077
+    },
+    {
+      "id": "cine_cold_steel",
+      "name": "Cold Steel",
+      "group": "Cinema",
+      "lut": "luts/cine_cold_steel.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.143
+    },
+    {
+      "id": "cine_flash_y2k",
+      "name": "Y2K Flash",
+      "group": "Cinema",
+      "lut": "luts/cine_flash_y2k.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.136
+    },
+    {
+      "id": "kodak_portra_160",
+      "name": "Kodak Portra 160",
+      "group": "Kodak",
+      "lut": "luts/kodak_portra_160.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.079
+    },
+    {
+      "id": "kodak_portra_800",
+      "name": "Kodak Portra 800",
+      "group": "Kodak",
+      "lut": "luts/kodak_portra_800.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.066
+    },
+    {
+      "id": "kodak_ektar_100",
+      "name": "Kodak Ektar 100",
+      "group": "Kodak",
+      "lut": "luts/kodak_ektar_100.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.08
+    },
+    {
+      "id": "kodak_ektachrome",
+      "name": "Kodak Ektachrome",
+      "group": "Kodak",
+      "lut": "luts/kodak_ektachrome.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.084
+    },
+    {
+      "id": "kodak_ultramax",
+      "name": "Kodak UltraMax 400",
+      "group": "Kodak",
+      "lut": "luts/kodak_ultramax.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.066
+    },
+    {
+      "id": "kodak_tmax_100",
+      "name": "Kodak T-Max 100",
+      "group": "Kodak",
+      "lut": "luts/kodak_tmax_100.png",
+      "tags": [
+        "mono"
+      ],
+      "difficulty": 0.484
+    },
+    {
+      "id": "ilford_hp5",
+      "name": "Ilford HP5 Plus",
+      "group": "Vintage",
+      "lut": "luts/ilford_hp5.png",
+      "tags": [
+        "mono"
+      ],
+      "difficulty": 0.528
+    },
+    {
+      "id": "ilford_delta_3200",
+      "name": "Ilford Delta 3200",
+      "group": "Vintage",
+      "lut": "luts/ilford_delta_3200.png",
+      "tags": [
+        "mono"
+      ],
+      "difficulty": 0.501
+    },
+    {
+      "id": "cinestill_800t",
+      "name": "CineStill 800T",
+      "group": "Cinema",
+      "lut": "luts/cinestill_800t.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.194
+    },
+    {
+      "id": "cinestill_50d",
+      "name": "CineStill 50D",
+      "group": "Cinema",
+      "lut": "luts/cinestill_50d.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.063
+    },
+    {
+      "id": "agfa_vista_200",
+      "name": "Agfa Vista 200",
+      "group": "Vintage",
+      "lut": "luts/agfa_vista_200.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.064
+    },
+    {
+      "id": "lomo_800",
+      "name": "Lomography 800",
+      "group": "Vintage",
+      "lut": "luts/lomo_800.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.148
+    },
+    {
+      "id": "polaroid_600",
+      "name": "Polaroid 600",
+      "group": "Vintage",
+      "lut": "luts/polaroid_600.png",
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.097
     },
     {
       "id": "jp001_001",
@@ -420,7 +739,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.629
+      "difficulty": 0.654
     },
     {
       "id": "jp002_001",
@@ -430,7 +749,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.191
+      "difficulty": 0.217
     },
     {
       "id": "jp002_002",
@@ -438,7 +757,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_002.png",
       "tags": [],
-      "difficulty": 0.507
+      "difficulty": 0.534
     },
     {
       "id": "jp002_003",
@@ -448,7 +767,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.566
+      "difficulty": 0.589
     },
     {
       "id": "jp002_004",
@@ -458,7 +777,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.633
+      "difficulty": 0.647
     },
     {
       "id": "jp002_005",
@@ -468,7 +787,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.332
+      "difficulty": 0.368
     },
     {
       "id": "jp002_006",
@@ -478,7 +797,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.222
+      "difficulty": 0.256
     },
     {
       "id": "jp002_007",
@@ -486,7 +805,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_007.png",
       "tags": [],
-      "difficulty": 0.399
+      "difficulty": 0.425
     },
     {
       "id": "jp002_008",
@@ -497,7 +816,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.33
+      "difficulty": 0.362
     },
     {
       "id": "jp002_009",
@@ -507,7 +826,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.139
+      "difficulty": 0.165
     },
     {
       "id": "jp002_010",
@@ -517,7 +836,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.13
+      "difficulty": 0.146
     },
     {
       "id": "jp002_011",
@@ -527,7 +846,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.571
+      "difficulty": 0.591
     },
     {
       "id": "jp002_012",
@@ -537,7 +856,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.121
+      "difficulty": 0.153
     },
     {
       "id": "jp002_013",
@@ -547,7 +866,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.472
+      "difficulty": 0.5
     },
     {
       "id": "jp002_014",
@@ -558,7 +877,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.255
+      "difficulty": 0.291
     },
     {
       "id": "jp002_015",
@@ -569,7 +888,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.326
+      "difficulty": 0.351
     },
     {
       "id": "jp002_016",
@@ -580,7 +899,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.228
+      "difficulty": 0.258
     },
     {
       "id": "jp002_017",
@@ -590,7 +909,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.088
+      "difficulty": 0.115
     },
     {
       "id": "jp002_018",
@@ -600,7 +919,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.565
+      "difficulty": 0.573
     },
     {
       "id": "jp002_019",
@@ -610,7 +929,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.639
+      "difficulty": 0.646
     },
     {
       "id": "jp002_020",
@@ -620,7 +939,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.207
+      "difficulty": 0.237
     },
     {
       "id": "jp002_021",
@@ -628,7 +947,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_021.png",
       "tags": [],
-      "difficulty": 0.508
+      "difficulty": 0.537
     },
     {
       "id": "jp002_022",
@@ -639,7 +958,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.297
+      "difficulty": 0.322
     },
     {
       "id": "jp002_023",
@@ -649,7 +968,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.337
+      "difficulty": 0.362
     },
     {
       "id": "jp002_024",
@@ -659,7 +978,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.619
+      "difficulty": 0.626
     },
     {
       "id": "jp002_025",
@@ -669,7 +988,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.185
+      "difficulty": 0.209
     },
     {
       "id": "jp002_026",
@@ -677,7 +996,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_026.png",
       "tags": [],
-      "difficulty": 0.501
+      "difficulty": 0.516
     },
     {
       "id": "jp002_027",
@@ -687,7 +1006,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.335
+      "difficulty": 0.365
     },
     {
       "id": "jp002_028",
@@ -695,7 +1014,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_028.png",
       "tags": [],
-      "difficulty": 0.487
+      "difficulty": 0.508
     },
     {
       "id": "jp002_029",
@@ -706,7 +1025,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.328
+      "difficulty": 0.356
     },
     {
       "id": "jp002_030",
@@ -717,7 +1036,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.723
+      "difficulty": 0.731
     },
     {
       "id": "jp002_031",
@@ -725,7 +1044,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_031.png",
       "tags": [],
-      "difficulty": 0.344
+      "difficulty": 0.375
     },
     {
       "id": "jp002_032",
@@ -735,7 +1054,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.147
+      "difficulty": 0.167
     },
     {
       "id": "jp002_033",
@@ -745,7 +1064,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.214
+      "difficulty": 0.248
     },
     {
       "id": "jp002_034",
@@ -755,7 +1074,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.527
+      "difficulty": 0.544
     },
     {
       "id": "jp002_035",
@@ -766,7 +1085,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.311
+      "difficulty": 0.35
     },
     {
       "id": "jp002_036",
@@ -776,7 +1095,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.472
+      "difficulty": 0.5
     },
     {
       "id": "jp002_037",
@@ -787,7 +1106,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.319
+      "difficulty": 0.348
     },
     {
       "id": "jp002_038",
@@ -797,7 +1116,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.552
+      "difficulty": 0.574
     },
     {
       "id": "jp002_039",
@@ -807,7 +1126,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.207
+      "difficulty": 0.237
     },
     {
       "id": "jp002_040",
@@ -817,7 +1136,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.69
+      "difficulty": 0.701
     },
     {
       "id": "jp002_041",
@@ -825,7 +1144,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_041.png",
       "tags": [],
-      "difficulty": 0.332
+      "difficulty": 0.367
     },
     {
       "id": "jp002_042",
@@ -835,7 +1154,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.671
+      "difficulty": 0.685
     },
     {
       "id": "jp002_043",
@@ -843,7 +1162,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_043.png",
       "tags": [],
-      "difficulty": 0.52
+      "difficulty": 0.537
     },
     {
       "id": "jp002_044",
@@ -853,7 +1172,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.69
+      "difficulty": 0.701
     },
     {
       "id": "jp002_045",
@@ -864,7 +1183,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.294
+      "difficulty": 0.326
     },
     {
       "id": "jp002_046",
@@ -874,7 +1193,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.527
+      "difficulty": 0.544
     },
     {
       "id": "jp002_047",
@@ -885,7 +1204,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.319
+      "difficulty": 0.348
     },
     {
       "id": "jp002_048",
@@ -895,7 +1214,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.294
+      "difficulty": 0.309
     },
     {
       "id": "jp002_049",
@@ -906,7 +1225,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.255
+      "difficulty": 0.291
     },
     {
       "id": "jp002_050",
@@ -914,7 +1233,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_050.png",
       "tags": [],
-      "difficulty": 0.352
+      "difficulty": 0.373
     },
     {
       "id": "jp002_051",
@@ -924,7 +1243,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.663
+      "difficulty": 0.68
     },
     {
       "id": "jp002_052",
@@ -932,7 +1251,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_052.png",
       "tags": [],
-      "difficulty": 0.482
+      "difficulty": 0.509
     },
     {
       "id": "jp002_053",
@@ -942,7 +1261,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.64
+      "difficulty": 0.657
     },
     {
       "id": "jp002_054",
@@ -953,7 +1272,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.391
+      "difficulty": 0.413
     },
     {
       "id": "jp002_055",
@@ -961,7 +1280,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_055.png",
       "tags": [],
-      "difficulty": 0.314
+      "difficulty": 0.34
     },
     {
       "id": "jp002_056",
@@ -971,7 +1290,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.243
+      "difficulty": 0.271
     },
     {
       "id": "jp002_057",
@@ -979,7 +1298,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_057.png",
       "tags": [],
-      "difficulty": 0.318
+      "difficulty": 0.349
     },
     {
       "id": "jp002_058",
@@ -987,7 +1306,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_058.png",
       "tags": [],
-      "difficulty": 0.46
+      "difficulty": 0.478
     },
     {
       "id": "jp002_059",
@@ -997,7 +1316,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.165
+      "difficulty": 0.201
     },
     {
       "id": "jp002_060",
@@ -1005,7 +1324,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_060.png",
       "tags": [],
-      "difficulty": 0.383
+      "difficulty": 0.403
     },
     {
       "id": "jp002_061",
@@ -1016,7 +1335,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.332
+      "difficulty": 0.358
     },
     {
       "id": "jp002_062",
@@ -1026,7 +1345,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.608
+      "difficulty": 0.632
     },
     {
       "id": "jp002_063",
@@ -1037,7 +1356,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.431
+      "difficulty": 0.456
     },
     {
       "id": "jp002_064",
@@ -1048,7 +1367,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.411
+      "difficulty": 0.431
     },
     {
       "id": "jp002_065",
@@ -1059,7 +1378,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.357
+      "difficulty": 0.38
     },
     {
       "id": "jp002_066",
@@ -1070,7 +1389,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.309
+      "difficulty": 0.335
     },
     {
       "id": "jp002_067",
@@ -1081,7 +1400,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.304
+      "difficulty": 0.329
     },
     {
       "id": "jp002_068",
@@ -1089,7 +1408,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_068.png",
       "tags": [],
-      "difficulty": 0.374
+      "difficulty": 0.398
     },
     {
       "id": "jp002_069",
@@ -1099,7 +1418,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.396
+      "difficulty": 0.424
     },
     {
       "id": "jp002_070",
@@ -1109,7 +1428,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.302
+      "difficulty": 0.328
     },
     {
       "id": "jp002_071",
@@ -1120,7 +1439,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.289
+      "difficulty": 0.31
     },
     {
       "id": "jp002_072",
@@ -1131,7 +1450,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.301
+      "difficulty": 0.33
     },
     {
       "id": "jp002_073",
@@ -1139,7 +1458,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_073.png",
       "tags": [],
-      "difficulty": 0.489
+      "difficulty": 0.523
     },
     {
       "id": "jp002_074",
@@ -1149,7 +1468,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.483
+      "difficulty": 0.5
     },
     {
       "id": "jp002_075",
@@ -1159,7 +1478,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.274
+      "difficulty": 0.305
     },
     {
       "id": "jp002_076",
@@ -1170,7 +1489,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.795
+      "difficulty": 0.801
     },
     {
       "id": "jp002_077",
@@ -1180,7 +1499,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.122
+      "difficulty": 0.152
     },
     {
       "id": "jp002_078",
@@ -1191,7 +1510,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.492
+      "difficulty": 0.506
     },
     {
       "id": "jp002_079",
@@ -1201,7 +1520,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.627
+      "difficulty": 0.643
     },
     {
       "id": "jp002_080",
@@ -1211,7 +1530,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.632
+      "difficulty": 0.653
     },
     {
       "id": "jp002_081",
@@ -1221,7 +1540,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.743
+      "difficulty": 0.745
     },
     {
       "id": "jp002_082",
@@ -1232,7 +1551,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.324
+      "difficulty": 0.355
     },
     {
       "id": "jp002_083",
@@ -1240,7 +1559,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_083.png",
       "tags": [],
-      "difficulty": 0.575
+      "difficulty": 0.589
     },
     {
       "id": "jp002_084",
@@ -1248,7 +1567,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_084.png",
       "tags": [],
-      "difficulty": 0.506
+      "difficulty": 0.533
     },
     {
       "id": "jp002_085",
@@ -1258,7 +1577,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.516
+      "difficulty": 0.545
     },
     {
       "id": "jp002_086",
@@ -1266,7 +1585,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_086.png",
       "tags": [],
-      "difficulty": 0.537
+      "difficulty": 0.562
     },
     {
       "id": "jp002_087",
@@ -1276,7 +1595,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.623
+      "difficulty": 0.64
     },
     {
       "id": "jp002_088",
@@ -1286,7 +1605,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.639
+      "difficulty": 0.652
     },
     {
       "id": "jp002_089",
@@ -1294,7 +1613,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_089.png",
       "tags": [],
-      "difficulty": 0.428
+      "difficulty": 0.447
     },
     {
       "id": "jp002_090",
@@ -1304,7 +1623,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.69
+      "difficulty": 0.701
     },
     {
       "id": "jp002_091",
@@ -1314,7 +1633,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.472
+      "difficulty": 0.5
     },
     {
       "id": "jp002_092",
@@ -1324,7 +1643,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.639
+      "difficulty": 0.649
     },
     {
       "id": "jp002_093",
@@ -1334,7 +1653,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.621
+      "difficulty": 0.629
     },
     {
       "id": "jp002_094",
@@ -1345,7 +1664,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.309
+      "difficulty": 0.344
     },
     {
       "id": "jp002_095",
@@ -1355,7 +1674,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.616
+      "difficulty": 0.64
     },
     {
       "id": "jp002_096",
@@ -1365,7 +1684,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.526
+      "difficulty": 0.547
     },
     {
       "id": "jp002_097",
@@ -1375,7 +1694,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.418
+      "difficulty": 0.441
     },
     {
       "id": "jp002_098",
@@ -1385,17 +1704,15 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.088
+      "difficulty": 0.115
     },
     {
       "id": "jp002_099",
       "name": "DaLat16",
       "group": "Japan Pack",
       "lut": "luts/jp002_099.png",
-      "tags": [
-        "cool"
-      ],
-      "difficulty": 0.481
+      "tags": [],
+      "difficulty": 0.492
     },
     {
       "id": "jp002_100",
@@ -1405,7 +1722,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.221
+      "difficulty": 0.245
     },
     {
       "id": "jp002_101",
@@ -1415,7 +1732,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.486
+      "difficulty": 0.509
     },
     {
       "id": "jp002_102",
@@ -1425,7 +1742,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.518
+      "difficulty": 0.544
     },
     {
       "id": "jp002_103",
@@ -1433,7 +1750,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp002_103.png",
       "tags": [],
-      "difficulty": 0.412
+      "difficulty": 0.445
     },
     {
       "id": "jp002_104",
@@ -1444,7 +1761,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.279
+      "difficulty": 0.324
     },
     {
       "id": "jp002_105",
@@ -1454,7 +1771,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.69
+      "difficulty": 0.701
     },
     {
       "id": "jp003_001",
@@ -1464,7 +1781,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.149
+      "difficulty": 0.2
     },
     {
       "id": "jp003_002",
@@ -1475,7 +1792,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.247
+      "difficulty": 0.28
     },
     {
       "id": "jp003_003",
@@ -1483,7 +1800,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp003_003.png",
       "tags": [],
-      "difficulty": 0.438
+      "difficulty": 0.477
     },
     {
       "id": "jp003_004",
@@ -1493,7 +1810,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.101
+      "difficulty": 0.137
     },
     {
       "id": "jp003_005",
@@ -1503,7 +1820,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.195
+      "difficulty": 0.227
     },
     {
       "id": "jp003_006",
@@ -1513,7 +1830,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.465
+      "difficulty": 0.491
     },
     {
       "id": "jp003_007",
@@ -1524,7 +1841,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.225
+      "difficulty": 0.251
     },
     {
       "id": "jp003_008",
@@ -1532,7 +1849,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp003_008.png",
       "tags": [],
-      "difficulty": 0.269
+      "difficulty": 0.305
     },
     {
       "id": "jp003_009",
@@ -1542,7 +1859,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.501
+      "difficulty": 0.529
     },
     {
       "id": "jp004_001",
@@ -1552,7 +1869,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.109
+      "difficulty": 0.135
     },
     {
       "id": "jp004_002",
@@ -1563,7 +1880,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.282
+      "difficulty": 0.317
     },
     {
       "id": "jp004_003",
@@ -1574,7 +1891,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.679
+      "difficulty": 0.693
     },
     {
       "id": "jp004_004",
@@ -1584,7 +1901,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.132
+      "difficulty": 0.157
     },
     {
       "id": "jp004_005",
@@ -1592,7 +1909,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp004_005.png",
       "tags": [],
-      "difficulty": 0.497
+      "difficulty": 0.504
     },
     {
       "id": "jp004_006",
@@ -1600,7 +1917,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp004_006.png",
       "tags": [],
-      "difficulty": 0.495
+      "difficulty": 0.513
     },
     {
       "id": "jp004_007",
@@ -1610,7 +1927,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.093
+      "difficulty": 0.122
     },
     {
       "id": "jp004_008",
@@ -1620,7 +1937,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.66
+      "difficulty": 0.663
     },
     {
       "id": "jp004_009",
@@ -1631,7 +1948,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.429
+      "difficulty": 0.461
     },
     {
       "id": "jp004_010",
@@ -1641,7 +1958,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.222
+      "difficulty": 0.256
     },
     {
       "id": "jp004_011",
@@ -1651,7 +1968,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.515
+      "difficulty": 0.545
     },
     {
       "id": "jp004_012",
@@ -1659,7 +1976,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp004_012.png",
       "tags": [],
-      "difficulty": 0.36
+      "difficulty": 0.377
     },
     {
       "id": "jp004_013",
@@ -1669,7 +1986,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.544
+      "difficulty": 0.553
     },
     {
       "id": "jp004_014",
@@ -1679,7 +1996,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.593
+      "difficulty": 0.604
     },
     {
       "id": "jp004_015",
@@ -1689,7 +2006,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.084
+      "difficulty": 0.121
     },
     {
       "id": "jp004_016",
@@ -1697,7 +2014,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp004_016.png",
       "tags": [],
-      "difficulty": 0.44
+      "difficulty": 0.464
     },
     {
       "id": "jp004_017",
@@ -1718,7 +2035,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.309
+      "difficulty": 0.339
     },
     {
       "id": "jp005_001",
@@ -1729,7 +2046,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.311
+      "difficulty": 0.338
     },
     {
       "id": "jp005_002",
@@ -1739,7 +2056,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.297
+      "difficulty": 0.324
     },
     {
       "id": "jp005_003",
@@ -1750,7 +2067,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.677
+      "difficulty": 0.692
     },
     {
       "id": "jp005_004",
@@ -1761,7 +2078,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.413
+      "difficulty": 0.433
     },
     {
       "id": "jp005_005",
@@ -1772,7 +2089,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.394
+      "difficulty": 0.411
     },
     {
       "id": "jp005_006",
@@ -1783,7 +2100,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.388
+      "difficulty": 0.425
     },
     {
       "id": "jp005_007",
@@ -1793,7 +2110,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.536
+      "difficulty": 0.551
     },
     {
       "id": "jp006_001",
@@ -1801,7 +2118,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp006_001.png",
       "tags": [],
-      "difficulty": 0.362
+      "difficulty": 0.394
     },
     {
       "id": "jp006_002",
@@ -1811,7 +2128,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.467
+      "difficulty": 0.486
     },
     {
       "id": "jp006_003",
@@ -1821,7 +2138,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.598
+      "difficulty": 0.611
     },
     {
       "id": "jp006_004",
@@ -1831,7 +2148,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.485
+      "difficulty": 0.51
     },
     {
       "id": "jp006_005",
@@ -1839,7 +2156,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp006_005.png",
       "tags": [],
-      "difficulty": 0.456
+      "difficulty": 0.469
     },
     {
       "id": "jp006_006",
@@ -1849,7 +2166,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.308
+      "difficulty": 0.331
     },
     {
       "id": "jp006_007",
@@ -1860,7 +2177,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.742
+      "difficulty": 0.77
     },
     {
       "id": "jp006_008",
@@ -1870,7 +2187,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.585
+      "difficulty": 0.602
     },
     {
       "id": "jp006_009",
@@ -1878,9 +2195,10 @@
       "group": "Japan Pack",
       "lut": "luts/jp006_009.png",
       "tags": [
-        "warm"
+        "warm",
+        "soft"
       ],
-      "difficulty": 0.448
+      "difficulty": 0.463
     },
     {
       "id": "jp006_010",
@@ -1890,7 +2208,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.476
+      "difficulty": 0.496
     },
     {
       "id": "jp006_011",
@@ -1901,7 +2219,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.734
+      "difficulty": 0.749
     },
     {
       "id": "jp006_012",
@@ -1911,7 +2229,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.617
+      "difficulty": 0.624
     },
     {
       "id": "jp006_013",
@@ -1919,7 +2237,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp006_013.png",
       "tags": [],
-      "difficulty": 0.417
+      "difficulty": 0.427
     },
     {
       "id": "jp006_014",
@@ -1927,10 +2245,9 @@
       "group": "Japan Pack",
       "lut": "luts/jp006_014.png",
       "tags": [
-        "cool",
-        "bold"
+        "cool"
       ],
-      "difficulty": 0.731
+      "difficulty": 0.742
     },
     {
       "id": "jp006_015",
@@ -1941,7 +2258,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.714
+      "difficulty": 0.726
     },
     {
       "id": "jp007_001",
@@ -1951,15 +2268,17 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.257
+      "difficulty": 0.284
     },
     {
       "id": "jp007_002",
       "name": "CatBa11",
       "group": "Japan Pack",
       "lut": "luts/jp007_002.png",
-      "tags": [],
-      "difficulty": 0.436
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.456
     },
     {
       "id": "jp007_003",
@@ -1969,7 +2288,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.203
+      "difficulty": 0.224
     },
     {
       "id": "jp007_004",
@@ -1979,7 +2298,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.188
+      "difficulty": 0.214
     },
     {
       "id": "jp007_005",
@@ -1987,7 +2306,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp007_005.png",
       "tags": [],
-      "difficulty": 0.473
+      "difficulty": 0.495
     },
     {
       "id": "jp007_006",
@@ -1997,7 +2316,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.586
+      "difficulty": 0.598
     },
     {
       "id": "jp007_007",
@@ -2007,7 +2326,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.686
+      "difficulty": 0.695
     },
     {
       "id": "jp007_008",
@@ -2017,7 +2336,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.719
+      "difficulty": 0.723
     },
     {
       "id": "jp007_009",
@@ -2025,7 +2344,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp007_009.png",
       "tags": [],
-      "difficulty": 0.501
+      "difficulty": 0.519
     },
     {
       "id": "jp007_010",
@@ -2033,7 +2352,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp007_010.png",
       "tags": [],
-      "difficulty": 0.639
+      "difficulty": 0.653
     },
     {
       "id": "jp007_011",
@@ -2041,7 +2360,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp007_011.png",
       "tags": [],
-      "difficulty": 0.468
+      "difficulty": 0.492
     },
     {
       "id": "jp007_012",
@@ -2051,7 +2370,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.427
+      "difficulty": 0.438
     },
     {
       "id": "jp007_013",
@@ -2061,15 +2380,17 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.677
+      "difficulty": 0.694
     },
     {
       "id": "jp007_014",
       "name": "MocChau11",
       "group": "Japan Pack",
       "lut": "luts/jp007_014.png",
-      "tags": [],
-      "difficulty": 0.334
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.352
     },
     {
       "id": "jp007_015",
@@ -2079,7 +2400,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.33
+      "difficulty": 0.344
     },
     {
       "id": "jp007_016",
@@ -2089,7 +2410,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.156
+      "difficulty": 0.177
     },
     {
       "id": "jp007_017",
@@ -2097,15 +2418,17 @@
       "group": "Japan Pack",
       "lut": "luts/jp007_017.png",
       "tags": [],
-      "difficulty": 0.33
+      "difficulty": 0.356
     },
     {
       "id": "jp007_018",
       "name": "PhongNha12",
       "group": "Japan Pack",
       "lut": "luts/jp007_018.png",
-      "tags": [],
-      "difficulty": 0.319
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.345
     },
     {
       "id": "jp008_001",
@@ -2115,7 +2438,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.644
+      "difficulty": 0.666
     },
     {
       "id": "jp008_002",
@@ -2126,7 +2449,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.383
+      "difficulty": 0.412
     },
     {
       "id": "jp008_003",
@@ -2136,7 +2459,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.499
+      "difficulty": 0.535
     },
     {
       "id": "jp008_004",
@@ -2146,7 +2469,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.643
+      "difficulty": 0.65
     },
     {
       "id": "jp008_005",
@@ -2157,7 +2480,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.698
+      "difficulty": 0.709
     },
     {
       "id": "jp008_006",
@@ -2167,7 +2490,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.608
+      "difficulty": 0.624
     },
     {
       "id": "jp008_007",
@@ -2178,7 +2501,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.383
+      "difficulty": 0.412
     },
     {
       "id": "jp008_008",
@@ -2188,7 +2511,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.631
+      "difficulty": 0.648
     },
     {
       "id": "jp008_009",
@@ -2199,7 +2522,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.733
+      "difficulty": 0.747
     },
     {
       "id": "jp008_010",
@@ -2210,7 +2533,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.286
+      "difficulty": 0.313
     },
     {
       "id": "jp008_011",
@@ -2220,7 +2543,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.156
+      "difficulty": 0.187
     },
     {
       "id": "jp008_012",
@@ -2231,7 +2554,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.29
+      "difficulty": 0.326
     },
     {
       "id": "jp008_013",
@@ -2242,7 +2565,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.322
+      "difficulty": 0.36
     },
     {
       "id": "jp008_014",
@@ -2250,7 +2573,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp008_014.png",
       "tags": [],
-      "difficulty": 0.604
+      "difficulty": 0.625
     },
     {
       "id": "jp008_015",
@@ -2261,7 +2584,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.817
+      "difficulty": 0.809
     },
     {
       "id": "jp008_016",
@@ -2271,7 +2594,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.623
+      "difficulty": 0.638
     },
     {
       "id": "jp008_017",
@@ -2282,7 +2605,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.733
+      "difficulty": 0.747
     },
     {
       "id": "jp008_018",
@@ -2293,7 +2616,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.852
+      "difficulty": 0.856
     },
     {
       "id": "jp008_019",
@@ -2303,7 +2626,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.63
+      "difficulty": 0.639
     },
     {
       "id": "jp008_020",
@@ -2314,7 +2637,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.325
+      "difficulty": 0.361
     },
     {
       "id": "jp008_021",
@@ -2324,7 +2647,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.27
+      "difficulty": 0.298
     },
     {
       "id": "jp008_022",
@@ -2335,7 +2658,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.878
+      "difficulty": 0.885
     },
     {
       "id": "jp008_023",
@@ -2345,7 +2668,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.516
+      "difficulty": 0.539
     },
     {
       "id": "jp008_024",
@@ -2355,7 +2678,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.568
+      "difficulty": 0.608
     },
     {
       "id": "jp008_025",
@@ -2365,7 +2688,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.483
+      "difficulty": 0.506
     },
     {
       "id": "jp009_001",
@@ -2376,7 +2699,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.775
+      "difficulty": 0.78
     },
     {
       "id": "jp009_002",
@@ -2386,7 +2709,7 @@
       "tags": [
         "mono"
       ],
-      "difficulty": 0.526
+      "difficulty": 0.533
     },
     {
       "id": "jp009_003",
@@ -2397,7 +2720,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.754
+      "difficulty": 0.764
     },
     {
       "id": "jp009_004",
@@ -2408,7 +2731,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.772
+      "difficulty": 0.779
     },
     {
       "id": "jp009_005",
@@ -2419,7 +2742,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.733
+      "difficulty": 0.742
     },
     {
       "id": "jp009_006",
@@ -2441,7 +2764,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.758
+      "difficulty": 0.765
     },
     {
       "id": "jp009_008",
@@ -2452,7 +2775,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.8
+      "difficulty": 0.806
     },
     {
       "id": "jp009_009",
@@ -2462,7 +2785,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.703
+      "difficulty": 0.706
     },
     {
       "id": "jp009_010",
@@ -2472,7 +2795,7 @@
       "tags": [
         "mono"
       ],
-      "difficulty": 0.585
+      "difficulty": 0.591
     },
     {
       "id": "jp010_001",
@@ -2482,7 +2805,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.22
+      "difficulty": 0.252
     },
     {
       "id": "jp010_002",
@@ -2492,7 +2815,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.248
+      "difficulty": 0.281
     },
     {
       "id": "jp010_003",
@@ -2502,7 +2825,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.25
+      "difficulty": 0.269
     },
     {
       "id": "jp010_004",
@@ -2510,7 +2833,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp010_004.png",
       "tags": [],
-      "difficulty": 0.439
+      "difficulty": 0.45
     },
     {
       "id": "jp010_005",
@@ -2520,7 +2843,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.571
+      "difficulty": 0.577
     },
     {
       "id": "jp010_006",
@@ -2528,7 +2851,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp010_006.png",
       "tags": [],
-      "difficulty": 0.312
+      "difficulty": 0.335
     },
     {
       "id": "jp010_007",
@@ -2538,7 +2861,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.546
+      "difficulty": 0.567
     },
     {
       "id": "jp010_008",
@@ -2548,7 +2871,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.285
+      "difficulty": 0.304
     },
     {
       "id": "jp010_009",
@@ -2558,7 +2881,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.231
+      "difficulty": 0.247
     },
     {
       "id": "jp011_001",
@@ -2566,7 +2889,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp011_001.png",
       "tags": [],
-      "difficulty": 0.413
+      "difficulty": 0.43
     },
     {
       "id": "jp011_002",
@@ -2576,7 +2899,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.226
+      "difficulty": 0.237
     },
     {
       "id": "jp011_003",
@@ -2586,7 +2909,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.67
+      "difficulty": 0.671
     },
     {
       "id": "jp011_004",
@@ -2594,7 +2917,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp011_004.png",
       "tags": [],
-      "difficulty": 0.355
+      "difficulty": 0.372
     },
     {
       "id": "jp011_005",
@@ -2602,7 +2925,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp011_005.png",
       "tags": [],
-      "difficulty": 0.431
+      "difficulty": 0.44
     },
     {
       "id": "jp011_006",
@@ -2610,7 +2933,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp011_006.png",
       "tags": [],
-      "difficulty": 0.485
+      "difficulty": 0.501
     },
     {
       "id": "jp011_007",
@@ -2618,7 +2941,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp011_007.png",
       "tags": [],
-      "difficulty": 0.366
+      "difficulty": 0.384
     },
     {
       "id": "jp011_008",
@@ -2628,7 +2951,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.717
+      "difficulty": 0.719
     },
     {
       "id": "jp011_009",
@@ -2638,7 +2961,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.212
+      "difficulty": 0.237
     },
     {
       "id": "jp011_010",
@@ -2648,7 +2971,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.588
+      "difficulty": 0.59
     },
     {
       "id": "jp011_011",
@@ -2656,7 +2979,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp011_011.png",
       "tags": [],
-      "difficulty": 0.451
+      "difficulty": 0.465
     },
     {
       "id": "jp012_001",
@@ -2666,7 +2989,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.247
+      "difficulty": 0.267
     },
     {
       "id": "jp012_002",
@@ -2676,7 +2999,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.28
+      "difficulty": 0.298
     },
     {
       "id": "jp012_003",
@@ -2686,7 +3009,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.258
+      "difficulty": 0.289
     },
     {
       "id": "jp012_004",
@@ -2694,7 +3017,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp012_004.png",
       "tags": [],
-      "difficulty": 0.417
+      "difficulty": 0.425
     },
     {
       "id": "jp012_005",
@@ -2702,7 +3025,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp012_005.png",
       "tags": [],
-      "difficulty": 0.424
+      "difficulty": 0.448
     },
     {
       "id": "jp012_006",
@@ -2712,7 +3035,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.744
+      "difficulty": 0.742
     },
     {
       "id": "jp013_001",
@@ -2720,7 +3043,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp013_001.png",
       "tags": [],
-      "difficulty": 0.476
+      "difficulty": 0.49
     },
     {
       "id": "jp013_002",
@@ -2731,7 +3054,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.845
+      "difficulty": 0.85
     },
     {
       "id": "jp013_003",
@@ -2739,7 +3062,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp013_003.png",
       "tags": [],
-      "difficulty": 0.497
+      "difficulty": 0.51
     },
     {
       "id": "jp013_004",
@@ -2749,7 +3072,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.665
+      "difficulty": 0.664
     },
     {
       "id": "jp013_005",
@@ -2760,7 +3083,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.828
+      "difficulty": 0.841
     },
     {
       "id": "jp013_006",
@@ -2771,7 +3094,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.319
+      "difficulty": 0.354
     },
     {
       "id": "jp013_007",
@@ -2782,7 +3105,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.258
+      "difficulty": 0.284
     },
     {
       "id": "jp013_008",
@@ -2803,7 +3126,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.706
+      "difficulty": 0.711
     },
     {
       "id": "jp013_010",
@@ -2813,7 +3136,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.708
+      "difficulty": 0.72
     },
     {
       "id": "jp014_001",
@@ -2823,7 +3146,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.618
+      "difficulty": 0.64
     },
     {
       "id": "jp014_002",
@@ -2834,7 +3157,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.807
+      "difficulty": 0.81
     },
     {
       "id": "jp014_003",
@@ -2842,7 +3165,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp014_003.png",
       "tags": [],
-      "difficulty": 0.465
+      "difficulty": 0.479
     },
     {
       "id": "jp014_004",
@@ -2850,7 +3173,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp014_004.png",
       "tags": [],
-      "difficulty": 0.462
+      "difficulty": 0.482
     },
     {
       "id": "jp014_005",
@@ -2861,7 +3184,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.922
+      "difficulty": 0.923
     },
     {
       "id": "jp014_006",
@@ -2871,15 +3194,17 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.52
+      "difficulty": 0.54
     },
     {
       "id": "jp014_007",
       "name": "Saigon5",
       "group": "Japan Pack",
       "lut": "luts/jp014_007.png",
-      "tags": [],
-      "difficulty": 0.583
+      "tags": [
+        "warm"
+      ],
+      "difficulty": 0.609
     },
     {
       "id": "jp014_008",
@@ -2889,7 +3214,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.724
+      "difficulty": 0.741
     },
     {
       "id": "jp014_009",
@@ -2899,7 +3224,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.582
+      "difficulty": 0.592
     },
     {
       "id": "jp014_010",
@@ -2907,7 +3232,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp014_010.png",
       "tags": [],
-      "difficulty": 0.508
+      "difficulty": 0.516
     },
     {
       "id": "jp014_011",
@@ -2917,7 +3242,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.595
+      "difficulty": 0.612
     },
     {
       "id": "jp014_012",
@@ -2925,7 +3250,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp014_012.png",
       "tags": [],
-      "difficulty": 0.426
+      "difficulty": 0.444
     },
     {
       "id": "jp015_001",
@@ -2935,7 +3260,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.294
+      "difficulty": 0.321
     },
     {
       "id": "jp015_002",
@@ -2945,7 +3270,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.513
+      "difficulty": 0.539
     },
     {
       "id": "jp015_003",
@@ -2955,7 +3280,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.258
+      "difficulty": 0.295
     },
     {
       "id": "jp015_004",
@@ -2965,7 +3290,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.094
+      "difficulty": 0.126
     },
     {
       "id": "jp015_005",
@@ -2976,17 +3301,15 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.334
+      "difficulty": 0.373
     },
     {
       "id": "jp016_001",
       "name": "NhaTrang43",
       "group": "Japan Pack",
       "lut": "luts/jp016_001.png",
-      "tags": [
-        "bold"
-      ],
-      "difficulty": 0.64
+      "tags": [],
+      "difficulty": 0.652
     },
     {
       "id": "jp016_002",
@@ -2997,7 +3320,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.524
+      "difficulty": 0.542
     },
     {
       "id": "jp016_003",
@@ -3008,7 +3331,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.812
+      "difficulty": 0.82
     },
     {
       "id": "jp016_004",
@@ -3018,7 +3341,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.835
+      "difficulty": 0.838
     },
     {
       "id": "jp016_005",
@@ -3028,7 +3351,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.701
+      "difficulty": 0.7
     },
     {
       "id": "jp016_006",
@@ -3038,7 +3361,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.762
+      "difficulty": 0.761
     },
     {
       "id": "jp016_007",
@@ -3049,7 +3372,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.774
+      "difficulty": 0.78
     },
     {
       "id": "jp016_008",
@@ -3060,7 +3383,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.802
+      "difficulty": 0.8
     },
     {
       "id": "jp017_001",
@@ -3070,7 +3393,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.818
+      "difficulty": 0.82
     },
     {
       "id": "jp017_002",
@@ -3081,7 +3404,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.841
+      "difficulty": 0.849
     },
     {
       "id": "jp017_003",
@@ -3092,7 +3415,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.878
+      "difficulty": 0.882
     },
     {
       "id": "jp017_004",
@@ -3103,7 +3426,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.735
+      "difficulty": 0.746
     },
     {
       "id": "jp017_005",
@@ -3111,9 +3434,10 @@
       "group": "Japan Pack",
       "lut": "luts/jp017_005.png",
       "tags": [
+        "warm",
         "bold"
       ],
-      "difficulty": 0.816
+      "difficulty": 0.827
     },
     {
       "id": "jp017_006",
@@ -3123,7 +3447,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.819
+      "difficulty": 0.822
     },
     {
       "id": "jp017_007",
@@ -3134,7 +3458,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.754
+      "difficulty": 0.763
     },
     {
       "id": "jp017_008",
@@ -3142,7 +3466,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp017_008.png",
       "tags": [],
-      "difficulty": 0.444
+      "difficulty": 0.458
     },
     {
       "id": "jp017_009",
@@ -3150,7 +3474,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp017_009.png",
       "tags": [],
-      "difficulty": 0.444
+      "difficulty": 0.458
     },
     {
       "id": "jp017_010",
@@ -3161,7 +3485,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.735
+      "difficulty": 0.755
     },
     {
       "id": "jp017_011",
@@ -3171,7 +3495,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.562
+      "difficulty": 0.581
     },
     {
       "id": "jp017_012",
@@ -3182,7 +3506,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.731
+      "difficulty": 0.74
     },
     {
       "id": "jp017_013",
@@ -3192,7 +3516,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.807
+      "difficulty": 0.814
     },
     {
       "id": "jp017_014",
@@ -3202,7 +3526,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.637
+      "difficulty": 0.648
     },
     {
       "id": "jp017_015",
@@ -3212,7 +3536,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.539
+      "difficulty": 0.556
     },
     {
       "id": "jp018_001",
@@ -3222,7 +3546,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.695
+      "difficulty": 0.708
     },
     {
       "id": "jp018_002",
@@ -3233,7 +3557,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.702
+      "difficulty": 0.708
     },
     {
       "id": "jp018_003",
@@ -3243,7 +3567,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.64
+      "difficulty": 0.658
     },
     {
       "id": "jp018_004",
@@ -3253,7 +3577,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.657
+      "difficulty": 0.673
     },
     {
       "id": "jp019_001",
@@ -3263,7 +3587,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.244
+      "difficulty": 0.268
     },
     {
       "id": "jp019_002",
@@ -3273,7 +3597,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.303
+      "difficulty": 0.32
     },
     {
       "id": "jp019_003",
@@ -3281,7 +3605,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp019_003.png",
       "tags": [],
-      "difficulty": 0.562
+      "difficulty": 0.569
     },
     {
       "id": "jp019_004",
@@ -3289,7 +3613,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp019_004.png",
       "tags": [],
-      "difficulty": 0.47
+      "difficulty": 0.475
     },
     {
       "id": "jp019_005",
@@ -3297,15 +3621,17 @@
       "group": "Japan Pack",
       "lut": "luts/jp019_005.png",
       "tags": [],
-      "difficulty": 0.419
+      "difficulty": 0.434
     },
     {
       "id": "jp019_006",
       "name": "PhuQuoc7",
       "group": "Japan Pack",
       "lut": "luts/jp019_006.png",
-      "tags": [],
-      "difficulty": 0.347
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.363
     },
     {
       "id": "jp019_007",
@@ -3313,7 +3639,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp019_007.png",
       "tags": [],
-      "difficulty": 0.435
+      "difficulty": 0.448
     },
     {
       "id": "jp019_008",
@@ -3324,7 +3650,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.356
+      "difficulty": 0.387
     },
     {
       "id": "jp019_009",
@@ -3334,7 +3660,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.589
+      "difficulty": 0.603
     },
     {
       "id": "jp019_010",
@@ -3344,7 +3670,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.332
+      "difficulty": 0.351
     },
     {
       "id": "jp019_011",
@@ -3355,7 +3681,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.456
+      "difficulty": 0.48
     },
     {
       "id": "jp019_012",
@@ -3363,7 +3689,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp019_012.png",
       "tags": [],
-      "difficulty": 0.352
+      "difficulty": 0.372
     },
     {
       "id": "jp019_013",
@@ -3373,7 +3699,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.287
+      "difficulty": 0.305
     },
     {
       "id": "jp019_014",
@@ -3381,7 +3707,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp019_014.png",
       "tags": [],
-      "difficulty": 0.378
+      "difficulty": 0.396
     },
     {
       "id": "jp019_015",
@@ -3391,7 +3717,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.269
+      "difficulty": 0.297
     },
     {
       "id": "jp020_001",
@@ -3401,7 +3727,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.595
+      "difficulty": 0.611
     },
     {
       "id": "jp020_002",
@@ -3411,7 +3737,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.635
+      "difficulty": 0.656
     },
     {
       "id": "jp020_003",
@@ -3419,10 +3745,9 @@
       "group": "Japan Pack",
       "lut": "luts/jp020_003.png",
       "tags": [
-        "cool",
         "bold"
       ],
-      "difficulty": 0.724
+      "difficulty": 0.731
     },
     {
       "id": "jp020_004",
@@ -3432,7 +3757,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.726
+      "difficulty": 0.735
     },
     {
       "id": "jp020_005",
@@ -3442,7 +3767,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.783
+      "difficulty": 0.793
     },
     {
       "id": "jp020_006",
@@ -3452,7 +3777,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.666
+      "difficulty": 0.672
     },
     {
       "id": "jp020_007",
@@ -3463,7 +3788,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.749
+      "difficulty": 0.763
     },
     {
       "id": "jp020_008",
@@ -3474,7 +3799,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.651
+      "difficulty": 0.671
     },
     {
       "id": "jp020_009",
@@ -3484,7 +3809,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.598
+      "difficulty": 0.608
     },
     {
       "id": "jp020_010",
@@ -3495,7 +3820,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.818
+      "difficulty": 0.823
     },
     {
       "id": "jp020_011",
@@ -3506,7 +3831,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.903
+      "difficulty": 0.908
     },
     {
       "id": "jp020_012",
@@ -3517,7 +3842,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.788
+      "difficulty": 0.803
     },
     {
       "id": "jp021_001",
@@ -3528,7 +3853,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.358
+      "difficulty": 0.382
     },
     {
       "id": "jp021_002",
@@ -3538,7 +3863,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.331
+      "difficulty": 0.366
     },
     {
       "id": "jp021_003",
@@ -3548,7 +3873,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.655
+      "difficulty": 0.666
     },
     {
       "id": "jp021_004",
@@ -3558,7 +3883,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.603
+      "difficulty": 0.618
     },
     {
       "id": "jp021_005",
@@ -3566,7 +3891,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp021_005.png",
       "tags": [],
-      "difficulty": 0.468
+      "difficulty": 0.494
     },
     {
       "id": "jp022_001",
@@ -3574,7 +3899,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp022_001.png",
       "tags": [],
-      "difficulty": 0.503
+      "difficulty": 0.524
     },
     {
       "id": "jp022_002",
@@ -3582,7 +3907,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp022_002.png",
       "tags": [],
-      "difficulty": 0.445
+      "difficulty": 0.463
     },
     {
       "id": "jp022_003",
@@ -3593,7 +3918,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.823
+      "difficulty": 0.825
     },
     {
       "id": "jp022_004",
@@ -3603,7 +3928,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.611
+      "difficulty": 0.626
     },
     {
       "id": "jp022_005",
@@ -3613,7 +3938,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.83
+      "difficulty": 0.828
     },
     {
       "id": "jp022_006",
@@ -3623,7 +3948,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.601
+      "difficulty": 0.62
     },
     {
       "id": "jp022_007",
@@ -3634,7 +3959,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.775
+      "difficulty": 0.781
     },
     {
       "id": "jp022_008",
@@ -3645,7 +3970,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.877
+      "difficulty": 0.878
     },
     {
       "id": "jp022_009",
@@ -3655,7 +3980,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.62
+      "difficulty": 0.633
     },
     {
       "id": "jp022_010",
@@ -3663,7 +3988,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp022_010.png",
       "tags": [],
-      "difficulty": 0.494
+      "difficulty": 0.508
     },
     {
       "id": "jp022_011",
@@ -3673,7 +3998,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.45
+      "difficulty": 0.478
     },
     {
       "id": "jp022_012",
@@ -3692,9 +4017,10 @@
       "group": "Japan Pack",
       "lut": "luts/jp022_013.png",
       "tags": [
+        "warm",
         "bold"
       ],
-      "difficulty": 0.761
+      "difficulty": 0.772
     },
     {
       "id": "jp022_014",
@@ -3704,7 +4030,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.642
+      "difficulty": 0.656
     },
     {
       "id": "jp022_015",
@@ -3714,7 +4040,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.631
+      "difficulty": 0.639
     },
     {
       "id": "jp023_001",
@@ -3722,15 +4048,17 @@
       "group": "Japan Pack",
       "lut": "luts/jp023_001.png",
       "tags": [],
-      "difficulty": 0.448
+      "difficulty": 0.464
     },
     {
       "id": "jp023_002",
       "name": "HoiAn9",
       "group": "Japan Pack",
       "lut": "luts/jp023_002.png",
-      "tags": [],
-      "difficulty": 0.378
+      "tags": [
+        "soft"
+      ],
+      "difficulty": 0.403
     },
     {
       "id": "jp023_003",
@@ -3748,7 +4076,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp023_004.png",
       "tags": [],
-      "difficulty": 0.426
+      "difficulty": 0.453
     },
     {
       "id": "jp023_005",
@@ -3758,7 +4086,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.656
+      "difficulty": 0.659
     },
     {
       "id": "jp023_006",
@@ -3766,7 +4094,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp023_006.png",
       "tags": [],
-      "difficulty": 0.481
+      "difficulty": 0.493
     },
     {
       "id": "jp023_007",
@@ -3774,7 +4102,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp023_007.png",
       "tags": [],
-      "difficulty": 0.446
+      "difficulty": 0.468
     },
     {
       "id": "jp024_001",
@@ -3785,7 +4113,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.251
+      "difficulty": 0.279
     },
     {
       "id": "jp024_002",
@@ -3796,7 +4124,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.282
+      "difficulty": 0.309
     },
     {
       "id": "jp024_003",
@@ -3807,7 +4135,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.206
+      "difficulty": 0.239
     },
     {
       "id": "jp024_004",
@@ -3818,7 +4146,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.248
+      "difficulty": 0.282
     },
     {
       "id": "jp024_005",
@@ -3829,7 +4157,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.222
+      "difficulty": 0.255
     },
     {
       "id": "jp024_006",
@@ -3840,7 +4168,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.325
+      "difficulty": 0.362
     },
     {
       "id": "jp025_001",
@@ -3851,7 +4179,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.892
+      "difficulty": 0.898
     },
     {
       "id": "jp025_002",
@@ -3862,7 +4190,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.906
+      "difficulty": 0.909
     },
     {
       "id": "jp025_003",
@@ -3873,7 +4201,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.74
+      "difficulty": 0.749
     },
     {
       "id": "jp025_004",
@@ -3883,7 +4211,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.675
+      "difficulty": 0.695
     },
     {
       "id": "jp025_005",
@@ -3893,7 +4221,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.804
+      "difficulty": 0.803
     },
     {
       "id": "jp025_006",
@@ -3913,7 +4241,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.557
+      "difficulty": 0.565
     },
     {
       "id": "jp026_002",
@@ -3923,7 +4251,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.69
+      "difficulty": 0.696
     },
     {
       "id": "jp026_003",
@@ -3931,7 +4259,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp026_003.png",
       "tags": [],
-      "difficulty": 0.47
+      "difficulty": 0.492
     },
     {
       "id": "jp026_004",
@@ -3941,7 +4269,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.192
+      "difficulty": 0.22
     },
     {
       "id": "jp026_005",
@@ -3952,7 +4280,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.776
+      "difficulty": 0.784
     },
     {
       "id": "jp026_006",
@@ -3960,7 +4288,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp026_006.png",
       "tags": [],
-      "difficulty": 0.436
+      "difficulty": 0.461
     },
     {
       "id": "jp026_007",
@@ -3970,7 +4298,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.221
+      "difficulty": 0.257
     },
     {
       "id": "jp026_008",
@@ -3981,7 +4309,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.267
+      "difficulty": 0.299
     },
     {
       "id": "jp026_009",
@@ -3991,7 +4319,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.224
+      "difficulty": 0.246
     },
     {
       "id": "jp026_010",
@@ -3999,7 +4327,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp026_010.png",
       "tags": [],
-      "difficulty": 0.477
+      "difficulty": 0.489
     },
     {
       "id": "jp026_011",
@@ -4010,7 +4338,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.338
+      "difficulty": 0.378
     },
     {
       "id": "jp026_012",
@@ -4018,7 +4346,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp026_012.png",
       "tags": [],
-      "difficulty": 0.354
+      "difficulty": 0.397
     },
     {
       "id": "jp027_001",
@@ -4029,7 +4357,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.762
+      "difficulty": 0.768
     },
     {
       "id": "jp027_002",
@@ -4040,7 +4368,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.81
+      "difficulty": 0.813
     },
     {
       "id": "jp027_003",
@@ -4051,7 +4379,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.639
+      "difficulty": 0.648
     },
     {
       "id": "jp027_004",
@@ -4061,7 +4389,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.566
+      "difficulty": 0.58
     },
     {
       "id": "jp027_005",
@@ -4072,7 +4400,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.68
+      "difficulty": 0.693
     },
     {
       "id": "jp027_006",
@@ -4083,7 +4411,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.829
+      "difficulty": 0.833
     },
     {
       "id": "jp027_007",
@@ -4091,17 +4419,15 @@
       "group": "Japan Pack",
       "lut": "luts/jp027_007.png",
       "tags": [],
-      "difficulty": 0.449
+      "difficulty": 0.47
     },
     {
       "id": "jp027_008",
       "name": "PhuQuoc9",
       "group": "Japan Pack",
       "lut": "luts/jp027_008.png",
-      "tags": [
-        "cool"
-      ],
-      "difficulty": 0.661
+      "tags": [],
+      "difficulty": 0.672
     },
     {
       "id": "jp027_009",
@@ -4112,7 +4438,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.689
+      "difficulty": 0.69
     },
     {
       "id": "jp027_010",
@@ -4123,7 +4449,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.776
+      "difficulty": 0.778
     },
     {
       "id": "jp027_011",
@@ -4133,7 +4459,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.374
+      "difficulty": 0.393
     },
     {
       "id": "jp027_012",
@@ -4144,7 +4470,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.69
+      "difficulty": 0.702
     },
     {
       "id": "jp027_013",
@@ -4155,7 +4481,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.337
+      "difficulty": 0.367
     },
     {
       "id": "jp027_014",
@@ -4166,7 +4492,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.661
+      "difficulty": 0.671
     },
     {
       "id": "jp027_015",
@@ -4176,7 +4502,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.592
+      "difficulty": 0.609
     },
     {
       "id": "jp027_016",
@@ -4187,7 +4513,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.871
+      "difficulty": 0.869
     },
     {
       "id": "jp027_017",
@@ -4195,10 +4521,9 @@
       "group": "Japan Pack",
       "lut": "luts/jp027_017.png",
       "tags": [
-        "cool",
-        "bold"
+        "cool"
       ],
-      "difficulty": 0.7
+      "difficulty": 0.708
     },
     {
       "id": "jp027_018",
@@ -4209,7 +4534,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.814
+      "difficulty": 0.811
     },
     {
       "id": "jp027_019",
@@ -4220,7 +4545,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.66
+      "difficulty": 0.667
     },
     {
       "id": "jp027_020",
@@ -4230,7 +4555,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.592
+      "difficulty": 0.614
     },
     {
       "id": "jp027_021",
@@ -4241,7 +4566,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.673
+      "difficulty": 0.686
     },
     {
       "id": "jp027_022",
@@ -4252,7 +4577,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.648
+      "difficulty": 0.655
     },
     {
       "id": "jp027_023",
@@ -4263,7 +4588,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.758
+      "difficulty": 0.768
     },
     {
       "id": "jp027_024",
@@ -4271,7 +4596,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp027_024.png",
       "tags": [],
-      "difficulty": 0.574
+      "difficulty": 0.586
     },
     {
       "id": "jp027_025",
@@ -4281,7 +4606,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.297
+      "difficulty": 0.315
     },
     {
       "id": "jp027_026",
@@ -4289,7 +4614,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp027_026.png",
       "tags": [],
-      "difficulty": 0.38
+      "difficulty": 0.393
     },
     {
       "id": "jp027_027",
@@ -4299,7 +4624,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.616
+      "difficulty": 0.625
     },
     {
       "id": "jp027_028",
@@ -4309,17 +4634,15 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.586
+      "difficulty": 0.6
     },
     {
       "id": "jp027_029",
       "name": "NhaTrang74",
       "group": "Japan Pack",
       "lut": "luts/jp027_029.png",
-      "tags": [
-        "bold"
-      ],
-      "difficulty": 0.538
+      "tags": [],
+      "difficulty": 0.553
     },
     {
       "id": "jp027_030",
@@ -4327,7 +4650,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp027_030.png",
       "tags": [],
-      "difficulty": 0.517
+      "difficulty": 0.531
     },
     {
       "id": "jp027_031",
@@ -4335,7 +4658,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp027_031.png",
       "tags": [],
-      "difficulty": 0.437
+      "difficulty": 0.447
     },
     {
       "id": "jp027_032",
@@ -4345,7 +4668,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.757
+      "difficulty": 0.763
     },
     {
       "id": "jp027_033",
@@ -4355,7 +4678,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.629
+      "difficulty": 0.637
     },
     {
       "id": "jp027_034",
@@ -4366,7 +4689,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.767
+      "difficulty": 0.77
     },
     {
       "id": "jp027_035",
@@ -4374,7 +4697,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp027_035.png",
       "tags": [],
-      "difficulty": 0.503
+      "difficulty": 0.522
     },
     {
       "id": "jp028_001",
@@ -4384,7 +4707,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.402
+      "difficulty": 0.423
     },
     {
       "id": "jp028_002",
@@ -4394,7 +4717,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.604
+      "difficulty": 0.614
     },
     {
       "id": "jp028_003",
@@ -4402,7 +4725,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp028_003.png",
       "tags": [],
-      "difficulty": 0.454
+      "difficulty": 0.48
     },
     {
       "id": "jp028_004",
@@ -4410,7 +4733,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp028_004.png",
       "tags": [],
-      "difficulty": 0.399
+      "difficulty": 0.416
     },
     {
       "id": "jp028_005",
@@ -4421,7 +4744,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.882
+      "difficulty": 0.887
     },
     {
       "id": "jp028_006",
@@ -4432,7 +4755,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.742
+      "difficulty": 0.753
     },
     {
       "id": "jp028_007",
@@ -4443,7 +4766,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.853
+      "difficulty": 0.861
     },
     {
       "id": "jp028_008",
@@ -4454,7 +4777,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.81
+      "difficulty": 0.819
     },
     {
       "id": "jp028_009",
@@ -4464,7 +4787,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.752
+      "difficulty": 0.768
     },
     {
       "id": "jp028_010",
@@ -4474,7 +4797,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.772
+      "difficulty": 0.778
     },
     {
       "id": "jp028_011",
@@ -4485,7 +4808,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.846
+      "difficulty": 0.856
     },
     {
       "id": "jp028_012",
@@ -4495,7 +4818,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.684
+      "difficulty": 0.706
     },
     {
       "id": "jp028_013",
@@ -4506,7 +4829,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.762
+      "difficulty": 0.775
     },
     {
       "id": "jp028_014",
@@ -4514,7 +4837,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp028_014.png",
       "tags": [],
-      "difficulty": 0.549
+      "difficulty": 0.568
     },
     {
       "id": "jp028_015",
@@ -4522,7 +4845,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp028_015.png",
       "tags": [],
-      "difficulty": 0.618
+      "difficulty": 0.623
     },
     {
       "id": "jp028_016",
@@ -4532,7 +4855,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.709
+      "difficulty": 0.72
     },
     {
       "id": "jp028_017",
@@ -4543,7 +4866,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.882
+      "difficulty": 0.885
     },
     {
       "id": "jp028_018",
@@ -4554,7 +4877,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.889
+      "difficulty": 0.894
     },
     {
       "id": "jp028_019",
@@ -4562,7 +4885,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp028_019.png",
       "tags": [],
-      "difficulty": 0.626
+      "difficulty": 0.637
     },
     {
       "id": "jp028_020",
@@ -4572,7 +4895,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.715
+      "difficulty": 0.722
     },
     {
       "id": "jp028_021",
@@ -4583,7 +4906,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.839
+      "difficulty": 0.844
     },
     {
       "id": "jp028_022",
@@ -4594,7 +4917,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.83
+      "difficulty": 0.837
     },
     {
       "id": "jp028_023",
@@ -4605,7 +4928,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.909
+      "difficulty": 0.911
     },
     {
       "id": "jp028_024",
@@ -4613,7 +4936,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp028_024.png",
       "tags": [],
-      "difficulty": 0.542
+      "difficulty": 0.552
     },
     {
       "id": "jp028_025",
@@ -4621,7 +4944,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp028_025.png",
       "tags": [],
-      "difficulty": 0.604
+      "difficulty": 0.618
     },
     {
       "id": "jp028_026",
@@ -4632,7 +4955,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.849
+      "difficulty": 0.862
     },
     {
       "id": "jp028_027",
@@ -4643,7 +4966,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.853
+      "difficulty": 0.856
     },
     {
       "id": "jp028_028",
@@ -4654,7 +4977,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.876
+      "difficulty": 0.881
     },
     {
       "id": "jp028_029",
@@ -4664,7 +4987,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.84
+      "difficulty": 0.848
     },
     {
       "id": "jp028_030",
@@ -4674,7 +4997,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.854
+      "difficulty": 0.851
     },
     {
       "id": "jp028_031",
@@ -4684,7 +5007,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.759
+      "difficulty": 0.764
     },
     {
       "id": "jp029_001",
@@ -4694,7 +5017,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.163
+      "difficulty": 0.195
     },
     {
       "id": "jp029_002",
@@ -4705,7 +5028,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.326
+      "difficulty": 0.355
     },
     {
       "id": "jp029_003",
@@ -4715,7 +5038,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.239
+      "difficulty": 0.267
     },
     {
       "id": "jp029_004",
@@ -4725,7 +5048,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.175
+      "difficulty": 0.204
     },
     {
       "id": "jp029_005",
@@ -4735,7 +5058,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.167
+      "difficulty": 0.199
     },
     {
       "id": "jp029_006",
@@ -4745,7 +5068,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.112
+      "difficulty": 0.14
     },
     {
       "id": "jp029_007",
@@ -4756,7 +5079,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.237
+      "difficulty": 0.272
     },
     {
       "id": "jp029_008",
@@ -4766,7 +5089,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.279
+      "difficulty": 0.306
     },
     {
       "id": "jp029_009",
@@ -4776,7 +5099,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.276
+      "difficulty": 0.301
     },
     {
       "id": "jp029_010",
@@ -4786,7 +5109,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.329
+      "difficulty": 0.35
     },
     {
       "id": "jp029_011",
@@ -4797,7 +5120,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.202
+      "difficulty": 0.234
     },
     {
       "id": "jp029_012",
@@ -4805,7 +5128,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp029_012.png",
       "tags": [],
-      "difficulty": 0.386
+      "difficulty": 0.408
     },
     {
       "id": "jp029_013",
@@ -4815,7 +5138,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.472
+      "difficulty": 0.493
     },
     {
       "id": "jp029_014",
@@ -4825,7 +5148,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.165
+      "difficulty": 0.197
     },
     {
       "id": "jp029_015",
@@ -4835,7 +5158,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.208
+      "difficulty": 0.239
     },
     {
       "id": "jp029_016",
@@ -4846,7 +5169,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.246
+      "difficulty": 0.271
     },
     {
       "id": "jp029_017",
@@ -4857,7 +5180,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.267
+      "difficulty": 0.299
     },
     {
       "id": "jp029_018",
@@ -4868,7 +5191,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.2
+      "difficulty": 0.225
     },
     {
       "id": "jp029_019",
@@ -4879,7 +5202,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.345
+      "difficulty": 0.37
     },
     {
       "id": "jp030_001",
@@ -4890,7 +5213,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.46
+      "difficulty": 0.479
     },
     {
       "id": "jp030_002",
@@ -4900,7 +5223,7 @@
       "tags": [
         "soft"
       ],
-      "difficulty": 0.248
+      "difficulty": 0.28
     },
     {
       "id": "jp030_003",
@@ -4910,7 +5233,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.544
+      "difficulty": 0.56
     },
     {
       "id": "jp030_004",
@@ -4920,7 +5243,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.645
+      "difficulty": 0.656
     },
     {
       "id": "jp030_005",
@@ -4931,7 +5254,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.392
+      "difficulty": 0.418
     },
     {
       "id": "jp031_001",
@@ -4939,7 +5262,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp031_001.png",
       "tags": [],
-      "difficulty": 0.51
+      "difficulty": 0.523
     },
     {
       "id": "jp031_002",
@@ -4949,7 +5272,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.475
+      "difficulty": 0.494
     },
     {
       "id": "jp031_003",
@@ -4957,7 +5280,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp031_003.png",
       "tags": [],
-      "difficulty": 0.516
+      "difficulty": 0.539
     },
     {
       "id": "jp031_004",
@@ -4965,10 +5288,9 @@
       "group": "Japan Pack",
       "lut": "luts/jp031_004.png",
       "tags": [
-        "warm",
-        "bold"
+        "warm"
       ],
-      "difficulty": 0.665
+      "difficulty": 0.68
     },
     {
       "id": "jp031_005",
@@ -4979,7 +5301,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.764
+      "difficulty": 0.776
     },
     {
       "id": "jp031_006",
@@ -4987,9 +5309,10 @@
       "group": "Japan Pack",
       "lut": "luts/jp031_006.png",
       "tags": [
+        "warm",
         "soft"
       ],
-      "difficulty": 0.34
+      "difficulty": 0.373
     },
     {
       "id": "jp031_007",
@@ -5000,7 +5323,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.268
+      "difficulty": 0.292
     },
     {
       "id": "jp031_008",
@@ -5011,7 +5334,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.4
+      "difficulty": 0.42
     },
     {
       "id": "jp032_001",
@@ -5021,7 +5344,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.465
+      "difficulty": 0.487
     },
     {
       "id": "jp032_002",
@@ -5031,7 +5354,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.59
+      "difficulty": 0.611
     },
     {
       "id": "jp032_003",
@@ -5039,7 +5362,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp032_003.png",
       "tags": [],
-      "difficulty": 0.392
+      "difficulty": 0.416
     },
     {
       "id": "jp032_004",
@@ -5049,7 +5372,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.453
+      "difficulty": 0.475
     },
     {
       "id": "jp032_005",
@@ -5059,7 +5382,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.631
+      "difficulty": 0.659
     },
     {
       "id": "jp033_001",
@@ -5069,7 +5392,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.516
+      "difficulty": 0.544
     },
     {
       "id": "jp033_002",
@@ -5080,7 +5403,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.453
+      "difficulty": 0.481
     },
     {
       "id": "jp033_003",
@@ -5091,7 +5414,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.453
+      "difficulty": 0.484
     },
     {
       "id": "jp033_004",
@@ -5102,7 +5425,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.488
+      "difficulty": 0.519
     },
     {
       "id": "jp033_005",
@@ -5113,7 +5436,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.488
+      "difficulty": 0.519
     },
     {
       "id": "jp033_006",
@@ -5124,7 +5447,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.467
+      "difficulty": 0.499
     },
     {
       "id": "jp033_007",
@@ -5135,7 +5458,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.467
+      "difficulty": 0.499
     },
     {
       "id": "jp033_008",
@@ -5146,7 +5469,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.453
+      "difficulty": 0.484
     },
     {
       "id": "jp033_009",
@@ -5157,7 +5480,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.505
+      "difficulty": 0.531
     },
     {
       "id": "jp033_010",
@@ -5168,7 +5491,7 @@
         "warm",
         "soft"
       ],
-      "difficulty": 0.469
+      "difficulty": 0.499
     },
     {
       "id": "jp034_001",
@@ -5179,7 +5502,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.879
+      "difficulty": 0.877
     },
     {
       "id": "jp034_002",
@@ -5189,7 +5512,7 @@
       "tags": [
         "mono"
       ],
-      "difficulty": 0.764
+      "difficulty": 0.76
     },
     {
       "id": "jp034_003",
@@ -5200,7 +5523,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.955
+      "difficulty": 0.956
     },
     {
       "id": "jp034_004",
@@ -5211,7 +5534,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.886
+      "difficulty": 0.887
     },
     {
       "id": "jp034_005",
@@ -5222,7 +5545,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.972
+      "difficulty": 0.971
     },
     {
       "id": "jp034_006",
@@ -5233,7 +5556,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.663
+      "difficulty": 0.683
     },
     {
       "id": "jp034_007",
@@ -5243,7 +5566,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.833
+      "difficulty": 0.837
     },
     {
       "id": "jp034_008",
@@ -5251,10 +5574,9 @@
       "group": "Japan Pack",
       "lut": "luts/jp034_008.png",
       "tags": [
-        "cool",
         "bold"
       ],
-      "difficulty": 0.754
+      "difficulty": 0.759
     },
     {
       "id": "jp034_009",
@@ -5264,7 +5586,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.689
+      "difficulty": 0.708
     },
     {
       "id": "jp034_010",
@@ -5275,7 +5597,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.884
+      "difficulty": 0.886
     },
     {
       "id": "jp034_011",
@@ -5286,7 +5608,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.981
+      "difficulty": 0.979
     },
     {
       "id": "jp035_001",
@@ -5296,7 +5618,7 @@
       "tags": [
         "mono"
       ],
-      "difficulty": 0.527
+      "difficulty": 0.534
     },
     {
       "id": "jp035_002",
@@ -5306,7 +5628,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.506
+      "difficulty": 0.512
     },
     {
       "id": "jp035_003",
@@ -5314,7 +5636,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp035_003.png",
       "tags": [],
-      "difficulty": 0.532
+      "difficulty": 0.545
     },
     {
       "id": "jp035_004",
@@ -5324,7 +5646,7 @@
       "tags": [
         "warm"
       ],
-      "difficulty": 0.701
+      "difficulty": 0.708
     },
     {
       "id": "jp035_005",
@@ -5334,7 +5656,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.52
+      "difficulty": 0.522
     },
     {
       "id": "jp035_006",
@@ -5342,7 +5664,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp035_006.png",
       "tags": [],
-      "difficulty": 0.542
+      "difficulty": 0.562
     },
     {
       "id": "jp036_001",
@@ -5350,9 +5672,10 @@
       "group": "Japan Pack",
       "lut": "luts/jp036_001.png",
       "tags": [
-        "cool"
+        "cool",
+        "soft"
       ],
-      "difficulty": 0.471
+      "difficulty": 0.492
     },
     {
       "id": "jp036_002",
@@ -5360,7 +5683,7 @@
       "group": "Japan Pack",
       "lut": "luts/jp036_002.png",
       "tags": [],
-      "difficulty": 0.471
+      "difficulty": 0.498
     },
     {
       "id": "jp036_003",
@@ -5371,7 +5694,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.417
+      "difficulty": 0.451
     },
     {
       "id": "jp036_004",
@@ -5392,7 +5715,7 @@
       "tags": [
         "cool"
       ],
-      "difficulty": 0.643
+      "difficulty": 0.656
     },
     {
       "id": "jp037_001",
@@ -5402,7 +5725,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.758
+      "difficulty": 0.77
     },
     {
       "id": "jp037_002",
@@ -5413,7 +5736,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.856
+      "difficulty": 0.863
     },
     {
       "id": "jp037_003",
@@ -5424,7 +5747,7 @@
         "warm",
         "bold"
       ],
-      "difficulty": 0.9
+      "difficulty": 0.903
     },
     {
       "id": "jp037_004",
@@ -5434,7 +5757,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.691
+      "difficulty": 0.699
     },
     {
       "id": "jp037_005",
@@ -5445,7 +5768,7 @@
         "cool",
         "soft"
       ],
-      "difficulty": 0.391
+      "difficulty": 0.416
     },
     {
       "id": "jp037_006",
@@ -5456,7 +5779,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.797
+      "difficulty": 0.799
     },
     {
       "id": "jp037_007",
@@ -5466,7 +5789,7 @@
       "tags": [
         "bold"
       ],
-      "difficulty": 0.81
+      "difficulty": 0.818
     },
     {
       "id": "jp037_008",
@@ -5477,7 +5800,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.865
+      "difficulty": 0.866
     },
     {
       "id": "jp037_009",
@@ -5488,7 +5811,7 @@
         "cool",
         "bold"
       ],
-      "difficulty": 0.793
+      "difficulty": 0.803
     }
   ]
 }
